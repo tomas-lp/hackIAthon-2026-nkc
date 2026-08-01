@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -19,6 +19,44 @@ interface ReportMapInternalProps {
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
 const INITIAL_ZOOM = 8;
+
+async function resolveReportAddress(lat: number, lng: number): Promise<string> {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+    {
+      headers: {
+        "Accept-Language": "es",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("No se pudo resolver la dirección");
+  }
+
+  const data = await response.json();
+  const address = data.address ?? {};
+  const street =
+    address.road || address.pedestrian || address.path || address.footway;
+  const houseNumber = address.house_number;
+  const locality =
+    address.city || address.town || address.village || address.suburb;
+  const state = address.state || address.province;
+  const country = address.country;
+
+  const formattedAddress = [
+    street && houseNumber ? `${street} ${houseNumber}` : street || houseNumber,
+    locality,
+    state,
+    country,
+  ].filter(Boolean);
+
+  return (
+    formattedAddress.join(", ") ||
+    data.display_name ||
+    "Ubicación no disponible"
+  );
+}
 
 function createRiskIcon(
   riskKey: keyof typeof RISK_CONFIG,
@@ -66,6 +104,7 @@ export default function ReportMapInternal({
   const showHeatmap = true;
   const showMarkers = true;
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
+  const [addresses, setAddresses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (selectedReport) {
@@ -75,6 +114,61 @@ export default function ReportMapInternal({
       }
     }
   }, [selectedReport]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const pendingReports = reports.filter((report) => {
+      return (
+        !addresses[report.id] &&
+        report.latitud != null &&
+        report.longitud != null
+      );
+    });
+
+    if (pendingReports.length === 0) {
+      return;
+    }
+
+    const loadAddresses = async () => {
+      for (const report of pendingReports) {
+        if (isCancelled) {
+          return;
+        }
+
+        try {
+          const resolvedAddress = await resolveReportAddress(
+            report.latitud,
+            report.longitud
+          );
+
+          if (!isCancelled) {
+            setAddresses((prev) => {
+              if (prev[report.id]) {
+                return prev;
+              }
+              return { ...prev, [report.id]: resolvedAddress };
+            });
+          }
+        } catch {
+          if (!isCancelled) {
+            setAddresses((prev) => {
+              if (prev[report.id]) {
+                return prev;
+              }
+              return { ...prev, [report.id]: "Ubicación no disponible" };
+            });
+          }
+        }
+      }
+    };
+
+    loadAddresses();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [addresses, reports]);
 
   // Transform reports into heatmap intensity points (excluding dismissed from heatmap to focus intensity on active alerts!)
   const heatmapPoints: HeatmapPoint[] = useMemo(() => {
@@ -92,7 +186,7 @@ export default function ReportMapInternal({
   }, [reports]);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] font-sans">
+    <div className="relative w-full h-full min-h-125 font-sans">
       <MapContainer
         center={CORRIENTES_CENTER}
         zoom={INITIAL_ZOOM}
@@ -117,9 +211,7 @@ export default function ReportMapInternal({
             const isDismissed =
               report.estado === "DESESTIMADO_SIN_ALERTA" ||
               report.estado === "DESESTIMADO_IRRELEVANTE";
-            const confidence = report.grokPayload?.grokConfidence
-              ? `${Math.round(report.grokPayload.grokConfidence * 100)}%`
-              : "—";
+            const criticidadLabel = riskCfg.label;
 
             return (
               <Marker
@@ -152,6 +244,16 @@ export default function ReportMapInternal({
                     </div>
 
                     <div className="space-y-1.5 text-[10px]">
+                      <div className="flex items-start justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 ">
+                        <span className="uppercase tracking-[0.16em] text-zinc-500">
+                          Ubicación
+                        </span>
+                        <span className="max-w-45 text-right font-medium leading-snug text-zinc-700">
+                          {addresses[report.id] ||
+                            `Lat ${report.latitud.toFixed(4)}, Lng ${report.longitud.toFixed(4)}`}
+                        </span>
+                      </div>
+
                       <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 ">
                         <span className="uppercase tracking-[0.16em] text-zinc-500">
                           Fecha
@@ -163,23 +265,12 @@ export default function ReportMapInternal({
 
                       <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 ">
                         <span className="uppercase tracking-[0.16em] text-zinc-500">
-                          Confianza
+                          Criticidad
                         </span>
                         <span className="font-medium text-zinc-700 ">
-                          {confidence}
+                          {criticidadLabel}
                         </span>
                       </div>
-
-                      {report.localidad && (
-                        <div className="rounded-md bg-zinc-50 px-2 py-1 ">
-                          <p className="mb-0.5 uppercase tracking-[0.16em] text-zinc-500">
-                            Ubicación
-                          </p>
-                          <p className="font-medium text-zinc-700 ">
-                            {report.localidad}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </Popup>
@@ -189,7 +280,7 @@ export default function ReportMapInternal({
       </MapContainer>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex items-center gap-3">
+      <div className="absolute bottom-4 left-4 z-1000 bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex items-center gap-3">
         <span className="font-medium text-zinc-500 flex items-center gap-1">
           <Layers className="w-3 h-3 text-blue-500" /> Criticidad:
         </span>
