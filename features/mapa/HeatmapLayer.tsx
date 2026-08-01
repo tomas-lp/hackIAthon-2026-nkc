@@ -15,9 +15,14 @@ interface HeatmapLayerProps {
   points: HeatmapPoint[];
 }
 
+type LeafletHeatLayer = L.Layer & {
+  setLatLngs: (latlngs: Array<[number, number, number]>) => void;
+  redraw: () => void;
+};
+
 export function HeatmapLayer({ points }: HeatmapLayerProps) {
   const map = useMap();
-  const heatLayerRef = useRef<L.Layer | null>(null);
+  const heatLayerRef = useRef<LeafletHeatLayer | null>(null);
 
   useEffect(() => {
     if (!map) return;

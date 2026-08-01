@@ -30,11 +30,15 @@ export function Sidebar({
   onResetFilters,
 }: SidebarProps) {
   const visibleReports = useMemo(() => {
+    const sortedReports = [...reports].sort(
+      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+    );
+
     if (!filters.tipo || filters.tipo === "TODOS") {
-      return reports;
+      return sortedReports;
     }
 
-    return reports.filter((report) => report.tipo === filters.tipo);
+    return sortedReports.filter((report) => report.tipo === filters.tipo);
   }, [filters.tipo, reports]);
 
   return (

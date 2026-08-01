@@ -12,7 +12,11 @@ export function RecentReportsList({
   selectedReport,
   onSelectReport,
 }: RecentReportsListProps) {
-  if (reports.length === 0) {
+  const sortedReports = [...reports].sort(
+    (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+  );
+
+  if (sortedReports.length === 0) {
     return (
       <div className="p-6 text-center text-zinc-400 bg-zinc-50  border border-zinc-200  rounded-lg">
         <p className="text-xs">
@@ -32,7 +36,7 @@ export function RecentReportsList({
       </div>
 
       <div className="space-y-2 max-h-[390px] overflow-y-auto pr-1">
-        {reports.map((report) => {
+        {sortedReports.map((report) => {
           const isSelected = selectedReport?.id === report.id;
           const riskCfg = RISK_CONFIG[report.riesgo];
           const typeCfg = TYPE_CONFIG[report.tipo];
