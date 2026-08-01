@@ -14,7 +14,7 @@ export function RecentReportsList({
 }: RecentReportsListProps) {
   if (reports.length === 0) {
     return (
-      <div className="p-6 text-center text-zinc-400 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+      <div className="p-6 text-center text-zinc-400 bg-zinc-50  border border-zinc-200  rounded-lg">
         <p className="text-xs">
           No se encontraron reportes con los filtros seleccionados.
         </p>
@@ -46,8 +46,8 @@ export function RecentReportsList({
               onClick={() => onSelectReport(report)}
               className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
                 isSelected
-                  ? "bg-blue-50/50 dark:bg-zinc-800 border-blue-600 dark:border-blue-400"
-                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700"
+                  ? "bg-blue-50/50  border-blue-600 "
+                  : "bg-white  border-zinc-200  hover:border-zinc-400 "
               }`}
             >
               <div className="space-y-2">
@@ -55,7 +55,7 @@ export function RecentReportsList({
                   <p className="text-[10px] uppercase tracking-wide text-zinc-400 mb-1">
                     Tipo
                   </p>
-                  <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  <p className="font-semibold text-zinc-900 ">
                     {typeCfg.label}
                   </p>
                 </div>
@@ -75,7 +75,7 @@ export function RecentReportsList({
                   <p className="text-[10px] uppercase tracking-wide text-zinc-400 mb-1">
                     Confianza
                   </p>
-                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <p className="text-sm font-medium text-zinc-700 ">
                     {confidence}
                   </p>
                 </div>

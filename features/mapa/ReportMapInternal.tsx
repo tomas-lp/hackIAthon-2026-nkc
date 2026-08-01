@@ -140,7 +140,7 @@ export default function ReportMapInternal({
                         <p className="text-[9px] uppercase tracking-[0.2em] text-zinc-400">
                           Reporte
                         </p>
-                        <p className="text-[11px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
+                        <p className="text-[11px] font-semibold leading-tight text-zinc-900 ">
                           {typeCfg.label}
                         </p>
                       </div>
@@ -152,30 +152,30 @@ export default function ReportMapInternal({
                     </div>
 
                     <div className="space-y-1.5 text-[10px]">
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 dark:bg-zinc-800/70">
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 ">
                         <span className="uppercase tracking-[0.16em] text-zinc-500">
                           Fecha
                         </span>
-                        <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium text-zinc-700 ">
                           {formatDate(report.fecha)}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 dark:bg-zinc-800/70">
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 ">
                         <span className="uppercase tracking-[0.16em] text-zinc-500">
                           Confianza
                         </span>
-                        <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium text-zinc-700 ">
                           {confidence}
                         </span>
                       </div>
 
                       {report.localidad && (
-                        <div className="rounded-md bg-zinc-50 px-2 py-1 dark:bg-zinc-800/70">
+                        <div className="rounded-md bg-zinc-50 px-2 py-1 ">
                           <p className="mb-0.5 uppercase tracking-[0.16em] text-zinc-500">
                             Ubicación
                           </p>
-                          <p className="font-medium text-zinc-700 dark:text-zinc-200">
+                          <p className="font-medium text-zinc-700 ">
                             {report.localidad}
                           </p>
                         </div>
@@ -189,7 +189,7 @@ export default function ReportMapInternal({
       </MapContainer>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[11px] flex items-center gap-3">
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex items-center gap-3">
         <span className="font-medium text-zinc-500 flex items-center gap-1">
           <Layers className="w-3 h-3 text-blue-500" /> Criticidad:
         </span>
@@ -199,9 +199,7 @@ export default function ReportMapInternal({
               className="w-2.5 h-2.5 rounded-full inline-block"
               style={{ backgroundColor: cfg.color }}
             />
-            <span className="text-zinc-700 dark:text-zinc-300 font-mono text-[10px]">
-              {key}
-            </span>
+            <span className="text-zinc-700  font-mono text-[10px]">{key}</span>
           </div>
         ))}
       </div>

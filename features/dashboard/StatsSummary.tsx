@@ -16,14 +16,14 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
     <div className="space-y-4 font-sans">
       {/* Top 4 Quick Metric Cards */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+        <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
               Reportes Lluvia
             </span>
             <CloudRain className="w-3.5 h-3.5 text-blue-500" />
           </div>
-          <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+          <div className="text-xl font-bold text-zinc-900  font-mono">
             {stats.total}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
@@ -31,14 +31,14 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
           </div>
         </div>
 
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+        <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
               Validados API Clima
             </span>
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
           </div>
-          <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="text-xl font-bold text-emerald-600  font-mono">
             {stats.validadosClima}{" "}
             <span className="text-xs font-normal text-zinc-400">
               ({validatedPercent}%)
@@ -49,14 +49,14 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
           </div>
         </div>
 
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+        <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
               Sin Alerta Clima
             </span>
             <XCircle className="w-3.5 h-3.5 text-red-500" />
           </div>
-          <div className="text-xl font-bold text-red-600 dark:text-red-400 font-mono">
+          <div className="text-xl font-bold text-red-600  font-mono">
             {stats.desestimadosSinAlerta}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
@@ -64,14 +64,14 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
           </div>
         </div>
 
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+        <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
               No Climáticos
             </span>
             <ShieldAlert className="w-3.5 h-3.5 text-zinc-400" />
           </div>
-          <div className="text-xl font-bold text-zinc-600 dark:text-zinc-400 font-mono">
+          <div className="text-xl font-bold text-zinc-600  font-mono">
             {stats.desestimadosIrrelevantes}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
@@ -81,7 +81,7 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
       </div>
 
       {/* Breakdown by Risk */}
-      <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+      <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
         <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 block mb-2">
           Criticidad de Inundación
         </span>
@@ -92,12 +92,12 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
             return (
               <div
                 key={risk}
-                className="p-1.5 bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700/50 rounded"
+                className="p-1.5 bg-white  border border-zinc-100  rounded"
               >
                 <div className={`text-[10px] font-bold ${cfg.text}`}>
                   {risk}
                 </div>
-                <div className="text-sm font-bold font-mono text-zinc-800 dark:text-zinc-200">
+                <div className="text-sm font-bold font-mono text-zinc-800 ">
                   {count}
                 </div>
               </div>
@@ -107,7 +107,7 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
       </div>
 
       {/* Breakdown by Type */}
-      <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+      <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
         <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 block mb-2">
           Problemáticas por Lluvia
         </span>
@@ -120,15 +120,15 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
 
             return (
               <div key={type} className="text-xs space-y-0.5">
-                <div className="flex justify-between text-[11px] text-zinc-600 dark:text-zinc-400">
+                <div className="flex justify-between text-[11px] text-zinc-600 ">
                   <span>{label}</span>
                   <span className="font-mono text-zinc-500">
                     {count} ({percentage}%)
                   </span>
                 </div>
-                <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-zinc-200  rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-600 dark:bg-blue-400 rounded-full transition-all duration-300"
+                    className="h-full bg-blue-600  rounded-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>

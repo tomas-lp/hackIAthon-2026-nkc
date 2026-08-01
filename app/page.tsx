@@ -17,7 +17,7 @@ export default function CrisisGraphPage() {
   } = useReports();
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 dark:bg-zinc-950">
+    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
       <Sidebar
         reports={reports}
         filters={filters}

@@ -34,7 +34,7 @@ export const RISK_CONFIG: Record<
   CRITICO: {
     label: "CRÍTICO",
     bg: "bg-red-500/10",
-    text: "text-red-600 dark:text-red-400",
+    text: "text-red-600 ",
     border: "border-red-500/30",
     weight: 2.4,
     color: "#ef4444",
@@ -42,7 +42,7 @@ export const RISK_CONFIG: Record<
   ALTO: {
     label: "ALTO",
     bg: "bg-orange-500/10",
-    text: "text-orange-600 dark:text-orange-400",
+    text: "text-orange-600 ",
     border: "border-orange-500/30",
     weight: 1.8,
     color: "#f97316",
@@ -50,7 +50,7 @@ export const RISK_CONFIG: Record<
   MEDIO: {
     label: "MEDIO",
     bg: "bg-amber-500/10",
-    text: "text-amber-600 dark:text-amber-400",
+    text: "text-amber-600 ",
     border: "border-amber-500/30",
     weight: 1.1,
     color: "#eab308",
@@ -58,7 +58,7 @@ export const RISK_CONFIG: Record<
   BAJO: {
     label: "BAJO",
     bg: "bg-blue-500/10",
-    text: "text-blue-600 dark:text-blue-400",
+    text: "text-blue-600 ",
     border: "border-blue-500/30",
     weight: 0.6,
     color: "#3b82f6",
@@ -79,25 +79,25 @@ export const STATUS_CONFIG: Record<
   VALIDADO_CLIMA: {
     label: "Validado API Clima",
     bg: "bg-emerald-500/10",
-    text: "text-emerald-700 dark:text-emerald-400",
+    text: "text-emerald-700 ",
     border: "border-emerald-500/30",
   },
   PENDIENTE_VALIDACION: {
     label: "Pendiente Análisis",
     bg: "bg-amber-500/10",
-    text: "text-amber-700 dark:text-amber-400",
+    text: "text-amber-700 ",
     border: "border-amber-500/30",
   },
   DESESTIMADO_SIN_ALERTA: {
     label: "Desestimado (Sin Lluvia)",
     bg: "bg-red-500/10",
-    text: "text-red-700 dark:text-red-400",
+    text: "text-red-700 ",
     border: "border-red-500/30",
   },
   DESESTIMADO_IRRELEVANTE: {
     label: "Desestimado (No Lluvia)",
     bg: "bg-zinc-500/10",
-    text: "text-zinc-600 dark:text-zinc-400",
+    text: "text-zinc-600 ",
     border: "border-zinc-500/30",
   },
 };
