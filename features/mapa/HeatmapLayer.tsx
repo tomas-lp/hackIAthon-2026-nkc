@@ -38,7 +38,8 @@ export function HeatmapLayer({ points }: HeatmapLayerProps) {
 
     try {
       heatLayerRef.current.setLatLngs(heatPoints);
-      heatLayerRef.current._reset();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (heatLayerRef.current as any)._reset();
       heatLayerRef.current.redraw();
     } catch (error) {
       console.warn("Heatmap update skipped", error);
