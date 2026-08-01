@@ -101,7 +101,10 @@ async function analyzeTextIntent(text: string): Promise<string> {
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
     });
-    if (!res.ok) throw new Error("Groq API error");
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Groq API error: ${res.status} ${errorText}`);
+    }
     const data = await res.json();
     return JSON.parse(data.choices[0].message.content).intent;
   }
@@ -113,7 +116,10 @@ async function analyzeTextIntent(text: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    if (!res.ok) throw new Error(`Gemini ${model} falló`);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Gemini ${model} falló: ${res.status} ${errorText}`);
+    }
     const data = await res.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) throw new Error("Respuesta bloqueada");
@@ -121,8 +127,13 @@ async function analyzeTextIntent(text: string): Promise<string> {
   }
 
   try { return await callGroq(GROQ_API_KEY_1); } catch (e1) {
+    console.error("Groq 1 intent failed:", e1);
     try { return await callGemini(); } catch (e2) {
-      try { return await callGroq(GROQ_API_KEY_2); } catch (e3) { return "DESCONOCIDO"; }
+      console.error("Gemini intent failed:", e2);
+      try { return await callGroq(GROQ_API_KEY_2); } catch (e3) { 
+        console.error("Groq 2 intent failed:", e3);
+        return "DESCONOCIDO"; 
+      }
     }
   }
 }
@@ -137,7 +148,10 @@ async function validateDescriptionWithAI(text: string): Promise<boolean> {
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
     });
-    if (!res.ok) throw new Error("Groq API error");
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Groq API error: ${res.status} ${errorText}`);
+    }
     const data = await res.json();
     return JSON.parse(data.choices[0].message.content).es_emergencia;
   }
@@ -149,7 +163,10 @@ async function validateDescriptionWithAI(text: string): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    if (!res.ok) throw new Error(`Gemini ${model} falló`);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Gemini ${model} falló: ${res.status} ${errorText}`);
+    }
     const data = await res.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) throw new Error("Respuesta bloqueada");
@@ -157,8 +174,13 @@ async function validateDescriptionWithAI(text: string): Promise<boolean> {
   }
 
   try { return await callGroq(GROQ_API_KEY_1); } catch (e1) {
+    console.error("Groq 1 validate failed:", e1);
     try { return await callGemini(); } catch (e2) {
-      try { return await callGroq(GROQ_API_KEY_2); } catch (e3) { return true; /* Fallback a true si caen APIs */ }
+      console.error("Gemini validate failed:", e2);
+      try { return await callGroq(GROQ_API_KEY_2); } catch (e3) {
+        console.error("Groq 2 validate failed:", e3);
+        return true; /* Fallback a true si caen APIs */ 
+      }
     }
   }
 }
