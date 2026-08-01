@@ -23,47 +23,79 @@ type LeafletHeatLayer = L.Layer & {
 export function HeatmapLayer({ points }: HeatmapLayerProps) {
   const map = useMap();
   const heatLayerRef = useRef<LeafletHeatLayer | null>(null);
+  const pointsRef = useRef(points);
+
+  useEffect(() => {
+    pointsRef.current = points;
+
+    if (!heatLayerRef.current) {
+      return;
+    }
+
+    const heatPoints: Array<[number, number, number]> = pointsRef.current.map(
+      (p) => [p.lat, p.lng, p.intensity]
+    );
+
+    try {
+      heatLayerRef.current.setLatLngs(heatPoints);
+      heatLayerRef.current._reset();
+      heatLayerRef.current.redraw();
+    } catch (error) {
+      console.warn("Heatmap update skipped", error);
+    }
+  }, [points]);
 
   useEffect(() => {
     if (!map) return;
 
-    const heatPoints: Array<[number, number, number]> = points.map((p) => [
-      p.lat,
-      p.lng,
-      p.intensity,
-    ]);
+    if (!heatLayerRef.current) {
+      // @ts-expect-error L.heatLayer comes from leaflet.heat plugin
+      const heatLayer = L.heatLayer([], {
+        radius: 45,
+        blur: 22,
+        maxZoom: 10,
+        minOpacity: 0.2,
+        gradient: {
+          0.25: "#3b82f6", // BAJO (Azul)
+          0.55: "#eab308", // MEDIO (Amarillo)
+          0.85: "#f97316", // ALTO (Naranja)
+          1.0: "#ef4444", // CRITICO (Rojo)
+        },
+      });
 
-    // @ts-expect-error L.heatLayer comes from leaflet.heat plugin
-    const heatLayer = L.heatLayer(heatPoints, {
-      radius: 45,
-      blur: 22,
-      maxZoom: 10,
-      minOpacity: 0.2,
-      gradient: {
-        0.25: "#3b82f6", // BAJO (Azul)
-        0.55: "#eab308", // MEDIO (Amarillo)
-        0.85: "#f97316", // ALTO (Naranja)
-        1.0: "#ef4444", // CRITICO (Rojo)
-      },
-    });
+      heatLayerRef.current = heatLayer as LeafletHeatLayer;
+      heatLayerRef.current.addTo(map);
+    }
 
-    heatLayerRef.current = heatLayer;
+    let animationFrameId: number | null = null;
 
-    const redrawHeatmap = () => {
-      if (
-        !map ||
-        !heatLayerRef.current ||
-        !map.hasLayer(heatLayerRef.current)
-      ) {
+    const updateHeatmap = () => {
+      if (!map || !heatLayerRef.current) {
         return;
       }
 
+      const heatPoints: Array<[number, number, number]> = pointsRef.current.map(
+        (p) => [p.lat, p.lng, p.intensity]
+      );
+
       try {
         heatLayerRef.current.setLatLngs(heatPoints);
+        heatLayerRef.current._reset();
         heatLayerRef.current.redraw();
       } catch (error) {
         console.warn("Heatmap redraw skipped", error);
       }
+    };
+
+    const scheduleHeatmapUpdate = () => {
+      if (animationFrameId !== null) {
+        return;
+      }
+
+      animationFrameId = window.requestAnimationFrame(() => {
+        animationFrameId = null;
+        updateHeatmap();
+      });
     };
 
     const initializeHeatmap = () => {
@@ -73,22 +105,25 @@ export function HeatmapLayer({ points }: HeatmapLayerProps) {
         heatLayerRef.current.addTo(map);
       }
 
-      requestAnimationFrame(() => {
-        redrawHeatmap();
-      });
+      scheduleHeatmapUpdate();
     };
 
     map.whenReady(initializeHeatmap);
-    map.on("move zoom viewreset", redrawHeatmap);
+    map.on("move zoom drag resize viewreset", scheduleHeatmapUpdate);
 
     return () => {
-      map.off("move zoom viewreset", redrawHeatmap);
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      map.off("move zoom drag resize viewreset", scheduleHeatmapUpdate);
       if (heatLayerRef.current && map.hasLayer(heatLayerRef.current)) {
         map.removeLayer(heatLayerRef.current);
       }
       heatLayerRef.current = null;
     };
-  }, [map, points]);
+  }, [map]);
 
   return null;
 }
