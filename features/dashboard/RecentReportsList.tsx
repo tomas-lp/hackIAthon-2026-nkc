@@ -48,7 +48,8 @@ export function RecentReportsList({
           const isSelected = selectedReport?.id === report.id;
           const riskCfg = RISK_CONFIG[report.riesgo];
           const typeCfg = TYPE_CONFIG[report.tipo];
-          const statusCfg = STATUS_CONFIG[report.estado];
+          const statusCfg =
+            STATUS_CONFIG[report.estado] ?? STATUS_CONFIG.PENDIENTE_VALIDACION;
           const weatherAlertDetails = report.grokPayload?.weatherAlertDetails;
           const isDismissed =
             report.estado === "DESESTIMADO_SIN_ALERTA" ||

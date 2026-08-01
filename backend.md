@@ -200,7 +200,7 @@ Estados sugeridos:
 - `validated`
 - `rejected`
 
-Si después hace falta trazabilidad más fina, se pueden agregar campos para evidencia, notas de moderación o nivel de confianza.
+Si después hace falta trazabilidad más fina, se pueden agregar campos para evidencia o notas de moderación.
 
 ---
 
