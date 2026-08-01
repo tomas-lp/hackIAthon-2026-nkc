@@ -256,17 +256,23 @@ serve(async (req) => {
       case 'ESPERANDO_FOTO':
         if (isPhoto || text.toLowerCase() === 'omitir') {
           // GUARDADO DEFINITIVO EN LA BASE DE DATOS
-          await supabase.from('reports').insert({
+          const { error: insertError } = await supabase.from('reports').insert({
             chat_id: chatId,
             descripcion: session.datos_temporales.descripcion || 'Sin descripción detallada',
             lat: session.datos_temporales.lat,
             lon: session.datos_temporales.lon,
             location: `POINT(${session.datos_temporales.lon} ${session.datos_temporales.lat})`, 
             criticidad: session.datos_temporales.criticidad,
-            lluvia_24h_mm: session.datos_temporales.clima?.lluvia_24h_mm || 0,
+            lluvia_mm: session.datos_temporales.clima?.lluvia_24h_mm || 0,
             clima_fuente: session.datos_temporales.clima?.fuente || 'Desconocida'
             // NOTA: Para hackathon, si envían foto, puedes dejar el foto_url nulo o guardar el file_id de Telegram temporalmente.
           });
+          
+          if (insertError) {
+            console.error("🔥🔥 ERROR GUARDANDO REPORTE EN DB:", insertError);
+            await sendMessage(chatId, "❌ Ocurrió un error al guardar el reporte en la base de datos. Por favor, intenta de nuevo.", true);
+            break; // Salimos del switch para que guarde la sesión actual
+          }
           
           session.state = 'IDLE';
           session.datos_temporales = {}; // Limpiar
