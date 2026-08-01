@@ -22,12 +22,7 @@ const INITIAL_ZOOM = 8;
 
 async function resolveReportAddress(lat: number, lng: number): Promise<string> {
   const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
-    {
-      headers: {
-        "Accept-Language": "es",
-      },
-    }
+    `/api/reverse-geocode?lat=${lat}&lon=${lng}&lang=es`
   );
 
   if (!response.ok) {
