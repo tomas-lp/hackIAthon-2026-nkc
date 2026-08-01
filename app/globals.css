@@ -26,9 +26,9 @@ body {
 .leaflet-popup-content-wrapper {
   background: #ffffff !important;
   color: #09090b !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-  padding: 4px !important;
+  padding: 2px !important;
   border: 1px solid #e4e4e7 !important;
 }
 
@@ -44,8 +44,12 @@ body {
 }
 
 .leaflet-popup-content {
-  margin: 6px 10px !important;
-  line-height: 1.4 !important;
+  margin: 0 8px !important;
+  line-height: 1.3 !important;
+}
+
+.leaflet-popup-content p {
+  margin: 0 !important;
 }
 
 .leaflet-container {

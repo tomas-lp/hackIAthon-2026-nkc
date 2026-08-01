@@ -10,7 +10,6 @@ export default function CrisisGraphPage() {
     loading,
     error,
     filters,
-    stats,
     selectedReport,
     setSelectedReport,
     updateFilter,
@@ -18,11 +17,9 @@ export default function CrisisGraphPage() {
   } = useReports();
 
   return (
-    <main className="flex flex-col lg:flex-row h-screen w-screen overflow-hidden bg-zinc-100 dark:bg-zinc-950">
-      {/* Sidebar Dashboard */}
+    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 dark:bg-zinc-950">
       <Sidebar
         reports={reports}
-        stats={stats}
         filters={filters}
         loading={loading}
         error={error}
@@ -32,8 +29,7 @@ export default function CrisisGraphPage() {
         onResetFilters={resetFilters}
       />
 
-      {/* Hero Map View */}
-      <section className="flex-1 h-[60vh] lg:h-full relative overflow-hidden">
+      <section className="absolute inset-0 h-full w-full">
         <ReportMap
           reports={reports}
           selectedReport={selectedReport}

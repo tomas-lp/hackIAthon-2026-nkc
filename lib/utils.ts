@@ -36,7 +36,7 @@ export const RISK_CONFIG: Record<
     bg: "bg-red-500/10",
     text: "text-red-600 dark:text-red-400",
     border: "border-red-500/30",
-    weight: 1.0,
+    weight: 2.4,
     color: "#ef4444",
   },
   ALTO: {
@@ -44,7 +44,7 @@ export const RISK_CONFIG: Record<
     bg: "bg-orange-500/10",
     text: "text-orange-600 dark:text-orange-400",
     border: "border-orange-500/30",
-    weight: 0.75,
+    weight: 1.8,
     color: "#f97316",
   },
   MEDIO: {
@@ -52,7 +52,7 @@ export const RISK_CONFIG: Record<
     bg: "bg-amber-500/10",
     text: "text-amber-600 dark:text-amber-400",
     border: "border-amber-500/30",
-    weight: 0.5,
+    weight: 1.1,
     color: "#eab308",
   },
   BAJO: {
@@ -60,7 +60,7 @@ export const RISK_CONFIG: Record<
     bg: "bg-blue-500/10",
     text: "text-blue-600 dark:text-blue-400",
     border: "border-blue-500/30",
-    weight: 0.25,
+    weight: 0.6,
     color: "#3b82f6",
   },
 };

@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Report, ReportFilters, ReportStats } from "@/types/report";
-import { StatsSummary } from "./StatsSummary";
-import { FilterPanel } from "./FilterPanel";
-import { RecentReportsList } from "./RecentReportsList";
-import { CloudRain, BarChart2, List, Bot } from "lucide-react";
+import { useMemo } from "react";
+import { Report, ReportFilters, ReportType } from "@/types/report";
+import { TYPE_CONFIG } from "@/lib/utils";
+import { ListFilter, MapPin, Sparkles } from "lucide-react";
 
 interface SidebarProps {
   reports: Report[];
-  stats: ReportStats;
   filters: ReportFilters;
   loading: boolean;
   error: string | null;
@@ -24,7 +21,6 @@ interface SidebarProps {
 
 export function Sidebar({
   reports,
-  stats,
   filters,
   loading,
   error,
@@ -33,100 +29,119 @@ export function Sidebar({
   onUpdateFilter,
   onResetFilters,
 }: SidebarProps) {
-  const [activeTab, setActiveTab] = useState<"feed" | "stats">("feed");
+  const visibleReports = useMemo(() => {
+    if (!filters.tipo || filters.tipo === "TODOS") {
+      return reports;
+    }
+
+    return reports.filter((report) => report.tipo === filters.tipo);
+  }, [filters.tipo, reports]);
 
   return (
-    <aside className="w-full lg:w-[430px] bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col h-full overflow-hidden font-sans">
-      {/* Header */}
-      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-              <CloudRain className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                Inu{" "}
-                <span className="text-xs font-normal text-zinc-400">
-                  | Inundaciones
-                </span>
-              </h1>
-            </div>
-          </div>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <Bot className="w-3 h-3" /> Grok AI + API Clima
-          </span>
+    <aside className="absolute left-4 top-4 z-[1000] w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200/80 bg-white/95 p-3 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
+            Mapa de inundaciones
+          </p>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Filtra y revisa los puntos
+          </h2>
         </div>
-        <p className="text-xs text-zinc-500 leading-normal">
-          Monitoreo de inundaciones y lluvias en Corrientes. Procesa mensajes de
-          Telegram con Grok AI y valida con la API meteorológica.
-        </p>
+        <div className="rounded-full bg-blue-50 p-2 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+          <ListFilter className="h-4 w-4" />
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="grid grid-cols-2 p-1 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-xs">
-        <button
-          onClick={() => setActiveTab("feed")}
-          className={`py-1.5 font-medium rounded flex items-center justify-center gap-1.5 transition-colors ${
-            activeTab === "feed"
-              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
-              : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-          }`}
+      <label className="mt-3 flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+        <span>Tipo</span>
+        <select
+          value={filters.tipo || "TODOS"}
+          onChange={(event) =>
+            onUpdateFilter("tipo", event.target.value as ReportType | "TODOS")
+          }
+          className="rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
         >
-          <List className="w-3.5 h-3.5" /> Reportes & Filtros
-        </button>
-        <button
-          onClick={() => setActiveTab("stats")}
-          className={`py-1.5 font-medium rounded flex items-center justify-center gap-1.5 transition-colors ${
-            activeTab === "stats"
-              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
-              : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-          }`}
-        >
-          <BarChart2 className="w-3.5 h-3.5" /> Métricas & Resumen
-        </button>
+          <option value="TODOS">Todos los tipos</option>
+          {(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => (
+            <option key={type} value={type}>
+              {TYPE_CONFIG[type].label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
+        <span>{visibleReports.length} puntos</span>
+        {(filters.tipo && filters.tipo !== "TODOS") || filters.busqueda ? (
+          <button
+            onClick={onResetFilters}
+            className="font-medium text-blue-600 transition hover:text-blue-700 dark:text-blue-400"
+          >
+            Limpiar
+          </button>
+        ) : null}
       </div>
 
-      {/* Scrollable Body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="mt-2 max-h-[46vh] overflow-y-auto rounded-xl border border-zinc-200/70 bg-zinc-50/70 p-2 dark:border-zinc-800 dark:bg-zinc-900/60">
         {loading && (
-          <div className="p-4 text-center text-xs text-zinc-400 font-mono">
-            Cargando reportes de Inu...
+          <div className="rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+            Cargando puntos de Inu...
           </div>
         )}
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 rounded text-xs">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600 dark:border-red-800/40 dark:bg-red-950/30 dark:text-red-400">
             {error}
           </div>
         )}
 
-        {!loading && !error && (
-          <>
-            {activeTab === "feed" && (
-              <>
-                <FilterPanel
-                  filters={filters}
-                  onUpdateFilter={onUpdateFilter}
-                  onResetFilters={onResetFilters}
-                />
-                <RecentReportsList
-                  reports={reports}
-                  selectedReport={selectedReport}
-                  onSelectReport={onSelectReport}
-                />
-              </>
-            )}
+        {!loading && !error && visibleReports.length === 0 && (
+          <div className="rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+            No hay puntos para este tipo.
+          </div>
+        )}
 
-            {activeTab === "stats" && <StatsSummary stats={stats} />}
-          </>
+        {!loading && !error && visibleReports.length > 0 && (
+          <div className="space-y-2">
+            {visibleReports.map((report) => {
+              const isSelected = selectedReport?.id === report.id;
+              const typeLabel = TYPE_CONFIG[report.tipo].label;
+
+              return (
+                <button
+                  key={report.id}
+                  onClick={() => onSelectReport(report)}
+                  className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                    isSelected
+                      ? "border-blue-500 bg-blue-50/80 dark:border-blue-400 dark:bg-blue-500/10"
+                      : "border-transparent bg-white/80 hover:border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-900/70 dark:hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                      {typeLabel}
+                    </span>
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                      {report.riesgo}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <MapPin className="h-3 w-3" />
+                    <span className="line-clamp-1">
+                      {report.localidad || report.descripcion}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Footer Info */}
-      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-[10px] text-zinc-400 flex items-center justify-between font-mono">
-        <span>Inu - Provincia de Corrientes</span>
-        <span>Mock Bot Telegram</span>
+      <div className="mt-3 flex items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-2 text-[11px] text-zinc-500 dark:bg-zinc-900/70 dark:text-zinc-400">
+        <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+        <span>Selecciona un punto para enfocarlo en el mapa.</span>
       </div>
     </aside>
   );

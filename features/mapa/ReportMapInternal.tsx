@@ -1,20 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { Report } from "@/types/report";
-import {
-  RISK_CONFIG,
-  TYPE_CONFIG,
-  STATUS_CONFIG,
-  formatDate,
-} from "@/lib/utils";
+import { formatDate, RISK_CONFIG, TYPE_CONFIG } from "@/lib/utils";
 import { HeatmapLayer, HeatmapPoint } from "./HeatmapLayer";
 import { MapController } from "./MapController";
-import { Layers, Flame, MapPin } from "lucide-react";
+import { Layers } from "lucide-react";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -68,8 +63,18 @@ export default function ReportMapInternal({
   selectedReport,
   onSelectReport,
 }: ReportMapInternalProps) {
-  const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
-  const [showMarkers, setShowMarkers] = useState<boolean>(true);
+  const showHeatmap = true;
+  const showMarkers = true;
+  const markerRefs = useRef<Record<string, L.Marker | null>>({});
+
+  useEffect(() => {
+    if (selectedReport) {
+      const marker = markerRefs.current[selectedReport.id];
+      if (marker) {
+        marker.openPopup();
+      }
+    }
+  }, [selectedReport]);
 
   // Transform reports into heatmap intensity points (excluding dismissed from heatmap to focus intensity on active alerts!)
   const heatmapPoints: HeatmapPoint[] = useMemo(() => {
@@ -92,11 +97,12 @@ export default function ReportMapInternal({
         center={CORRIENTES_CENTER}
         zoom={INITIAL_ZOOM}
         scrollWheelZoom={true}
+        zoomControl={false}
         className="w-full h-full z-0"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         <MapController selectedReport={selectedReport} />
@@ -108,14 +114,19 @@ export default function ReportMapInternal({
             const isSelected = selectedReport?.id === report.id;
             const riskCfg = RISK_CONFIG[report.riesgo];
             const typeCfg = TYPE_CONFIG[report.tipo];
-            const statusCfg = STATUS_CONFIG[report.estado];
             const isDismissed =
               report.estado === "DESESTIMADO_SIN_ALERTA" ||
               report.estado === "DESESTIMADO_IRRELEVANTE";
+            const confidence = report.grokPayload?.grokConfidence
+              ? `${Math.round(report.grokPayload.grokConfidence * 100)}%`
+              : "—";
 
             return (
               <Marker
                 key={report.id}
+                ref={(marker) => {
+                  markerRefs.current[report.id] = marker;
+                }}
                 position={[report.latitud, report.longitud]}
                 icon={createRiskIcon(report.riesgo, isSelected, isDismissed)}
                 eventHandlers={{
@@ -123,54 +134,52 @@ export default function ReportMapInternal({
                 }}
               >
                 <Popup className="custom-leaflet-popup">
-                  <div className="p-1.5 max-w-xs font-sans text-xs space-y-2">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b pb-1">
-                      <span className="font-mono text-[10px] text-zinc-400 font-semibold">
-                        {report.id}
+                  <div className="p-4">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.2em] text-zinc-400">
+                          Reporte
+                        </p>
+                        <p className="text-[11px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
+                          {typeCfg.label}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${riskCfg.bg} ${riskCfg.text} ${riskCfg.border}`}
+                      >
+                        {riskCfg.label}
                       </span>
-                      {report.localidad && (
-                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                          📍 {report.localidad}
+                    </div>
+
+                    <div className="space-y-1.5 text-[10px]">
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 dark:bg-zinc-800/70">
+                        <span className="uppercase tracking-[0.16em] text-zinc-500">
+                          Fecha
                         </span>
+                        <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                          {formatDate(report.fecha)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1 dark:bg-zinc-800/70">
+                        <span className="uppercase tracking-[0.16em] text-zinc-500">
+                          Confianza
+                        </span>
+                        <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                          {confidence}
+                        </span>
+                      </div>
+
+                      {report.localidad && (
+                        <div className="rounded-md bg-zinc-50 px-2 py-1 dark:bg-zinc-800/70">
+                          <p className="mb-0.5 uppercase tracking-[0.16em] text-zinc-500">
+                            Ubicación
+                          </p>
+                          <p className="font-medium text-zinc-700 dark:text-zinc-200">
+                            {report.localidad}
+                          </p>
+                        </div>
                       )}
-                    </div>
-
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-1">
-                      <span
-                        className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold ${riskCfg.bg} ${riskCfg.text} ${riskCfg.border}`}
-                      >
-                        Riesgo {riskCfg.label}
-                      </span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
-                      >
-                        {statusCfg.label}
-                      </span>
-                    </div>
-
-                    {/* Problematic & Telegram Text */}
-                    <div>
-                      <div className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                        {typeCfg.label}
-                      </div>
-                      <div className="mt-1 p-1.5 bg-zinc-50 dark:bg-zinc-900 border rounded text-[11px] text-zinc-600 dark:text-zinc-300 italic">
-                        &quot;{report.descripcion}&quot;
-                      </div>
-                    </div>
-
-                    {/* Weather Alert Match Details */}
-                    {report.grokPayload?.weatherAlertDetails && (
-                      <div className="text-[10px] text-zinc-500 font-mono bg-blue-50 dark:bg-zinc-800 p-1.5 rounded border border-blue-100 dark:border-zinc-700">
-                        ⚡ {report.grokPayload.weatherAlertDetails}
-                      </div>
-                    )}
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t">
-                      <span>Telegram: {report.usuario}</span>
-                      <span>{formatDate(report.fecha)}</span>
                     </div>
                   </div>
                 </Popup>
@@ -178,35 +187,6 @@ export default function ReportMapInternal({
             );
           })}
       </MapContainer>
-
-      {/* Floating Controls */}
-      <div className="absolute top-3 right-3 z-[1000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-lg p-1.5 shadow-sm flex flex-col gap-1 text-xs">
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-colors ${
-            showHeatmap
-              ? "bg-blue-600 text-white font-medium"
-              : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-          }`}
-          title="Alternar mapa de calor"
-        >
-          <Flame className="w-3.5 h-3.5" />
-          <span>Heatmap Lluvias</span>
-        </button>
-
-        <button
-          onClick={() => setShowMarkers(!showMarkers)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-colors ${
-            showMarkers
-              ? "bg-blue-600 text-white font-medium"
-              : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-          }`}
-          title="Alternar marcadores"
-        >
-          <MapPin className="w-3.5 h-3.5" />
-          <span>Marcadores</span>
-        </button>
-      </div>
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[11px] flex items-center gap-3">
