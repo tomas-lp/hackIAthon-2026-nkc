@@ -18,6 +18,7 @@ interface HeatmapLayerProps {
 type LeafletHeatLayer = L.Layer & {
   setLatLngs: (latlngs: Array<[number, number, number]>) => void;
   redraw: () => void;
+  _reset?: () => void;
 };
 
 export function HeatmapLayer({ points }: HeatmapLayerProps) {
@@ -81,7 +82,7 @@ export function HeatmapLayer({ points }: HeatmapLayerProps) {
 
       try {
         heatLayerRef.current.setLatLngs(heatPoints);
-        heatLayerRef.current._reset();
+        heatLayerRef.current._reset?.();
         heatLayerRef.current.redraw();
       } catch (error) {
         console.warn("Heatmap redraw skipped", error);
