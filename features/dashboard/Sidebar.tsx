@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { TYPE_CONFIG } from "@/lib/utils";
-import { ListFilter, MapPin, Sparkles } from "lucide-react";
+import { ListFilter, Sparkles } from "lucide-react";
 
 interface SidebarProps {
   reports: Report[];
@@ -40,6 +40,98 @@ export function Sidebar({
 
     return sortedReports.filter((report) => report.tipo === filters.tipo);
   }, [filters.tipo, reports]);
+
+  const [addresses, setAddresses] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const pendingReports = visibleReports.filter(
+      (report) =>
+        !addresses[report.id] &&
+        report.latitud != null &&
+        report.longitud != null
+    );
+
+    if (pendingReports.length === 0) {
+      return;
+    }
+
+    const resolveReportAddress = async (lat: number, lng: number) => {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+        {
+          headers: {
+            "Accept-Language": "es",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("No se pudo resolver la dirección");
+      }
+
+      const data = await response.json();
+      const address = data.address ?? {};
+      const street =
+        address.road || address.pedestrian || address.path || address.footway;
+      const houseNumber = address.house_number;
+      const locality =
+        address.city || address.town || address.village || address.suburb;
+      const state = address.state || address.province;
+      const country = address.country;
+
+      const formattedAddress = [
+        street && houseNumber
+          ? `${street} ${houseNumber}`
+          : street || houseNumber,
+        locality,
+        state,
+        country,
+      ].filter(Boolean);
+
+      return (
+        formattedAddress.join(", ") ||
+        data.display_name ||
+        "Ubicación no disponible"
+      );
+    };
+
+    const loadAddresses = async () => {
+      for (const report of pendingReports) {
+        if (isCancelled) {
+          return;
+        }
+
+        try {
+          const resolvedAddress = await resolveReportAddress(
+            report.latitud,
+            report.longitud
+          );
+
+          if (!isCancelled) {
+            setAddresses((prev) => ({
+              ...prev,
+              [report.id]: resolvedAddress,
+            }));
+          }
+        } catch {
+          if (!isCancelled) {
+            setAddresses((prev) => ({
+              ...prev,
+              [report.id]: "Ubicación no disponible",
+            }));
+          }
+        }
+      }
+    };
+
+    loadAddresses();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [visibleReports, addresses]);
 
   return (
     <aside className="absolute left-4 top-4 z-[1000] w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200/80 bg-white/95 p-3 shadow-xl backdrop-blur  ">
@@ -130,10 +222,18 @@ export function Sidebar({
                       {report.riesgo}
                     </span>
                   </div>
-                  <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500 ">
-                    <MapPin className="h-3 w-3" />
-                    <span className="line-clamp-1">
-                      {report.localidad || report.descripcion}
+                  <div className="mt-1 text-[11px] text-zinc-500 ">
+                    <span
+                      className="line-clamp-1"
+                      title={
+                        addresses[report.id] ||
+                        report.localidad ||
+                        report.descripcion
+                      }
+                    >
+                      {addresses[report.id] ||
+                        report.localidad ||
+                        report.descripcion}
                     </span>
                   </div>
                 </button>
