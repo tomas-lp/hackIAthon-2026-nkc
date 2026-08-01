@@ -2,6 +2,23 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 // ==========================================
+// CONFIGURACIÓN Y CLAVES API
+// ==========================================
+// Deno.env.get() buscará las claves directamente en los Secrets de Supabase.
+// Usamos ?? '' para evitar errores de TypeScript si alguna no existe.
+
+const TELEGRAM_TOKEN = Deno.env.get('BOT_TELEGRAM_TOKEN') ?? '';
+const GROQ_API_KEY_1 = Deno.env.get('GROQ_API_KEY_1') ?? '';
+const GROQ_API_KEY_2 = Deno.env.get('GROQ_API_KEY_2') ?? '';
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
+const WEATHER_API_KEY = Deno.env.get('WEATHER_API_KEY') ?? '';
+
+// Variables nativas de Supabase (Se inyectan solas, no hay que agregarlas a secrets manualmente)
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ==========================================
 // UTILIDADES DE TELEGRAM
 // ==========================================
 async function sendMessage(chatId: number, text: string, useKeyboard = false) {
