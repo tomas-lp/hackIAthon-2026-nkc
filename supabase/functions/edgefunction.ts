@@ -96,34 +96,70 @@ async function analyzeTextIntent(text: string): Promise<string> {
   if (/(zona|barrio|clima|llover|lluvia|estado)/.test(textLower)) return "CONSULTA";
 
   async function callGroq(apiKey: string) {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
+    const resModels = await fetch("https://api.groq.com/openai/v1/models", {
+      headers: { "Authorization": `Bearer ${apiKey}` }
     });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Groq API error: ${res.status} ${errorText}`);
+    if (!resModels.ok) throw new Error("No se pudieron obtener modelos de Groq");
+    const dataModels = await resModels.json();
+    const GROQ_EXCLUDE = ["guard", "whisper", "vision", "embedding", "tts", "batch"];
+    const models: string[] = dataModels.data
+      .map((m: any) => m.id)
+      .filter((id: string) =>
+        (id.includes("llama") || id.includes("mixtral") || id.includes("gemma")) &&
+        !GROQ_EXCLUDE.some(bad => id.toLowerCase().includes(bad))
+      );
+    console.log("Groq modelos de chat disponibles:", models);
+    if (models.length === 0) throw new Error("No hay modelos de chat disponibles en Groq");
+
+    for (const model of models) {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Groq intent OK con modelo: ${model}`);
+        return JSON.parse(data.choices[0].message.content).intent;
+      } else {
+        console.error(`Groq ${model} falló: ${res.status} ${await res.text()}`);
+      }
     }
-    const data = await res.json();
-    return JSON.parse(data.choices[0].message.content).intent;
+    throw new Error("Todos los modelos de chat de Groq fallaron");
   }
 
   async function callGemini() {
-    const model = "gemini-1.5-flash-latest"; 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Gemini ${model} falló: ${res.status} ${errorText}`);
+    const resModels = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+    if (!resModels.ok) throw new Error("No se pudieron obtener modelos de Gemini");
+    const dataModels = await resModels.json();
+    const models: string[] = dataModels.models
+      .filter((m: any) =>
+        Array.isArray(m.supportedGenerationMethods) &&
+        m.supportedGenerationMethods.includes("generateContent") &&
+        m.name.includes("gemini") &&
+        !m.name.includes("vision")
+      )
+      .map((m: any) => m.name.replace('models/', ''));
+    console.log("Gemini modelos generateContent disponibles:", models);
+    if (models.length === 0) throw new Error("No hay modelos generateContent disponibles en Gemini");
+
+    for (const model of models) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) { console.error(`Gemini ${model} devolvió texto vacío`); continue; }
+        console.log(`Gemini intent OK con modelo: ${model}`);
+        return JSON.parse(rawText.replace(/```json|```/g, '')).intent;
+      } else {
+        console.error(`Gemini ${model} falló: ${res.status} ${await res.text()}`);
+      }
     }
-    const data = await res.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error("Respuesta bloqueada");
-    return JSON.parse(rawText.replace(/```json|```/g, '')).intent;
+    throw new Error("Todos los modelos generateContent de Gemini fallaron");
   }
 
   try { return await callGroq(GROQ_API_KEY_1); } catch (e1) {
@@ -143,34 +179,70 @@ async function validateDescriptionWithAI(text: string): Promise<boolean> {
   const prompt = `Analiza si este texto describe una emergencia climática (lluvia, inundación, calle anegada, árbol caído, viento, granizo, etc.). Responde SÓLO con JSON: {"es_emergencia": true} o {"es_emergencia": false}. Texto: "${text}"`;
 
   async function callGroq(apiKey: string) {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
+    const resModels = await fetch("https://api.groq.com/openai/v1/models", {
+      headers: { "Authorization": `Bearer ${apiKey}` }
     });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Groq API error: ${res.status} ${errorText}`);
+    if (!resModels.ok) throw new Error("No se pudieron obtener modelos de Groq");
+    const dataModels = await resModels.json();
+    const GROQ_EXCLUDE = ["guard", "whisper", "vision", "embedding", "tts", "batch"];
+    const models: string[] = dataModels.data
+      .map((m: any) => m.id)
+      .filter((id: string) =>
+        (id.includes("llama") || id.includes("mixtral") || id.includes("gemma")) &&
+        !GROQ_EXCLUDE.some(bad => id.toLowerCase().includes(bad))
+      );
+    console.log("Groq modelos de chat disponibles:", models);
+    if (models.length === 0) throw new Error("No hay modelos de chat disponibles en Groq");
+
+    for (const model of models) {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Groq validate OK con modelo: ${model}`);
+        return JSON.parse(data.choices[0].message.content).es_emergencia;
+      } else {
+        console.error(`Groq ${model} falló: ${res.status} ${await res.text()}`);
+      }
     }
-    const data = await res.json();
-    return JSON.parse(data.choices[0].message.content).es_emergencia;
+    throw new Error("Todos los modelos de chat de Groq fallaron");
   }
 
   async function callGemini() {
-    const model = "gemini-1.5-flash-latest"; 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Gemini ${model} falló: ${res.status} ${errorText}`);
+    const resModels = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+    if (!resModels.ok) throw new Error("No se pudieron obtener modelos de Gemini");
+    const dataModels = await resModels.json();
+    const models: string[] = dataModels.models
+      .filter((m: any) =>
+        Array.isArray(m.supportedGenerationMethods) &&
+        m.supportedGenerationMethods.includes("generateContent") &&
+        m.name.includes("gemini") &&
+        !m.name.includes("vision")
+      )
+      .map((m: any) => m.name.replace('models/', ''));
+    console.log("Gemini modelos generateContent disponibles:", models);
+    if (models.length === 0) throw new Error("No hay modelos generateContent disponibles en Gemini");
+
+    for (const model of models) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) { console.error(`Gemini ${model} devolvió texto vacío`); continue; }
+        console.log(`Gemini validate OK con modelo: ${model}`);
+        return JSON.parse(rawText.replace(/```json|```/g, '')).es_emergencia;
+      } else {
+        console.error(`Gemini ${model} falló: ${res.status} ${await res.text()}`);
+      }
     }
-    const data = await res.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error("Respuesta bloqueada");
-    return JSON.parse(rawText.replace(/```json|```/g, '')).es_emergencia;
+    throw new Error("Todos los modelos generateContent de Gemini fallaron");
   }
 
   try { return await callGroq(GROQ_API_KEY_1); } catch (e1) {
