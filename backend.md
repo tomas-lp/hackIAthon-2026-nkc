@@ -1,290 +1,264 @@
-# Backend — Crisis-Graph
+# Backend
 
-> Motor de ingesta y verificación de reportes ciudadanos durante emergencias hídricas (Corrientes/Chaco), con NER vía LLM, verificación climática, validación por corroboración y mapa de calor geoespacial.
+<!-- BEGIN:nextjs-agent-rules -->
 
-Este documento es la referencia técnica del backend. Las decisiones de diseño siguen los principios de _Clean Code_ (Robert C. Martin): nombres que revelan intención, funciones pequeñas que hacen una sola cosa, manejo de errores explícito, y código que se lee como una narración del dominio del problema, no como una traducción literal de la infraestructura.
+# This is NOT the Next.js you know
 
----
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
 
-## 1. Filosofía del proyecto
+> Base técnica del proyecto: una app de Next.js 16 con React 19, App Router y Supabase como backend de datos y autenticación. La ingesta principal de reportes llegará por Telegram usando un bot creado con BotFather.
 
-Antes de la arquitectura, las reglas que gobiernan cómo escribimos código acá, tomadas directamente de Clean Code:
-
-- **Nombres que revelan intención.** `procesarMensaje()` no dice nada. `extraerEntidadesDeReporte()` sí. Si necesitás un comentario para explicar qué hace una función, el nombre está mal elegido.
-- **Funciones pequeñas, y de un solo nivel de abstracción.** Una función que geocodifica no debería también insertar en la base. Si una función tiene un `y` en la descripción ("valida y guarda"), son dos funciones.
-- **Los errores son parte del flujo, no un afterthought.** No devolvemos `null` ni tragamos excepciones en silencio. Cada punto de falla externa (API de Groq, Open-Meteo, Supabase) tiene su propio manejo explícito.
-- **DRY sin sobre-ingeniería.** Para un hackathon: preferimos código duplicado y legible por sobre una abstracción prematura que nadie del equipo entienda a las 4am.
-- **El código se escribe una vez y se lee cien.** Priorizamos claridad sobre "elegancia" o líneas ahorradas.
+Este documento describe la dirección técnica del backend y cómo se alinea con la estructura real del repositorio.
 
 ---
 
-## 2. Idea general y objetivos
+## 1. Stack actual
 
-Durante inundaciones, la información oficial suele llegar fragmentada y con demora, pero los vecinos ya saben en tiempo real lo que pasa en su barrio. Crisis-Graph centraliza esos reportes desde un bot de Telegram, los interpreta con IA, los cruza con datos climáticos y de corroboración entre usuarios, y arma un mapa de calor en tiempo real para que organismos de emergencia prioricen recursos.
+El proyecto usa estas tecnologías hoy:
 
-El sistema resuelve tres problemas:
+- Next.js 16.2.12 con App Router.
+- React 19.2.4.
+- Tailwind CSS 4 para estilos globales.
+- Supabase con `@supabase/ssr` y `@supabase/supabase-js`.
+- TypeScript.
 
-1. **Centralizar** reportes ciudadanos en un único canal simple de usar.
-2. **Reducir falsas alarmas** mediante validaciones automáticas (no eliminando reportes dudosos, sino asignándoles un nivel de confianza).
-3. **Visualizar** la situación provincial en tiempo real mediante un mapa interactivo.
+La integración con Telegram todavía es parte del backend objetivo, no del código montado en el repo. El bot se va a crear con BotFather y va a publicar reportes hacia la app mediante webhook o una ruta API.
 
 ---
 
-## 3. Arquitectura general
+## 2. Estructura real del proyecto
 
-```
-[ Ciudadano ] ──texto + ubicación──▶ [ Bot de Telegram ] ──webhook──▶ [ API Route: /api/ingest ]
-                                                                                │
-                                                                                ▼
-                                                          [ Paso 1: extraerEntidades() ]
-                                                          Groq API (Llama-3) → JSON estructurado
-                                                                                │
-                                                                                ▼
-                                                          [ Paso 2: verificarFrecuenciaDeUsuario() ]
-                                                          Rate limit por telegram_id (30 min)
-                                                                                │
-                                                                                ▼
-                                                          [ Paso 3: verificarConClima() ]
-                                                          Open-Meteo API → confirma/no confirma
-                                                                                │
-                                                                                ▼
-                                                          [ Paso 4: calcularNivelDeConfianza() ]
-                                                          Corrobora contra reportes cercanos (radio + usuarios distintos)
-                                                                                │
-                                                                                ▼
-                                                          [ Paso 5: guardarReporte() ]
-                                                          Supabase (Postgres + PostGIS)
-                                                                                │
-                                                                                ▼
-                                                          [ Frontend Next.js ]
-                                                          Mapa de calor + panel de control
-                                                          (Supabase Realtime subscription)
+La estructura actual ya marca bastante bien cómo se organiza el backend:
+
+```text
+/app
+  layout.tsx
+  page.tsx
+  globals.css
+/utils
+  /supabase
+    client.ts
+    server.ts
+    middleware.ts
+proxy.ts
 ```
 
-**Decisión de diseño:** el pipeline es una secuencia de funciones puras encadenadas, no un grafo de agentes (LangGraph). Para el alcance de un hackathon, un flujo secuencial es más fácil de debuggear en vivo y de explicarle al jurado en 30 segundos. Si el proyecto crece post-hackathon, ahí se evalúa migrar a un orquestador.
+`utils/supabase` concentra los tres contextos de uso de Supabase:
 
-**Ingesta por webhook, no polling:** el bot de Telegram recibe los mensajes mediante un webhook apuntando directo a la API Route de Next.js — no hace falta mantener un proceso separado escuchando conexiones.
+- `client.ts` para el navegador.
+- `server.ts` para Server Components y lógica del servidor.
+- `middleware.ts` para mantener sesiones con cookies.
 
----
-
-## 4. Stack
-
-| Capa                   | Tecnología                                          | Motivo                                                                     |
-| ---------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| Frontend               | Next.js (App Router) + React + Tailwind + shadcn/ui | Interfaz clara y rápida, mismo proyecto que el backend                     |
-| Backend                | Next.js API Routes (Node)                           | No hace falta Express/NestJS aparte; recibe el webhook de Telegram directo |
-| Base de datos          | Supabase (Postgres + PostGIS)                       | Geoespacial nativo + Realtime + Auth si hace falta                         |
-| Extracción NER         | Groq API (Llama-3, structured output)               | Latencia mínima, clave para demo en vivo                                   |
-| Verificación climática | Open-Meteo (gratuita, sin API key)                  | Cero fricción de setup en el tiempo que tienen                             |
-| Mapa interactivo       | React Leaflet                                       | Marcadores + mapa de calor por concentración de reportes                   |
-| Bot de ingesta         | Telegraf (Node) o python-telegram-bot               | Definir según quién del equipo lo programa                                 |
+`proxy.ts` actúa como middleware de la aplicación para refrescar o propagar estado de autenticación cuando haga falta.
 
 ---
 
-## 5. Estructura de carpetas
+## 3. Rol del backend
 
+El backend no se plantea como un servicio separado con Express o NestJS. En este repo, Next.js es la capa de aplicación completa:
+
+- Sirve el frontend.
+- Ejecuta la lógica del servidor.
+- Lee y escribe datos en Supabase.
+- Recibe la futura entrada desde Telegram.
+
+La idea es evitar duplicación de infraestructura mientras el proyecto sigue siendo de alcance chico o mediano. Si más adelante hace falta un worker separado para procesar mensajes o reintentos, eso se puede agregar sin romper la base actual.
+
+---
+
+## 4. Integración con Supabase
+
+Supabase es la base de datos y la capa de autenticación elegida para el proyecto.
+
+### 4.1 Variables de acceso
+
+Los helpers de `utils/supabase` usan estas variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
+
+Si más adelante se agregan operaciones administrativas desde servidor o migraciones manuales, también va a hacer falta una key de servicio, pero no se usa en el cliente.
+
+### 4.2 Responsabilidades
+
+Supabase se va a usar para:
+
+- Persistir usuarios y reportes.
+- Consultar el estado de sesión cuando corresponda.
+- Exponer datos al frontend de forma simple.
+- Mantener cookies de sesión en el flujo server/middleware.
+
+### 4.3 Convención de uso
+
+- `utils/supabase/client.ts` se usa en componentes cliente o lógica que corre en el navegador.
+- `utils/supabase/server.ts` se usa en Server Components o handlers del servidor.
+- `utils/supabase/middleware.ts` se usa para sincronizar cookies entre request y response.
+
+Esto evita mezclar responsabilidades y deja una sola forma de acceder a Supabase en todo el repo.
+
+---
+
+## 5. Integración con Telegram
+
+El canal de entrada de reportes será un bot de Telegram creado con BotFather.
+
+### 5.1 Flujo esperado
+
+1. El usuario escribe al bot.
+2. El bot pide o recibe el reporte y, si hace falta, la ubicación.
+3. Telegram entrega el evento al backend.
+4. Next.js valida y persiste el dato en Supabase.
+5. El frontend consume la información y la muestra en pantalla.
+
+### 5.2 Enfoque técnico
+
+Para esta etapa conviene usar webhook en vez de polling:
+
+- reduce complejidad operativa,
+- evita dejar un proceso extra corriendo,
+- encaja bien con Next.js desplegado en Vercel o una plataforma similar.
+
+Si después se necesita separar el bot del frontend, el contrato puede mantenerse igual: Telegram entra por HTTP y el backend persiste en Supabase.
+
+### 5.3 Variables de entorno previstas
+
+```env
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
+```
+
+La segunda variable es opcional, pero recomendable para verificar que los requests realmente vienen de Telegram.
+
+---
+
+## 6. Estructura recomendada para crecer
+
+La estructura actual es mínima, así que la evolución natural sería algo parecido a esto:
+
+```text
 /app
   /api
-    /ingest
-      route.ts              → único punto de entrada del webhook de Telegram
-  /mapa
-    page.tsx                → vista del mapa de calor
-  /panel
-    page.tsx                → dashboard: estadísticas, últimos incidentes, filtros
+    /telegram
+      route.ts
+    /reports
+      route.ts
+  page.tsx
+  layout.tsx
 /lib
-  /pipeline
-    extraerEntidades.ts
-    verificarFrecuenciaDeUsuario.ts
-    verificarConClima.ts
-    calcularNivelDeConfianza.ts
-    guardarReporte.ts
-    procesarReporteCiudadano.ts   → orquesta los 5 pasos, nada más
-  /gazetteer
-    corrientesResistencia.json
-    buscarReferenciaLocal.ts
-  /clients
-    groqClient.ts
-    supabaseClient.ts
-    openMeteoClient.ts
+  /telegram
+    parse-update.ts
+    verify-webhook.ts
+  /reports
+    create-report.ts
+    list-reports.ts
+  /supabase
+    admin.ts
 /types
-  reporte.ts
-  usuario.ts
-  entidadesExtraidas.ts
+  report.ts
+  telegram.ts
 ```
 
-**Por qué esta estructura:** cada archivo en `/pipeline` corresponde a exactamente un paso del diagrama de arquitectura. `procesarReporteCiudadano.ts` es la única función que conoce el orden de los pasos — el resto no sabe nada del flujo completo, solo hace su parte. Esto es el principio de responsabilidad única aplicado a nivel de archivo, no solo de función.
+La idea no es inventar una arquitectura sobredimensionada, sino dejar espacio para separar bien:
+
+- entrada de Telegram,
+- lógica de negocio,
+- acceso a datos,
+- tipos compartidos.
 
 ---
 
-## 6. Modelo de datos (Supabase / PostgreSQL + PostGIS)
+## 7. Modelo de datos inicial en Supabase
 
-```sql
-create extension if not exists postgis;
+Como base mínima, el backend debería manejar estas entidades:
 
-create table usuarios (
-  id uuid primary key default gen_random_uuid(),
-  telegram_id text not null unique,
-  ultimo_reporte_en timestamptz,        -- para el rate limit de 30 min
-  creado_en timestamptz not null default now()
-);
+### 7.1 `users`
 
-create table reportes (
-  id uuid primary key default gen_random_uuid(),
-  usuario_id uuid not null references usuarios(id),
-  texto_original text not null,
-  tipo_incidente text not null,          -- 'inundacion', 'arbol_caido', 'corte_ruta', 'rescate', etc.
-  nivel_riesgo text not null,            -- 'bajo', 'medio', 'alto'
-  requiere_evacuacion boolean not null default false,
-  descripcion text,                      -- descripción normalizada por la IA
-  geom geometry(Point, 4326),            -- coordenadas compartidas por Telegram
-  estado_validacion text not null,       -- 'confirmado', 'pendiente', 'baja_confianza'
-  reportes_corroborantes int not null default 0,  -- cuántos usuarios distintos reportaron algo similar cerca
-  fuente text not null default 'telegram',
-  creado_en timestamptz not null default now()
-);
+- `id`
+- `telegram_id`
+- `username`
+- `created_at`
 
-create index reportes_geom_idx on reportes using gist (geom);
-create index reportes_tipo_idx on reportes (tipo_incidente);
-```
+### 7.2 `reports`
 
-**Nota de diseño:** `estado_validacion` tiene tres valores, no dos — la distinción entre `pendiente` (todavía no se pudo verificar clima ni corroboración) y `baja_confianza` (se verificó y no coincide con las condiciones esperadas) importa para el dominio: no es lo mismo "no sabemos" que "dudamos". Colapsar esto en un booleano `verificado: true/false` perdería información que las autoridades necesitan para decidir.
+- `id`
+- `user_id`
+- `source` con valor `telegram`
+- `message_text`
+- `status`
+- `latitude`
+- `longitude`
+- `created_at`
 
----
+### 7.3 `report_status`
 
-## 7. Los cinco pasos del pipeline
+Estados sugeridos:
 
-Cada función recibe una entrada tipada y devuelve una salida tipada. Ninguna función hace más de lo que su nombre promete.
+- `pending`
+- `validated`
+- `rejected`
 
-### 7.1 `extraerEntidades(texto: string): Promise<EntidadesExtraidas>`
-
-Llama a Groq con un prompt que fuerza salida JSON estricta (`tipo`, `riesgo`, `descripcion`, `requiere_evacuacion`). La IA acá no es conversacional — su única función es convertir lenguaje natural en datos estructurados. Si Groq no devuelve JSON válido, la función lanza `ErrorExtraccion`, no devuelve un objeto vacío disfrazado de éxito.
-
-### 7.2 `verificarFrecuenciaDeUsuario(telegramId: string): Promise<boolean>`
-
-Consulta `ultimo_reporte_en` del usuario. Si mandó un reporte hace menos de 30 minutos, la función devuelve `false` y el pipeline corta ahí — evita que una sola persona genere decenas de reportes sobre el mismo evento e infle artificialmente la confianza del mapa.
-
-### 7.3 `verificarConClima(coordenadas: Coordenadas): Promise<'coincide' | 'no_coincide'>`
-
-Consulta Open-Meteo por lluvia/alerta en la zona y momento del reporte. Devuelve un string del dominio, no un booleano genérico — así el resto del código no necesita recordar qué significa `true`.
-
-### 7.4 `calcularNivelDeConfianza(reporte, resultadoClima): Promise<EstadoValidacion>`
-
-Combina dos señales:
-
-- Si el clima coincide → sube la confianza.
-- Si hay **otros usuarios distintos** (no el mismo) reportando algo similar dentro de un radio de ~500m → sube la confianza más todavía. Esto es más fuerte que la validación climática sola: cinco personas distintas reportando inundación en la misma zona es más confiable que un evento sin lluvia registrada oficialmente (puede ser rotura de un dique, por ejemplo).
-- Si ninguna de las dos señales confirma → el reporte queda en `pendiente`, nunca se descarta. La decisión de fondo es que un falso negativo (ignorar una emergencia real) es mucho más costoso que un falso positivo marcado como pendiente.
-
-### 7.5 `guardarReporte(reporte: ReporteProcesado): Promise<void>`
-
-Único punto de escritura a Supabase. Si falla el insert, lanza el error hacia arriba — no lo loguea y sigue como si nada, porque un reporte perdido en una emergencia es un dato crítico.
-
-### 7.6 Orquestador: `procesarReporteCiudadano(mensaje: MensajeEntrante)`
-
-```ts
-export async function procesarReporteCiudadano(mensaje: MensajeEntrante) {
-  const puedeReportar = await verificarFrecuenciaDeUsuario(mensaje.telegramId);
-  if (!puedeReportar) {
-    throw new ErrorLimiteDeFrecuencia(mensaje.telegramId);
-  }
-
-  const entidades = await extraerEntidades(mensaje.texto);
-  const resultadoClima = await verificarConClima(mensaje.coordenadas);
-  const estadoValidacion = await calcularNivelDeConfianza(
-    { ...entidades, coordenadas: mensaje.coordenadas },
-    resultadoClima
-  );
-
-  await guardarReporte({
-    ...entidades,
-    coordenadas: mensaje.coordenadas,
-    estadoValidacion,
-  });
-}
-```
-
-Esta función se lee de arriba a abajo como la descripción del proceso de negocio. Es la prueba de que separar responsabilidades funcionó: no hay detalles de implementación de Groq, PostGIS ni Open-Meteo acá, solo el orden de las decisiones.
+Si después hace falta trazabilidad más fina, se pueden agregar campos para evidencia, notas de moderación o nivel de confianza.
 
 ---
 
-## 8. Manejo de errores
+## 8. Flujo de backend recomendado
 
-Regla dura: **ninguna función del pipeline atrapa un error y continúa en silencio.** Si Groq está caído, el reporte no se pierde silenciosamente — se guarda en una tabla `reportes_fallidos` con el motivo, para reprocesar después. Esto es más importante en un sistema de emergencias que en un CRUD cualquiera: perder un reporte de "necesito bote" sin dejar rastro es inaceptable, incluso en una demo.
+El flujo debería mantenerse simple:
 
-```ts
-try {
-  await procesarReporteCiudadano(mensaje);
-} catch (error) {
-  await registrarFalloDeProcesamiento(mensaje, error);
-}
-```
+1. Telegram recibe el mensaje.
+2. El backend identifica al usuario.
+3. Se valida el contenido mínimo necesario.
+4. Se guarda el reporte en Supabase.
+5. El frontend consulta o suscribe cambios.
+
+En esta primera versión no hace falta meter múltiples servicios intermedios. Lo importante es que el dato entre, se persista y quede listo para consumo del panel.
 
 ---
 
-## 9. Panel de control (frontend)
+## 9. Estado actual del repo
 
-Cuatro componentes, cada uno alimentado por una query independiente a Supabase — nada de mezclar la lógica de un componente con la de otro:
+Hoy el proyecto todavía tiene una pantalla base en `app/page.tsx` que consulta una tabla llamada `todos`. Eso funciona como placeholder, no como backend final.
 
-1. **Mapa principal** — reportes de toda la provincia, con mapa de calor por concentración (React Leaflet).
-2. **Estadísticas generales** — total de reportes, inundaciones, calles cortadas, árboles caídos, pedidos de ayuda.
-3. **Últimos incidentes** — listado cronológico ("Hace 2 minutos — Barrio Laguna Seca — Agua ingresando a viviendas").
-4. **Filtros** — por tipo de incidente (inundación, árbol caído, corte de ruta, evacuación, corte de energía) y por nivel de riesgo.
+La próxima tarea lógica es reemplazar ese acceso por la entidad real del proyecto, probablemente `reports` o una vista equivalente en Supabase.
 
 ---
 
 ## 10. Variables de entorno
 
-```
-GROQ_API_KEY=
+Variables mínimas para trabajar con lo que ya está en el código:
+
+```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=      # solo en API routes, nunca en el cliente
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
 ```
 
----
+Si se agrega administración de datos desde servidor, también va a ser útil:
 
-## 11. Datos simulados para la demo
+```env
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
-Antes de la presentación, tener listo:
-
-- `seed/mensajes-demo.json` — 30-40 mensajes de ejemplo con distintos niveles de riesgo, tipos de incidente y ubicaciones del gazetteer, incluyendo casos que deliberadamente NO coinciden con el clima (para mostrar el estado `pendiente` en vivo) y casos con múltiples usuarios reportando la misma zona (para mostrar el salto a `confirmado` por corroboración).
-- `scripts/reproducirDemo.ts` — script que envía esos mensajes al bot a intervalos (cada 3-5 segundos) para que el mapa se pueble en vivo frente al jurado, en vez de arrancar con el mapa ya lleno.
-
----
-
-## 12. Plan de desarrollo
-
-**Etapa 1 — Preparación del proyecto.** Repo, Next.js, Tailwind + shadcn/ui, proyecto Supabase, diseño de tablas, variables de entorno, primer deploy en Vercel.
-
-**Etapa 2 — Bot de Telegram.** Crear el bot en BotFather, configurar webhook hacia `/api/ingest`, flujo de texto + solicitud de ubicación, guardado inicial sin procesar.
-
-**Etapa 3 — Procesamiento inteligente.** Conectar Groq, Open-Meteo, implementar `verificarFrecuenciaDeUsuario` y `calcularNivelDeConfianza`, actualizar el registro en Supabase con el resultado.
-
-**Etapa 4 — Visualización.** Mapa interactivo con React Leaflet, mapa de calor, filtros, panel de estadísticas y últimos incidentes.
-
-**Etapa 5 — Pruebas y demo.** Simular escenarios (lluvias, árboles caídos, calles cortadas), verificar el flujo completo Telegram → mapa, corregir errores, optimizar tiempos de respuesta, preparar la demo con `reproducirDemo.ts`.
+Esa key no debe exponerse en el cliente.
 
 ---
 
-## 13. Pendientes / próximos pasos
+## 11. Próximos pasos
 
-- [ ] Cargar el gazetteer de Corrientes/Resistencia (barrios, avenidas, puntos de referencia)
-- [ ] Definir el prompt exacto de extracción para Groq (con ejemplos few-shot del dominio local)
-- [ ] Levantar el proyecto en Supabase y correr la migración de `usuarios` y `reportes`
-- [ ] Armar el bot de Telegram y configurar el webhook (definir quién del equipo lo hace)
-- [ ] Implementar la lógica de corroboración por radio + usuarios distintos
-- [ ] Conectar Supabase Realtime al frontend para que el mapa y el panel se actualicen sin refrescar
+1. Crear el proyecto en Supabase y definir las tablas base.
+2. Reemplazar el placeholder de `todos` por lecturas reales de `reports`.
+3. Crear el bot en BotFather y configurar el webhook.
+4. Implementar la ruta de entrada para Telegram en Next.js.
+5. Conectar el frontend con Supabase para listar reportes reales.
 
 ---
 
-## 14. Ideas para una segunda versión (mencionar en el pitch, no desarrollar ahora)
+## 12. Decisión de arquitectura
 
-No entran en el alcance del hackathon, pero sirven para mostrar visión de producto si el jurado pregunta "¿y después?":
+La decisión principal del backend es esta: Next.js hace de aplicación completa, Supabase resuelve datos y sesión, y Telegram entra como canal externo de captura de reportes.
 
-- **Sistema de reputación de usuarios** — subir la confianza de quienes históricamente reportaron cosas válidas.
-- **Carga de fotos** — que la IA confirme visualmente el tipo de incidente.
-- **Alertas automáticas** — notificar a usuarios cercanos cuando se detecta una nueva zona crítica.
-- **Predicción de expansión del riesgo** — combinar reportes con datos meteorológicos para estimar hacia dónde se puede extender una inundación.
-- **Panel para autoridades** — marcar reportes como "atendidos", "en proceso" o "descartados", separando la información ciudadana de la gestión operativa.
+Esa combinación encaja con la estructura actual del repo y evita meter piezas que hoy no están justificadas.
