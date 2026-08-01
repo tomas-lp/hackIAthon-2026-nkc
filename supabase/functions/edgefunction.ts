@@ -85,13 +85,14 @@ async function checkWeatherSeverity(lat: number, lon: number): Promise<{ llueve_
 // MÓDULO IA ENRUTADOR
 // ==========================================
 async function analyzeTextIntent(text: string): Promise<string> {
+  text = text.substring(0, 500);
   if (text === "🚨 Enviar Reporte") return "REPORTE";
   if (text === "📍 Estado de mi zona") return "CONSULTA";
 
   const prompt = `Analiza el texto de este ciudadano. Clasifica la intención en: 'REPORTE' (inundación, agua, peligro, caída de árbol), 'CONSULTA' (clima, saber estado de zona) o 'DESCONOCIDO' (otra cosa). Texto: "${text}". Responde SÓLO con JSON: {"intent": "REPORTE"}`;
 
   const textLower = text.toLowerCase();
-  if (/(inundad|agua|desborde|caída|caida|árbol|arbol|emergencia|rescate|bote)/.test(textLower)) return "REPORTE";
+  if (/(inundad|inundación|inundacion|agua|desborde|caída|caida|árbol|arbol|emergencia|rescate|bote|tormenta|temporal|granizo|viento|ráfaga|rafaga|tornado|huracan|huracán|anegad|anegamiento|tapado|alcantarilla|techo|voló|volo|corte|luz|electricidad|cable|poste|peligro|evacuación|evacuacion|ayuda|socorro|bombero|policía|policia|ambulancia|herido|auxilio|río|rio|arroyo|cauce|creciente|derrumbe|socavón|socavon|desprendimiento|atrapad)/.test(textLower)) return "REPORTE";
   if (/(zona|barrio|clima|llover|lluvia|estado)/.test(textLower)) return "CONSULTA";
 
   async function callGroq(apiKey: string) {
@@ -122,6 +123,42 @@ async function analyzeTextIntent(text: string): Promise<string> {
   try { return await callGroq(GROQ_API_KEY_1); } catch (e1) {
     try { return await callGemini(); } catch (e2) {
       try { return await callGroq(GROQ_API_KEY_2); } catch (e3) { return "DESCONOCIDO"; }
+    }
+  }
+}
+
+async function validateDescriptionWithAI(text: string): Promise<boolean> {
+  text = text.substring(0, 500);
+  const prompt = `Analiza si este texto describe una emergencia climática (lluvia, inundación, calle anegada, árbol caído, viento, granizo, etc.). Responde SÓLO con JSON: {"es_emergencia": true} o {"es_emergencia": false}. Texto: "${text}"`;
+
+  async function callGroq(apiKey: string) {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
+    });
+    if (!res.ok) throw new Error("Groq API error");
+    const data = await res.json();
+    return JSON.parse(data.choices[0].message.content).es_emergencia;
+  }
+
+  async function callGemini() {
+    const model = "gemini-1.5-flash-latest"; 
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    if (!res.ok) throw new Error(`Gemini ${model} falló`);
+    const data = await res.json();
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error("Respuesta bloqueada");
+    return JSON.parse(rawText.replace(/```json|```/g, '')).es_emergencia;
+  }
+
+  try { return await callGroq(GROQ_API_KEY_1); } catch (e1) {
+    try { return await callGemini(); } catch (e2) {
+      try { return await callGroq(GROQ_API_KEY_2); } catch (e3) { return true; /* Fallback a true si caen APIs */ }
     }
   }
 }
@@ -193,10 +230,15 @@ serve(async (req) => {
               session.state = 'ESPERANDO_DESCRIPCION';
               await sendMessage(chatId, "📝 Por favor, <b>describe brevemente cuál es el problema</b> (ej: calle inundada, árbol caído, agua dentro del hogar).");
             } else {
-              // SMART UX: Si escribió un texto largo, asumimos que YA ES la descripción. Nos ahorramos un paso.
-              session.datos_temporales = { descripcion: text };
-              session.state = 'ESPERANDO_UBICACION_REPORTE';
-              await sendMessage(chatId, "📝 Descripción registrada.\n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de Telegram para mapear el problema.");
+              // SMART UX: Si escribió un texto largo, validamos que sea una emergencia.
+              const esEmergencia = await validateDescriptionWithAI(text);
+              if (esEmergencia) {
+                session.datos_temporales = { descripcion: text };
+                session.state = 'ESPERANDO_UBICACION_REPORTE';
+                await sendMessage(chatId, "📝 Descripción registrada.\n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de Telegram para mapear el problema.");
+              } else {
+                await sendMessage(chatId, "Tu mensaje no parece describir una emergencia climática válida. Por favor, sé más específico o usa el teclado para navegar.", true);
+              }
             }
           } else if (intent === 'CONSULTA') {
             session.state = 'ESPERANDO_UBICACION_CONSULTA';
@@ -212,10 +254,15 @@ serve(async (req) => {
 
       case 'ESPERANDO_DESCRIPCION':
         if (text) {
-          session.datos_temporales = { descripcion: text };
-          session.state = 'ESPERANDO_UBICACION_REPORTE';
-          session.intentos_fallidos = 0;
-          await sendMessage(chatId, "¡Entendido! \n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 (Adjuntar) -> Ubicación.");
+          const esEmergencia = await validateDescriptionWithAI(text);
+          if (esEmergencia) {
+            session.datos_temporales = { descripcion: text };
+            session.state = 'ESPERANDO_UBICACION_REPORTE';
+            session.intentos_fallidos = 0;
+            await sendMessage(chatId, "¡Entendido! \n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 (Adjuntar) -> Ubicación.");
+          } else {
+            await sendMessage(chatId, "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol). Por favor describe el problema nuevamente o escribe /cancelar.");
+          }
         } else {
            await sendMessage(chatId, "Por favor, envíame una descripción en texto de lo que está sucediendo.");
         }
