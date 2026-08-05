@@ -126,8 +126,8 @@ export function Sidebar({
                     <span className="text-sm font-medium text-zinc-900 ">
                       {typeLabel}
                     </span>
-                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500  ">
-                      {report.riesgo}
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600  ">
+                      {report.puntajeBase} pts
                     </span>
                   </div>
                   <div className="mt-1 text-[11px] text-zinc-500 ">

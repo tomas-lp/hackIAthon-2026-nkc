@@ -1,5 +1,5 @@
 import { Report } from "@/types/report";
-import { RISK_CONFIG, TYPE_CONFIG } from "@/lib/utils";
+import { TYPE_CONFIG } from "@/lib/utils";
 
 interface RecentReportsListProps {
   reports: Report[];
@@ -38,11 +38,7 @@ export function RecentReportsList({
       <div className="space-y-2 max-h-[390px] overflow-y-auto pr-1">
         {sortedReports.map((report) => {
           const isSelected = selectedReport?.id === report.id;
-          const riskCfg = RISK_CONFIG[report.riesgo];
           const typeCfg = TYPE_CONFIG[report.tipo];
-          const confidence = report.grokPayload?.grokConfidence
-            ? `${Math.round(report.grokPayload.grokConfidence * 100)}%`
-            : "—";
 
           return (
             <div
@@ -66,21 +62,27 @@ export function RecentReportsList({
 
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-zinc-400 mb-1">
-                    Criticidad
+                    Puntaje de evidencia
                   </p>
-                  <span
-                    className={`inline-flex px-2 py-1 rounded border text-[10px] font-semibold ${riskCfg.bg} ${riskCfg.text} ${riskCfg.border}`}
-                  >
-                    {riskCfg.label}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex px-2 py-1 rounded border text-[10px] font-semibold bg-blue-50  text-blue-700  border-blue-200 ">
+                      {report.puntajeBase} pts
+                    </span>
+                    {report.fotoValida && (
+                      <span className="text-[10px] text-zinc-400">
+                        con foto validada
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-zinc-400 mb-1">
-                    Confianza
+                    Desglose
                   </p>
                   <p className="text-sm font-medium text-zinc-700 ">
-                    {confidence}
+                    {report.puntajeDescripcion} desc · {report.puntajeFoto} foto
+                    · {report.puntajeClima} clima
                   </p>
                 </div>
               </div>

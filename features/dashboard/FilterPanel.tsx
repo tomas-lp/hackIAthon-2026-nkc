@@ -1,11 +1,6 @@
-import {
-  ReportFilters,
-  ReportType,
-  RiskLevel,
-  ValidationStatus,
-} from "@/types/report";
-import { TYPE_CONFIG, RISK_CONFIG, STATUS_CONFIG } from "@/lib/utils";
-import { Filter, Search, RotateCcw, ShieldOff } from "lucide-react";
+import { ReportFilters, ReportType, ZoneLevel } from "@/types/report";
+import { TYPE_CONFIG, ZONE_CONFIG } from "@/lib/utils";
+import { Filter, Search, RotateCcw, MapPin } from "lucide-react";
 
 interface FilterPanelProps {
   filters: ReportFilters;
@@ -23,9 +18,7 @@ export function FilterPanel({
 }: FilterPanelProps) {
   const isFiltered =
     filters.tipo !== "TODOS" ||
-    filters.riesgo !== "TODOS" ||
-    filters.estado !== "TODOS" ||
-    filters.ocultarDesestimados ||
+    filters.nivelZona !== "TODOS" ||
     Boolean(filters.busqueda && filters.busqueda.trim() !== "");
 
   return (
@@ -79,67 +72,45 @@ export function FilterPanel({
           </select>
         </div>
 
-        {/* Riesgo & Estado */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
-              Nivel Criticidad
-            </label>
-            <select
-              value={filters.riesgo || "TODOS"}
-              onChange={(e) =>
-                onUpdateFilter("riesgo", e.target.value as RiskLevel | "TODOS")
-              }
-              className="w-full text-xs px-2 py-1.5 bg-white  border border-zinc-200  rounded text-zinc-800  focus:outline-none focus:border-blue-500"
-            >
-              <option value="TODOS">Todos</option>
-              {(Object.keys(RISK_CONFIG) as RiskLevel[]).map((risk) => (
-                <option key={risk} value={risk}>
-                  {RISK_CONFIG[risk].label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
-              Validación Clima/Grok
-            </label>
-            <select
-              value={filters.estado || "TODOS"}
-              onChange={(e) =>
-                onUpdateFilter(
-                  "estado",
-                  e.target.value as ValidationStatus | "TODOS"
-                )
-              }
-              className="w-full text-xs px-2 py-1.5 bg-white  border border-zinc-200  rounded text-zinc-800  focus:outline-none focus:border-blue-500"
-            >
-              <option value="TODOS">Todos</option>
-              {(Object.keys(STATUS_CONFIG) as ValidationStatus[]).map((st) => (
-                <option key={st} value={st}>
-                  {STATUS_CONFIG[st].label}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Nivel de zona */}
+        <div>
+          <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider block mb-1">
+            Nivel de Zona
+          </label>
+          <select
+            value={filters.nivelZona || "TODOS"}
+            onChange={(e) =>
+              onUpdateFilter("nivelZona", e.target.value as ZoneLevel | "TODOS")
+            }
+            className="w-full text-xs px-2.5 py-1.5 bg-white  border border-zinc-200  rounded text-zinc-800  focus:outline-none focus:border-blue-500"
+          >
+            <option value="TODOS">Todas las zonas</option>
+            {(Object.keys(ZONE_CONFIG) as ZoneLevel[]).map((zone) => (
+              <option key={zone} value={zone}>
+                {ZONE_CONFIG[zone].label}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Toggle Checkbox: Ocultar Desestimados */}
-        <label className="flex items-center gap-2 text-xs text-zinc-600  pt-1 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={Boolean(filters.ocultarDesestimados)}
-            onChange={(e) =>
-              onUpdateFilter("ocultarDesestimados", e.target.checked)
-            }
-            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="flex items-center gap-1">
-            <ShieldOff className="w-3.5 h-3.5 text-amber-500" /> Ocultar
-            reportes desestimados
-          </span>
-        </label>
+        {/* Resumen por nivel */}
+        <div className="flex items-center gap-2 px-1 pt-1">
+          <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {(Object.keys(ZONE_CONFIG) as ZoneLevel[]).map((zone) => (
+              <span
+                key={zone}
+                className="flex items-center gap-1 text-[10px] text-zinc-500"
+              >
+                <span
+                  className="w-2 h-2 rounded-full inline-block"
+                  style={{ backgroundColor: ZONE_CONFIG[zone].color }}
+                />
+                {ZONE_CONFIG[zone].rango}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
