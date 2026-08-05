@@ -1,6 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { ReportType, RiskLevel, ValidationStatus } from "@/types/report";
+import {
+  ReportType,
+  RiskLevel,
+  ValidationStatus,
+  ZoneLevel,
+} from "@/types/report";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -63,6 +68,17 @@ export const RISK_CONFIG: Record<
     weight: 0.6,
     color: "#3b82f6",
   },
+};
+
+export const ZONE_CONFIG: Record<
+  ZoneLevel,
+  { label: string; rango: string; color: string }
+> = {
+  GRIS: { label: "Sin evidencia suficiente", rango: "0-15", color: "#6b7280" },
+  VERDE: { label: "Riesgo muy bajo", rango: "16-35", color: "#22c55e" },
+  AMARILLO: { label: "Riesgo moderado", rango: "36-60", color: "#eab308" },
+  NARANJA: { label: "Riesgo alto", rango: "61-85", color: "#f97316" },
+  ROJO: { label: "Riesgo crítico", rango: ">85", color: "#ef4444" },
 };
 
 export const TYPE_CONFIG: Record<ReportType, { label: string }> = {
