@@ -75,7 +75,7 @@ async function sendMessage(platform: 'telegram' | 'whatsapp', chatId: string | n
         text: { body: waText }
       };
     }
-    const resWhatsapp = await fetch(`https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`, {
+    const resWhatsapp = await fetch(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
@@ -362,12 +362,22 @@ serve(async (req) => {
 
     if (body.object === 'whatsapp_business_account') {
       platform = 'whatsapp';
+      console.log(">>> Plataforma detectada: WhatsApp");
       const entry = body.entry?.[0];
       const changes = entry?.changes?.[0];
+      console.log(">>> changes.value keys:", Object.keys(changes?.value || {}));
       const msg = changes?.value?.messages?.[0];
-      if (!msg) return new Response("OK", { status: 200 });
+      if (!msg) {
+        if (changes?.value?.statuses) {
+          console.log("Evento de estado de WhatsApp recibido y omitido (NO es un mensaje de usuario).");
+        } else {
+          console.log(">>> Payload de WhatsApp sin messages ni statuses:", JSON.stringify(changes?.value));
+        }
+        return new Response("OK", { status: 200 });
+      }
       
       chatId = msg.from; // String (phone number)
+      console.log(">>> WhatsApp msg.from:", chatId, "msg.type:", msg.type);
       
       if (msg.type === 'text') {
         text = msg.text.body;
@@ -390,8 +400,10 @@ serve(async (req) => {
     
     // Convert chatId to BigInt compatible format for Supabase
     const dbChatId = parseInt(chatId.toString());
+    console.log(">>> dbChatId:", dbChatId, "platform:", platform, "text:", text);
     
     let session = await getDBSession(dbChatId);
+    console.log(">>> Session obtenida, state:", session.state);
 
     if (['/cancel', 'cancelar', 'salir'].includes(text.toLowerCase())) {
       session.state = 'IDLE';
