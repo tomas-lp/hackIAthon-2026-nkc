@@ -1,15 +1,9 @@
-// Esta función serverless se ejecuta en Supabase Edge Functions. Se incluye aquí para mantener el control de versiones.
-//quiero ver si se sube bien
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 // ==========================================
 // CONFIGURACIÓN Y CLAVES API
 // ==========================================
-// Deno.env.get() buscará las claves directamente en los Secrets de Supabase.
-// Usamos ?? '' para evitar errores de TypeScript si alguna no existe.
-
 const TELEGRAM_TOKEN = Deno.env.get("BOT_TELEGRAM_TOKEN") ?? "";
 const WHATSAPP_VERIFY_TOKEN = Deno.env.get("WHATSAPP_VERIFY_TOKEN") ?? "";
 const WHATSAPP_PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "";
@@ -19,13 +13,135 @@ const GROQ_API_KEY_2 = Deno.env.get("GROQ_API_KEY_2") ?? "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 const WEATHER_API_KEY = Deno.env.get("WEATHER_API_KEY") ?? "";
 
-// Variables nativas de Supabase (Se inyectan solas, no hay que agregarlas a secrets manualmente)
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseKey =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
   Deno.env.get("SUPABASE_ANON_KEY") ??
   "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ==========================================
+// CACHÉ DE MODELOS EN MEMORIA (Para evitar fetch a /models en cada request)
+// ==========================================
+let groqModelsCache: string[] | null = null;
+let groqModelsCacheTime = 0;
+let geminiModelsCache: string[] | null = null;
+let geminiModelsCacheTime = 0;
+const CACHE_TTL = 1000 * 60 * 60; // 1 hora
+
+async function getGroqModels(apiKey: string): Promise<string[]> {
+  const now = Date.now();
+  if (groqModelsCache && now - groqModelsCacheTime < CACHE_TTL) return groqModelsCache;
+
+  const res = await fetch("https://api.groq.com/openai/v1/models", {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!res.ok) throw new Error("No se pudieron obtener modelos de Groq");
+  const data = await res.json();
+  const GROQ_EXCLUDE = ["guard", "whisper", "vision", "embedding", "tts", "batch"];
+  const models = data.data
+    .map((m: { id: string }) => m.id)
+    .filter(
+      (id: string) =>
+        (id.includes("llama") || id.includes("mixtral") || id.includes("gemma")) &&
+        !GROQ_EXCLUDE.some((bad) => id.toLowerCase().includes(bad))
+    );
+  
+  if (models.length === 0) throw new Error("No hay modelos de chat disponibles en Groq");
+  groqModelsCache = models;
+  groqModelsCacheTime = now;
+  return models;
+}
+
+async function getGeminiModels(): Promise<string[]> {
+  const now = Date.now();
+  if (geminiModelsCache && now - geminiModelsCacheTime < CACHE_TTL) return geminiModelsCache;
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+  if (!res.ok) throw new Error("No se pudieron obtener modelos de Gemini");
+  const data = await res.json();
+  const models = data.models
+    .filter(
+      (m: { name: string; supportedGenerationMethods?: string[] }) =>
+        Array.isArray(m.supportedGenerationMethods) &&
+        m.supportedGenerationMethods.includes("generateContent") &&
+        m.name.includes("gemini") &&
+        !m.name.includes("vision")
+    )
+    .map((m: { name: string }) => m.name.replace("models/", ""));
+  
+  if (models.length === 0) throw new Error("No hay modelos generateContent disponibles en Gemini");
+  geminiModelsCache = models;
+  geminiModelsCacheTime = now;
+  return models;
+}
+
+// ==========================================
+// CLIENTES IA UNIFICADOS
+// ==========================================
+async function callGroqAI(apiKey: string, prompt: string, expectJson: boolean = true) {
+  const models = await getGroqModels(apiKey);
+  for (const model of models) {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        ...(expectJson ? { response_format: { type: "json_object" } } : {}),
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const content = data.choices[0].message.content;
+      return expectJson ? JSON.parse(content) : content;
+    }
+  }
+  throw new Error("Todos los modelos de chat de Groq fallaron");
+}
+
+async function callGeminiAI(prompt: string, expectJson: boolean = true) {
+  const models = await getGeminiModels();
+  for (const model of models) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) continue;
+      return expectJson ? JSON.parse(rawText.replace(/```json|```/g, "")) : rawText;
+    }
+  }
+  throw new Error("Todos los modelos generateContent de Gemini fallaron");
+}
+
+async function runAIFallback(prompt: string, expectJson: boolean = true) {
+  try {
+    return await callGroqAI(GROQ_API_KEY_1, prompt, expectJson);
+  } catch (e1) {
+    console.error("Groq 1 failed:", e1);
+    try {
+      return await callGeminiAI(prompt, expectJson);
+    } catch (e2) {
+      console.error("Gemini failed:", e2);
+      try {
+        return await callGroqAI(GROQ_API_KEY_2, prompt, expectJson);
+      } catch (e3) {
+        console.error("Groq 2 failed:", e3);
+        throw e3;
+      }
+    }
+  }
+}
 
 // ==========================================
 // UTILIDADES DE MENSAJERÍA
@@ -44,34 +160,22 @@ async function sendMessage(
     };
     if (useKeyboard) {
       payload.reply_markup = {
-        keyboard: [
-          [{ text: "🚨 Enviar Reporte" }, { text: "📍 Estado de mi zona" }],
-        ],
+        keyboard: [[{ text: "🚨 Enviar Reporte" }, { text: "📍 Estado de mi zona" }]],
         resize_keyboard: true,
         one_time_keyboard: false,
       };
     } else {
       payload.reply_markup = { remove_keyboard: true };
     }
-    const resTelegram = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (!resTelegram.ok) {
-      console.error(
-        "Error al enviar mensaje a Telegram:",
-        resTelegram.status,
-        await resTelegram.text()
-      );
-    }
+    const resTelegram = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!resTelegram.ok) console.error("Error Telegram:", resTelegram.status, await resTelegram.text());
   } else if (platform === "whatsapp") {
-    let payload: Record<string, unknown>;
-    // Whatsapp text conversion from HTML bold to Markdown bold
     const waText = text.replace(/<b>/g, "*").replace(/<\/b>/g, "*");
+    let payload: Record<string, unknown>;
     if (useKeyboard) {
       payload = {
         messaging_product: "whatsapp",
@@ -82,150 +186,53 @@ async function sendMessage(
           body: { text: waText },
           action: {
             buttons: [
-              {
-                type: "reply",
-                reply: { id: "reporte", title: "🚨 Enviar Reporte" },
-              },
-              {
-                type: "reply",
-                reply: { id: "estado", title: "📍 Estado de mi zona" },
-              },
+              { type: "reply", reply: { id: "reporte", title: "🚨 Enviar Reporte" } },
+              { type: "reply", reply: { id: "estado", title: "📍 Estado de mi zona" } },
             ],
           },
         },
       };
     } else {
-      payload = {
-        messaging_product: "whatsapp",
-        to: chatId.toString(),
-        type: "text",
-        text: { body: waText },
-      };
+      payload = { messaging_product: "whatsapp", to: chatId.toString(), type: "text", text: { body: waText } };
     }
-    const resWhatsapp = await fetch(
-      `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (!resWhatsapp.ok) {
-      console.error(
-        "Error al enviar mensaje a WhatsApp:",
-        resWhatsapp.status,
-        await resWhatsapp.text()
-      );
-    }
+    const resWhatsapp = await fetch(`https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!resWhatsapp.ok) console.error("Error WhatsApp:", resWhatsapp.status, await resWhatsapp.text());
   }
 }
 
 // ==========================================
-// MÓDULO DE CLIMA (Histórico + Actual)
+// MÓDULO DE CLIMA
 // ==========================================
-async function checkWeatherSeverity(
-  lat: number,
-  lon: number
-): Promise<{ llueve_ahora: boolean; lluvia_24h_mm: number; fuente: string }> {
-  // INTENTO 1: Open-Meteo (Excelente para datos acumulados recientes)
+async function checkWeatherSeverity(lat: number, lon: number): Promise<{ llueve_ahora: boolean; lluvia_24h_mm: number; fuente: string }> {
   try {
-    // past_days=1 y forecast_days=1 nos da ayer y hoy
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation&daily=precipitation_sum&timezone=auto&past_days=1&forecast_days=1`
-    );
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation&daily=precipitation_sum&timezone=auto&past_days=1&forecast_days=1`);
     if (res.ok) {
       const data = await res.json();
       const precip_ahora = data.current?.precipitation || 0;
-
-      // Sumamos la precipitación de ayer [0] y lo que va de hoy [1]
       const precip_ayer = data.daily?.precipitation_sum?.[0] || 0;
       const precip_hoy = data.daily?.precipitation_sum?.[1] || 0;
-      const lluvia_acumulada = precip_ayer + precip_hoy;
-
-      return {
-        llueve_ahora: precip_ahora > 0,
-        lluvia_24h_mm: lluvia_acumulada,
-        fuente: "Open-Meteo",
-      };
+      return { llueve_ahora: precip_ahora > 0, lluvia_24h_mm: precip_ayer + precip_hoy, fuente: "Open-Meteo" };
     }
-  } catch (error) {
-    console.error("Open-Meteo falló.", error);
-  }
+  } catch (error) { console.error("Open-Meteo falló.", error); }
 
-  // INTENTO 2: WeatherAPI (Fallback, solo da actual)
   try {
-    const res = await fetch(
-      `http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${lat},${lon}`
-    );
+    const res = await fetch(`http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${lat},${lon}`);
     if (res.ok) {
       const data = await res.json();
       const precip = data.current?.precip_mm || 0;
-      return {
-        llueve_ahora: precip > 0,
-        lluvia_24h_mm: precip,
-        fuente: "WeatherAPI",
-      };
+      return { llueve_ahora: precip > 0, lluvia_24h_mm: precip, fuente: "WeatherAPI" };
     }
-  } catch {
-    console.error("WeatherAPI falló.");
-  }
+  } catch { console.error("WeatherAPI falló."); }
 
   return { llueve_ahora: false, lluvia_24h_mm: 0, fuente: "Desconocida" };
 }
 
 // ==========================================
-// CLASIFICACIÓN DEL REPORTE (columnas tipadas)
-// ==========================================
-// NUEVO: el reporte ahora persiste 3 columnas tipadas (`tipo`, `riesgo`,
-// `estado`) además de `criticidad` (texto libre). Antes el frontend tenía que
-// inferir estos valores con heurísticas al leer (mapDbRowToReport); ahora se
-// deciden acá al ingestar, quedando indexables y filtrables en SQL (push-down).
-// Los valores replican los dominios de types/report.ts de la app.
-
-// `tipo`: mismos 4 valores que el dominio ReportType.
-// Idealmente sale del análisis de IA; por ahora usamos extracción por palabras
-// clave de la descripción (misma lógica que la heurística del frontend).
-function extractReportType(descripcion: string): string {
-  const lower = (descripcion || "").toLowerCase();
-  if (lower.includes("inund")) return "INUNDACION_URBANA";
-  if (lower.includes("lluv")) return "LLUVIAS_FUERTES";
-  if (lower.includes("graniz")) return "GRANIZO";
-  if (lower.includes("aneg")) return "ANEGAMIENTO_VIVIENDA";
-  if (lower.includes("corte") || lower.includes("ruta"))
-    return "INUNDACION_URBANA";
-  if (lower.includes("rescat")) return "ANEGAMIENTO_VIVIENDA";
-  return "INUNDACION_URBANA";
-}
-
-// `riesgo`: mapa directo de la criticidad asignada arriba
-// (AMARILLA→MEDIO, NARANJA→ALTO, ROJA→CRITICO).
-function mapCriticidadToRiesgo(criticidad: string): string {
-  if (criticidad.includes("ROJA")) return "CRITICO";
-  if (criticidad.includes("NARANJA")) return "ALTO";
-  if (criticidad.includes("AMARILLA")) return "MEDIO";
-  return "BAJO";
-}
-
-// `estado`: resultado de la validación contra el clima.
-//  - VALIDADO_CLIMA: hay precipitación real o acumulada > 0mm.
-//  - DESESTIMADO_SIN_ALERTA: el clima no registra lluvia.
-//  - PENDIENTE_VALIDACION: no se obtuvo fuente climática (fuente 'Desconocida').
-function computeValidationState(clima: {
-  llueve_ahora: boolean;
-  lluvia_24h_mm: number;
-  fuente: string;
-}): string {
-  if (!clima || clima.fuente === "Desconocida") return "PENDIENTE_VALIDACION";
-  if (!clima.llueve_ahora && (clima.lluvia_24h_mm || 0) <= 0)
-    return "DESESTIMADO_SIN_ALERTA";
-  return "VALIDADO_CLIMA";
-}
-
-// ==========================================
-// MÓDULO IA ENRUTADOR
+// MÓDULO IA ENRUTADOR Y CLASIFICADOR
 // ==========================================
 async function analyzeTextIntent(text: string): Promise<string> {
   text = text.substring(0, 500);
@@ -235,299 +242,85 @@ async function analyzeTextIntent(text: string): Promise<string> {
   const prompt = `Analiza el texto de este ciudadano. Clasifica la intención en: 'REPORTE' (inundación, agua, peligro, caída de árbol), 'CONSULTA' (clima, saber estado de zona) o 'DESCONOCIDO' (otra cosa). Texto: "${text}". Responde SÓLO con JSON: {"intent": "REPORTE"}`;
 
   const textLower = text.toLowerCase();
-  if (
-    /(inundad|inundación|inundacion|agua|desborde|caída|caida|árbol|arbol|emergencia|rescate|bote|tormenta|temporal|granizo|viento|ráfaga|rafaga|tornado|huracan|huracán|anegad|anegamiento|tapado|alcantarilla|techo|voló|volo|corte|luz|electricidad|cable|poste|peligro|evacuación|evacuacion|ayuda|socorro|bombero|policía|policia|ambulancia|herido|auxilio|río|rio|arroyo|cauce|creciente|derrumbe|socavón|socavon|desprendimiento|atrapad)/.test(
-      textLower
-    )
-  )
-    return "REPORTE";
-  if (/(zona|barrio|clima|llover|lluvia|estado)/.test(textLower))
-    return "CONSULTA";
-
-  async function callGroq(apiKey: string) {
-    const resModels = await fetch("https://api.groq.com/openai/v1/models", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!resModels.ok)
-      throw new Error("No se pudieron obtener modelos de Groq");
-    const dataModels = await resModels.json();
-    const GROQ_EXCLUDE = [
-      "guard",
-      "whisper",
-      "vision",
-      "embedding",
-      "tts",
-      "batch",
-    ];
-    const models: string[] = dataModels.data
-      .map((m: { id: string }) => m.id)
-      .filter(
-        (id: string) =>
-          (id.includes("llama") ||
-            id.includes("mixtral") ||
-            id.includes("gemma")) &&
-          !GROQ_EXCLUDE.some((bad) => id.toLowerCase().includes(bad))
-      );
-    console.log("Groq modelos de chat disponibles:", models);
-    if (models.length === 0)
-      throw new Error("No hay modelos de chat disponibles en Groq");
-
-    for (const model of models) {
-      const res = await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" },
-          }),
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`Groq intent OK con modelo: ${model}`);
-        return JSON.parse(data.choices[0].message.content).intent;
-      } else {
-        console.error(`Groq ${model} falló: ${res.status} ${await res.text()}`);
-      }
-    }
-    throw new Error("Todos los modelos de chat de Groq fallaron");
-  }
-
-  async function callGemini() {
-    const resModels = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-    );
-    if (!resModels.ok)
-      throw new Error("No se pudieron obtener modelos de Gemini");
-    const dataModels = await resModels.json();
-    const models: string[] = dataModels.models
-      .filter(
-        (m: { name: string; supportedGenerationMethods?: string[] }) =>
-          Array.isArray(m.supportedGenerationMethods) &&
-          m.supportedGenerationMethods.includes("generateContent") &&
-          m.name.includes("gemini") &&
-          !m.name.includes("vision")
-      )
-      .map((m: { name: string }) => m.name.replace("models/", ""));
-    console.log("Gemini modelos generateContent disponibles:", models);
-    if (models.length === 0)
-      throw new Error("No hay modelos generateContent disponibles en Gemini");
-
-    for (const model of models) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) {
-          console.error(`Gemini ${model} devolvió texto vacío`);
-          continue;
-        }
-        console.log(`Gemini intent OK con modelo: ${model}`);
-        return JSON.parse(rawText.replace(/```json|```/g, "")).intent;
-      } else {
-        console.error(
-          `Gemini ${model} falló: ${res.status} ${await res.text()}`
-        );
-      }
-    }
-    throw new Error("Todos los modelos generateContent de Gemini fallaron");
-  }
+  if (/(inundad|agua|desborde|caída|caida|árbol|arbol|emergencia|rescate|bote|tormenta|temporal|granizo|viento|ráfaga|rafaga|tornado|huracan|huracán|anegad|anegamiento|tapado|alcantarilla|techo|voló|volo|corte|luz|electricidad|cable|poste|peligro|evacuación|evacuacion|ayuda|socorro|bombero|policía|policia|ambulancia|herido|auxilio|río|rio|arroyo|cauce|creciente|derrumbe|socavón|socavon|desprendimiento|atrapad)/.test(textLower)) return "REPORTE";
+  if (/(zona|barrio|clima|llover|lluvia|estado)/.test(textLower)) return "CONSULTA";
 
   try {
-    return await callGroq(GROQ_API_KEY_1);
-  } catch (e1) {
-    console.error("Groq 1 intent failed:", e1);
-    try {
-      return await callGemini();
-    } catch (e2) {
-      console.error("Gemini intent failed:", e2);
-      try {
-        return await callGroq(GROQ_API_KEY_2);
-      } catch (e3) {
-        console.error("Groq 2 intent failed:", e3);
-        return "DESCONOCIDO";
-      }
-    }
+    const res = await runAIFallback(prompt, true);
+    return res.intent || "DESCONOCIDO";
+  } catch (e) {
+    return "DESCONOCIDO";
   }
 }
 
-async function validateDescriptionWithAI(text: string): Promise<boolean> {
+async function validateDescriptionWithAI(text: string): Promise<{ es_emergencia: boolean; tipo: string; riesgo: string }> {
   text = text.substring(0, 500);
-  const prompt = `Analiza si este texto describe una emergencia climática (lluvia, inundación, calle anegada, árbol caído, viento, granizo, etc.). Responde SÓLO con JSON: {"es_emergencia": true} o {"es_emergencia": false}. Texto: "${text}"`;
-
-  async function callGroq(apiKey: string) {
-    const resModels = await fetch("https://api.groq.com/openai/v1/models", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!resModels.ok)
-      throw new Error("No se pudieron obtener modelos de Groq");
-    const dataModels = await resModels.json();
-    const GROQ_EXCLUDE = [
-      "guard",
-      "whisper",
-      "vision",
-      "embedding",
-      "tts",
-      "batch",
-    ];
-    const models: string[] = dataModels.data
-      .map((m: { id: string }) => m.id)
-      .filter(
-        (id: string) =>
-          (id.includes("llama") ||
-            id.includes("mixtral") ||
-            id.includes("gemma")) &&
-          !GROQ_EXCLUDE.some((bad) => id.toLowerCase().includes(bad))
-      );
-    console.log("Groq modelos de chat disponibles:", models);
-    if (models.length === 0)
-      throw new Error("No hay modelos de chat disponibles en Groq");
-
-    for (const model of models) {
-      const res = await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" },
-          }),
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`Groq validate OK con modelo: ${model}`);
-        return JSON.parse(data.choices[0].message.content).es_emergencia;
-      } else {
-        console.error(`Groq ${model} falló: ${res.status} ${await res.text()}`);
-      }
-    }
-    throw new Error("Todos los modelos de chat de Groq fallaron");
-  }
-
-  async function callGemini() {
-    const resModels = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-    );
-    if (!resModels.ok)
-      throw new Error("No se pudieron obtener modelos de Gemini");
-    const dataModels = await resModels.json();
-    const models: string[] = dataModels.models
-      .filter(
-        (m: { name: string; supportedGenerationMethods?: string[] }) =>
-          Array.isArray(m.supportedGenerationMethods) &&
-          m.supportedGenerationMethods.includes("generateContent") &&
-          m.name.includes("gemini") &&
-          !m.name.includes("vision")
-      )
-      .map((m: { name: string }) => m.name.replace("models/", ""));
-    console.log("Gemini modelos generateContent disponibles:", models);
-    if (models.length === 0)
-      throw new Error("No hay modelos generateContent disponibles en Gemini");
-
-    for (const model of models) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) {
-          console.error(`Gemini ${model} devolvió texto vacío`);
-          continue;
-        }
-        console.log(`Gemini validate OK con modelo: ${model}`);
-        return JSON.parse(rawText.replace(/```json|```/g, "")).es_emergencia;
-      } else {
-        console.error(
-          `Gemini ${model} falló: ${res.status} ${await res.text()}`
-        );
-      }
-    }
-    throw new Error("Todos los modelos generateContent de Gemini fallaron");
-  }
+  const prompt = `Analiza si este texto describe una emergencia climática (lluvia, inundación, calle anegada, árbol caído, viento, granizo, etc.). 
+  Si es una emergencia, clasifica el 'tipo' (valores permitidos EXACTOS: INUNDACION_URBANA, LLUVIAS_FUERTES, GRANIZO, ANEGAMIENTO_VIVIENDA) y el 'riesgo' (valores permitidos EXACTOS: BAJO, MEDIO, ALTO, CRITICO). 
+  Responde SÓLO con JSON, formato: {"es_emergencia": true, "tipo": "...", "riesgo": "..."} o {"es_emergencia": false}. Texto: "${text}"`;
 
   try {
-    return await callGroq(GROQ_API_KEY_1);
-  } catch (e1) {
-    console.error("Groq 1 validate failed:", e1);
-    try {
-      return await callGemini();
-    } catch (e2) {
-      console.error("Gemini validate failed:", e2);
-      try {
-        return await callGroq(GROQ_API_KEY_2);
-      } catch (e3) {
-        console.error("Groq 2 validate failed:", e3);
-        return true; /* Fallback a true si caen APIs */
-      }
-    }
+    const res = await runAIFallback(prompt, true);
+    return {
+      es_emergencia: !!res.es_emergencia,
+      tipo: res.tipo || "INUNDACION_URBANA",
+      riesgo: res.riesgo || "MEDIO",
+    };
+  } catch (e) {
+    return { es_emergencia: true, tipo: "INUNDACION_URBANA", riesgo: "MEDIO" };
   }
+}
+
+async function analyzePhotoWithGemini(base64Image: string, mimeType: string): Promise<string> {
+  const prompt = "Analiza esta imagen y describe brevemente lo que ves, enfocándote especialmente en problemas climáticos, inundaciones, calles anegadas, daños estructurales o árboles caídos. Si es una imagen irrelevante (ej: una selfie o algo que no tiene nada que ver), indícalo.";
+  
+  try {
+    // Usamos el endpoint específico con el modelo gemini-1.5-flash directamente ya que es conocido por soportar visión bien.
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Image } }
+          ]
+        }]
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar descripción.";
+    }
+  } catch (e) {
+    console.error("Error analyzing photo with Gemini:", e);
+  }
+  return "Error al analizar imagen con IA.";
+}
+
+function computeValidationState(clima: { llueve_ahora: boolean; lluvia_24h_mm: number; fuente: string }): string {
+  if (!clima || clima.fuente === "Desconocida") return "PENDIENTE_VALIDACION";
+  if (!clima.llueve_ahora && (clima.lluvia_24h_mm || 0) <= 0) return "DESESTIMADO_SIN_ALERTA";
+  return "VALIDADO_CLIMA";
 }
 
 // ==========================================
 // GESTIÓN DE SESIONES (BD)
 // ==========================================
-type BotSession = {
-  chat_id: number;
-  state: string;
-  intentos_fallidos: number;
-  datos_temporales: Record<string, unknown>;
-  ultima_interaccion: string;
-};
+type BotSession = { chat_id: number; state: string; intentos_fallidos: number; datos_temporales: Record<string, any>; ultima_interaccion: string; };
 
 async function getDBSession(chatId: number) {
-  const { data, error } = await supabase
-    .from("user_sessions")
-    .select("*")
-    .eq("chat_id", chatId)
-    .single();
+  const { data, error } = await supabase.from("user_sessions").select("*").eq("chat_id", chatId).single();
   const now = new Date();
 
   if (error || !data) {
-    const newSession = {
-      chat_id: chatId,
-      state: "IDLE",
-      intentos_fallidos: 0,
-      datos_temporales: {},
-      ultima_interaccion: now.toISOString(),
-    };
+    const newSession = { chat_id: chatId, state: "IDLE", intentos_fallidos: 0, datos_temporales: {}, ultima_interaccion: now.toISOString() };
     await supabase.from("user_sessions").upsert(newSession);
     return newSession;
   }
 
-  const lastInteraction = new Date(data.ultima_interaccion).getTime();
-  if (now.getTime() - lastInteraction > 600000) {
-    const resetSession = {
-      chat_id: chatId,
-      state: "IDLE",
-      intentos_fallidos: 0,
-      datos_temporales: {},
-      ultima_interaccion: now.toISOString(),
-    };
+  if (now.getTime() - new Date(data.ultima_interaccion).getTime() > 600000) {
+    const resetSession = { chat_id: chatId, state: "IDLE", intentos_fallidos: 0, datos_temporales: {}, ultima_interaccion: now.toISOString() };
     await supabase.from("user_sessions").upsert(resetSession);
     return resetSession;
   }
@@ -545,80 +338,60 @@ async function saveDBSession(session: BotSession) {
 // ==========================================
 serve(async (req) => {
   try {
-    // 1. WhatsApp Webhook Verification
     if (req.method === "GET") {
       const url = new URL(req.url);
       if (url.searchParams.get("hub.mode") === "subscribe") {
-        if (
-          url.searchParams.get("hub.verify_token") === WHATSAPP_VERIFY_TOKEN
-        ) {
-          return new Response(url.searchParams.get("hub.challenge") || "", {
-            status: 200,
-          });
-        }
+        if (url.searchParams.get("hub.verify_token") === WHATSAPP_VERIFY_TOKEN) return new Response(url.searchParams.get("hub.challenge") || "", { status: 200 });
         return new Response("Forbidden", { status: 403 });
       }
       return new Response("OK", { status: 200 });
     }
 
-    if (req.method !== "POST")
-      return new Response("Method not allowed", { status: 405 });
-
+    if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
     const body = await req.json();
-    console.log("Webhook POST recibido:", JSON.stringify(body));
 
     let platform: "telegram" | "whatsapp" = "telegram";
     let chatId: string | number = 0;
     let text = "";
     let isPhoto = false;
     let location: { latitude: number; longitude: number } | null = null;
+    let photoData: { fileId: string; } | null = null;
 
     if (body.object === "whatsapp_business_account") {
       platform = "whatsapp";
-      const entry = body.entry?.[0];
-      const changes = entry?.changes?.[0];
-      const msg = changes?.value?.messages?.[0];
+      const msg = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!msg) return new Response("OK", { status: 200 });
 
-      chatId = msg.from; // String (phone number)
-
-      if (msg.type === "text") {
-        text = msg.text.body;
-      } else if (msg.type === "interactive" && msg.interactive?.button_reply) {
-        text = msg.interactive.button_reply.title;
-      } else if (msg.type === "location") {
-        location = {
-          latitude: msg.location.latitude,
-          longitude: msg.location.longitude,
-        };
-      } else if (msg.type === "image") {
-        isPhoto = true;
-      }
+      chatId = msg.from;
+      if (msg.type === "text") text = msg.text.body;
+      else if (msg.type === "interactive" && msg.interactive?.button_reply) text = msg.interactive.button_reply.title;
+      else if (msg.type === "location") location = { latitude: msg.location.latitude, longitude: msg.location.longitude };
+      else if (msg.type === "image") isPhoto = true;
     } else if (body.message) {
       platform = "telegram";
       chatId = body.message.chat.id;
       text = body.message.text || body.message.caption || "";
       isPhoto = !!body.message.photo;
-      location = body.message.location; // { latitude, longitude }
+      if (isPhoto) {
+        // En Telegram, .photo es un arreglo de tamaños (del más chico al más grande).
+        // Agarramos un tamaño intermedio o el penúltimo para evitar archivos gigantes en Supabase Free.
+        const photos = body.message.photo;
+        const selectedPhoto = photos.length > 1 ? photos[photos.length - 2] : photos[0];
+        photoData = { fileId: selectedPhoto.file_id };
+      }
+      location = body.message.location;
     } else {
       return new Response("OK", { status: 200 });
     }
 
-    // Convert chatId to BigInt compatible format for Supabase
     const dbChatId = parseInt(chatId.toString());
-
     const session = await getDBSession(dbChatId);
 
     if (["/cancel", "cancelar", "salir"].includes(text.toLowerCase())) {
       session.state = "IDLE";
       session.datos_temporales = {};
       await saveDBSession(session);
-      await sendMessage(
-        platform,
-        chatId,
-        "Acción cancelada. ¿En qué más te puedo ayudar?",
-        true
-      );
+      await sendMessage(platform, chatId, "Acción cancelada. ¿En qué más te puedo ayudar?", true);
       return new Response("OK", { status: 200 });
     }
 
@@ -626,111 +399,60 @@ serve(async (req) => {
       case "IDLE":
         if (text) {
           const intent = await analyzeTextIntent(text);
-
           if (intent === "REPORTE") {
             session.intentos_fallidos = 0;
-            // SMART UX: Si el usuario apretó el botón o escribió un comando corto, le pedimos detalle.
             if (text === "🚨 Enviar Reporte" || text.length < 15) {
               session.state = "ESPERANDO_DESCRIPCION";
-              await sendMessage(
-                platform,
-                chatId,
-                "📝 Por favor, <b>describe brevemente cuál es el problema</b> (ej: calle inundada, árbol caído, agua dentro del hogar)."
-              );
+              await sendMessage(platform, chatId, "📝 Por favor, <b>describe brevemente cuál es el problema</b> (ej: calle inundada, árbol caído, agua dentro del hogar).");
             } else {
-              // SMART UX: Si escribió un texto largo, validamos que sea una emergencia.
-              const esEmergencia = await validateDescriptionWithAI(text);
-              if (esEmergencia) {
-                session.datos_temporales = { descripcion: text };
+              const aiData = await validateDescriptionWithAI(text);
+              if (aiData.es_emergencia) {
+                session.datos_temporales = { descripcion: text, tipo: aiData.tipo, riesgo: aiData.riesgo };
                 session.state = "ESPERANDO_UBICACION_REPORTE";
-                await sendMessage(
-                  platform,
-                  chatId,
-                  "📝 Descripción registrada.\n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de Telegram para mapear el problema."
-                );
+                await sendMessage(platform, chatId, "📝 Descripción registrada.\n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de Telegram para mapear el problema.");
               } else {
-                await sendMessage(
-                  platform,
-                  chatId,
-                  "Tu mensaje no parece describir una emergencia climática válida. Por favor, sé más específico o usa el teclado para navegar.",
-                  true
-                );
+                await sendMessage(platform, chatId, "Tu mensaje no parece describir una emergencia climática válida. Por favor, sé más específico o usa el teclado para navegar.", true);
               }
             }
           } else if (intent === "CONSULTA") {
             session.state = "ESPERANDO_UBICACION_CONSULTA";
             session.intentos_fallidos = 0;
-            await sendMessage(
-              platform,
-              chatId,
-              "📍 Para decirte cómo está tu zona, <b>envíame tu ubicación</b> usando el clip 📎 de Telegram."
-            );
+            await sendMessage(platform, chatId, "📍 Para decirte cómo está tu zona, <b>envíame tu ubicación</b> usando el clip 📎 de Telegram.");
           } else {
-            await sendMessage(
-              platform,
-              chatId,
-              "No entendí tu mensaje. Puedes elegir una opción del menú debajo.",
-              true
-            );
+            await sendMessage(platform, chatId, "No entendí tu mensaje. Puedes elegir una opción del menú debajo.", true);
           }
         } else {
-          await sendMessage(
-            platform,
-            chatId,
-            "Para comenzar, por favor envíame un mensaje de texto o usa los botones del teclado. 👇",
-            true
-          );
+          await sendMessage(platform, chatId, "Para comenzar, por favor envíame un mensaje de texto o usa los botones del teclado. 👇", true);
         }
         break;
 
       case "ESPERANDO_DESCRIPCION":
         if (text) {
-          const esEmergencia = await validateDescriptionWithAI(text);
-          if (esEmergencia) {
-            session.datos_temporales = { descripcion: text };
+          const aiData = await validateDescriptionWithAI(text);
+          if (aiData.es_emergencia) {
+            session.datos_temporales = { descripcion: text, tipo: aiData.tipo, riesgo: aiData.riesgo };
             session.state = "ESPERANDO_UBICACION_REPORTE";
             session.intentos_fallidos = 0;
-            await sendMessage(
-              platform,
-              chatId,
-              "¡Entendido! \n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 (Adjuntar) -> Ubicación."
-            );
+            await sendMessage(platform, chatId, "¡Entendido! \n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 (Adjuntar) -> Ubicación.");
           } else {
-            await sendMessage(
-              platform,
-              chatId,
-              "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol). Por favor describe el problema nuevamente o escribe /cancelar."
-            );
+            await sendMessage(platform, chatId, "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol). Por favor describe el problema nuevamente o escribe /cancelar.");
           }
         } else {
-          await sendMessage(
-            platform,
-            chatId,
-            "Por favor, envíame una descripción en texto de lo que está sucediendo."
-          );
+          await sendMessage(platform, chatId, "Por favor, envíame una descripción en texto de lo que está sucediendo.");
         }
         break;
 
       case "ESPERANDO_UBICACION_REPORTE":
         if (location) {
-          await sendMessage(
-            platform,
-            chatId,
-            "⏳ Analizando el clima histórico y actual en esa ubicación..."
-          );
-          const clima = await checkWeatherSeverity(
-            location.latitude,
-            location.longitude
-          );
+          await sendMessage(platform, chatId, "⏳ Analizando el clima histórico y actual en esa ubicación...");
+          const clima = await checkWeatherSeverity(location.latitude, location.longitude);
 
-          // Nueva lógica de criticidad basada en lluvia acumulada (mm)
-          let criticidad = "AMARILLA (Moderada)";
-          if (clima.lluvia_24h_mm > 30) criticidad = "NARANJA (Alerta)";
-          if (clima.lluvia_24h_mm > 60) criticidad = "ROJA (Crítica)";
+          // Utilizamos la IA para asignar el riesgo previamente, pero podemos recalcularlo si la lluvia es masiva
+          let criticidad = session.datos_temporales.riesgo || "MEDIO";
+          if (clima.lluvia_24h_mm > 60) criticidad = "CRITICO";
 
-          // Guardamos todo para el paso final
           session.datos_temporales = {
-            ...session.datos_temporales, // Mantiene la descripción
+            ...session.datos_temporales,
             lat: location.latitude,
             lon: location.longitude,
             clima,
@@ -739,47 +461,63 @@ serve(async (req) => {
 
           session.state = "ESPERANDO_FOTO";
           session.intentos_fallidos = 0;
-
-          await sendMessage(
-            platform,
-            chatId,
-            `¡Ubicación registrada!\n⛈️ Lluvia acumulada (24h): <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>.\n🚨 Criticidad asignada: <b>${criticidad}</b>.\n\n📷 (Último paso) Envía una <b>foto del problema</b>, o escribe "omitir" para finalizar el reporte.`
-          );
+          await sendMessage(platform, chatId, `¡Ubicación registrada!\n⛈️ Lluvia acumulada (24h): <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>.\n🚨 Nivel de riesgo detectado: <b>${criticidad}</b>.\n\n📷 (Último paso) Envía una <b>foto del problema</b>, o escribe "omitir" para finalizar el reporte.`);
         } else {
           session.intentos_fallidos++;
           if (session.intentos_fallidos >= 3) {
             session.state = "IDLE";
-            await sendMessage(
-              platform,
-              chatId,
-              "Superaste el límite de intentos. Reporte cancelado.",
-              true
-            );
+            await sendMessage(platform, chatId, "Superaste el límite de intentos. Reporte cancelado.", true);
           } else {
-            await sendMessage(
-              platform,
-              chatId,
-              `❌ No reconozco esa ubicación. Tienes que usar la herramienta de adjuntar de Telegram (clip 📎 -> Ubicación). (Intento ${session.intentos_fallidos}/3)`
-            );
+            await sendMessage(platform, chatId, `❌ No reconozco esa ubicación. Tienes que usar la herramienta de adjuntar de Telegram (clip 📎 -> Ubicación). (Intento ${session.intentos_fallidos}/3)`);
           }
         }
         break;
 
       case "ESPERANDO_FOTO":
         if (isPhoto || text.toLowerCase() === "omitir") {
-          // GUARDADO DEFINITIVO EN LA BASE DE DATOS
-          // NUEVO: además de `criticidad` (texto libre), persistimos las
-          // columnas tipadas `tipo`, `riesgo` y `estado` (ver sección
-          // "CLASIFICACIÓN DEL REPORTE" arriba) para poder filtrar en SQL.
-          const descripcion =
-            session.datos_temporales.descripcion || "Sin descripción detallada";
-          const criticidad =
-            session.datos_temporales.criticidad || "AMARILLA (Moderada)";
-          const clima = session.datos_temporales.clima || {
-            llueve_ahora: false,
-            lluvia_24h_mm: 0,
-            fuente: "Desconocida",
-          };
+          let fotoUrl = null;
+          let descripcion_imagen = null;
+
+          if (isPhoto && photoData?.fileId) {
+            await sendMessage(platform, chatId, "⏳ Procesando tu imagen con IA...");
+            try {
+              // 1. Obtener la foto desde Telegram
+              const fileRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getFile?file_id=${photoData.fileId}`);
+              const fileData = await fileRes.json();
+              if (fileData.ok) {
+                const filePath = fileData.result.file_path;
+                const imgRes = await fetch(`https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${filePath}`);
+                
+                // TODO: Extraer metadatos EXIF (fecha de captura, GPS) de la imagen para validar si es una foto antigua.
+                // Nota: Telegram comprime las fotos enviadas por defecto (como Image) y elimina los metadatos EXIF por privacidad. 
+                // Para recibir metadatos reales y validar, el usuario debería enviar la imagen como "Documento" (Archivo sin comprimir).
+                
+                const imgBlob = await imgRes.blob();
+                
+                // 2. Analizar con Gemini Vision
+                const arrayBuffer = await imgBlob.arrayBuffer();
+                const base64Image = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+                descripcion_imagen = await analyzePhotoWithGemini(base64Image, 'image/jpeg');
+
+                // 3. Subir a Supabase Storage
+                const fileName = `${dbChatId}_${Date.now()}.jpg`;
+                const { error: uploadError } = await supabase.storage
+                  .from('reports-photos')
+                  .upload(fileName, imgBlob, { contentType: 'image/jpeg', upsert: true });
+
+                if (!uploadError) {
+                  fotoUrl = `${supabaseUrl}/storage/v1/object/public/reports-photos/${fileName}`;
+                } else {
+                  console.error("Error subiendo foto a Supabase:", uploadError);
+                }
+              }
+            } catch (err) {
+              console.error("Error en flujo de foto:", err);
+            }
+          }
+
+          const descripcion = session.datos_temporales.descripcion || "Sin descripción detallada";
+          const clima = session.datos_temporales.clima || { llueve_ahora: false, lluvia_24h_mm: 0, fuente: "Desconocida" };
 
           const { error: insertError } = await supabase.from("reports").insert({
             chat_id: dbChatId,
@@ -787,83 +525,43 @@ serve(async (req) => {
             lat: session.datos_temporales.lat,
             lon: session.datos_temporales.lon,
             location: `POINT(${session.datos_temporales.lon} ${session.datos_temporales.lat})`,
-            criticidad,
+            criticidad: session.datos_temporales.criticidad || "MEDIO",
             lluvia_mm: clima.lluvia_24h_mm || 0,
             clima_fuente: clima.fuente || "Desconocida",
-            // NUEVAS columnas tipadas: el frontend ya no tiene que inferirlas.
-            tipo: extractReportType(descripcion),
-            riesgo: mapCriticidadToRiesgo(criticidad),
+            tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
+            riesgo: session.datos_temporales.criticidad || "MEDIO",
             estado: computeValidationState(clima),
-            // NOTA: Para hackathon, si envían foto, puedes dejar el foto_url nulo o guardar el file_id de Telegram temporalmente.
+            foto_url: fotoUrl,
+            descripcion_imagen: descripcion_imagen
           });
 
           if (insertError) {
-            console.error("🔥🔥 ERROR GUARDANDO REPORTE EN DB:", insertError);
-            await sendMessage(
-              platform,
-              chatId,
-              "❌ Ocurrió un error al guardar el reporte en la base de datos. Por favor, intenta de nuevo.",
-              true
-            );
-            break; // Salimos del switch para que guarde la sesión actual
+            console.error("ERROR GUARDANDO REPORTE:", insertError);
+            await sendMessage(platform, chatId, "❌ Ocurrió un error al guardar el reporte en la base de datos.", true);
+            break;
           }
 
           session.state = "IDLE";
-          session.datos_temporales = {}; // Limpiar
-          await sendMessage(
-            platform,
-            chatId,
-            "✅ <b>¡Reporte guardado con éxito!</b> Ha sido subido al mapa de Crisis y los equipos de emergencia han sido notificados. Mantente a salvo.",
-            true
-          );
+          session.datos_temporales = {};
+          await sendMessage(platform, chatId, "✅ <b>¡Reporte guardado con éxito!</b> Ha sido subido al mapa y equipos han sido notificados. Mantente a salvo.", true);
         } else {
-          await sendMessage(
-            platform,
-            chatId,
-            "Por favor envía una foto o escribe 'omitir' para terminar de subir tu reporte."
-          );
+          await sendMessage(platform, chatId, "Por favor envía una foto o escribe 'omitir' para terminar.");
         }
         break;
 
       case "ESPERANDO_UBICACION_CONSULTA":
         if (location) {
-          const clima = await checkWeatherSeverity(
-            location.latitude,
-            location.longitude
-          );
-
-          const { data: reportesCercanos } = await supabase.rpc(
-            "get_reports_nearby",
-            {
-              p_lon: location.longitude,
-              p_lat: location.latitude,
-              p_radius: 2000,
-            }
-          );
-
+          const clima = await checkWeatherSeverity(location.latitude, location.longitude);
+          const { data: reportesCercanos } = await supabase.rpc("get_reports_nearby", { p_lon: location.longitude, p_lat: location.latitude, p_radius: 2000 });
           session.state = "IDLE";
-          await sendMessage(
-            platform,
-            chatId,
-            `📊 <b>Estado de tu zona (Radio 2km):</b>\n\n🌧️ Lluvia acumulada 24h: <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>\n🚨 Hay <b>${reportesCercanos || 0} reporte(s)</b> de emergencia cerca de ti.\n\nMantente a salvo. Si ves peligro, usa el botón de Enviar Reporte.`,
-            true
-          );
+          await sendMessage(platform, chatId, `📊 <b>Estado de tu zona (Radio 2km):</b>\n\n🌧️ Lluvia acumulada 24h: <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>\n🚨 Hay <b>${reportesCercanos || 0} reporte(s)</b> cerca de ti.\n\nMantente a salvo.`, true);
         } else {
           session.intentos_fallidos++;
           if (session.intentos_fallidos >= 3) {
             session.state = "IDLE";
-            await sendMessage(
-              platform,
-              chatId,
-              "Consulta cancelada por errores de formato.",
-              true
-            );
+            await sendMessage(platform, chatId, "Consulta cancelada por errores de formato.", true);
           } else {
-            await sendMessage(
-              platform,
-              chatId,
-              "Por favor, adjunta tu ubicación usando el clip 📎."
-            );
+            await sendMessage(platform, chatId, "Por favor, adjunta tu ubicación usando el clip 📎.");
           }
         }
         break;
@@ -873,6 +571,6 @@ serve(async (req) => {
     return new Response("OK", { status: 200 });
   } catch (error) {
     console.error("Error crítico:", error);
-    return new Response("OK", { status: 200 }); // Evitar reintentos de Telegram
+    return new Response("OK", { status: 200 });
   }
 });
