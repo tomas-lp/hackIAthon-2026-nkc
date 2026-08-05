@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Report } from "@/types/report";
-import { formatDate, RISK_CONFIG, TYPE_CONFIG } from "@/lib/utils";
+import { formatDate, TYPE_CONFIG, ZONE_CONFIG } from "@/lib/utils";
+import { nivelPorPuntaje } from "@/lib/zones";
 import { resolveAddress } from "@/lib/geocode";
 
 interface ReportPopupProps {
@@ -32,8 +33,9 @@ export function ReportPopup({ report }: ReportPopupProps) {
     };
   }, [report.latitud, report.longitud]);
 
-  const riskCfg = RISK_CONFIG[report.riesgo];
   const typeCfg = TYPE_CONFIG[report.tipo];
+  const nivelZona = nivelPorPuntaje(report.puntajeReal ?? report.puntajeBase);
+  const zonaCfg = ZONE_CONFIG[nivelZona];
 
   return (
     <div className="p-4">
@@ -47,9 +49,10 @@ export function ReportPopup({ report }: ReportPopupProps) {
           </p>
         </div>
         <span
-          className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${riskCfg.bg} ${riskCfg.text} ${riskCfg.border}`}
+          className="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-white"
+          style={{ backgroundColor: zonaCfg.color }}
         >
-          {riskCfg.label}
+          {report.puntajeBase} pts
         </span>
       </div>
 
@@ -76,10 +79,24 @@ export function ReportPopup({ report }: ReportPopupProps) {
 
         <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1">
           <span className="uppercase tracking-[0.16em] text-zinc-500">
-            Criticidad
+            Evidencia
           </span>
-          <span className="font-medium text-zinc-700">{riskCfg.label}</span>
+          <span className="font-medium text-zinc-700">
+            {report.puntajeDescripcion} desc + {report.puntajeFoto} foto +{" "}
+            {report.puntajeClima} clima
+          </span>
         </div>
+
+        {report.puntajeReal !== null && (
+          <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1">
+            <span className="uppercase tracking-[0.16em] text-zinc-500">
+              Puntaje actual
+            </span>
+            <span className="font-medium text-zinc-700">
+              {report.puntajeReal} pts
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

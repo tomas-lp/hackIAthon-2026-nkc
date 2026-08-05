@@ -14,7 +14,7 @@ export interface Report {
   tipo: ReportType;
   descripcion: string;
   usuario: string;
-  localidad?: string;
+  localidad?: string | null;
   puntajeBase: number;
   puntajeDescripcion: number;
   puntajeFoto: number;

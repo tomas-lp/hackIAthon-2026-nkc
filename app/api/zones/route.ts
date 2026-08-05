@@ -1,29 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reportService } from "@/services/reportService";
-import { ReportType } from "@/types/report";
+import { ReportType, ZoneLevel } from "@/types/report";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
     const tipo = (searchParams.get("tipo") as ReportType | "TODOS") || "TODOS";
-    const busqueda = searchParams.get("busqueda") || "";
+    const nivelZona =
+      (searchParams.get("nivelZona") as ZoneLevel | "TODOS") || "TODOS";
 
-    const reports = await reportService.getReports({
-      tipo,
-      busqueda,
-    });
+    const zones = await reportService.getZones({ tipo, nivelZona });
 
-    return NextResponse.json(reports, {
+    return NextResponse.json(zones, {
       status: 200,
       headers: {
         "Cache-Control": "no-store, max-age=0",
       },
     });
   } catch (error) {
-    console.error("Error fetching reports from service:", error);
+    console.error("Error fetching zones from service:", error);
     return NextResponse.json(
-      { error: "Error al obtener los reportes de Inu" },
+      { error: "Error al obtener las zonas de riesgo" },
       { status: 500 }
     );
   }
