@@ -7,7 +7,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 // ==========================================
 // CONFIGURACIÓN Y CLAVES API
 // ==========================================
-const TELEGRAM_TOKEN = Deno.env.get("BOT_TELEGRAM_TOKEN") ?? "";
 const WHATSAPP_VERIFY_TOKEN = Deno.env.get("WHATSAPP_VERIFY_TOKEN") ?? "";
 const WHATSAPP_PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "";
 const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? "";
@@ -150,61 +149,42 @@ async function runAIFallback(prompt: string, expectJson: boolean = true) {
 // UTILIDADES DE MENSAJERÍA
 // ==========================================
 async function sendMessage(
-  platform: "telegram" | "whatsapp",
   chatId: string | number,
   text: string,
   useKeyboard = false
 ) {
-  if (platform === "telegram") {
-    const payload: Record<string, unknown> = {
-      chat_id: chatId,
-      text: text,
-      parse_mode: "HTML",
-    };
-    if (useKeyboard) {
-      payload.reply_markup = {
-        keyboard: [[{ text: "🚨 Enviar Reporte" }, { text: "📍 Estado de mi zona" }]],
-        resize_keyboard: true,
-        one_time_keyboard: false,
-      };
-    } else {
-      payload.reply_markup = { remove_keyboard: true };
-    }
-    const resTelegram = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!resTelegram.ok) console.error("Error Telegram:", resTelegram.status, await resTelegram.text());
-  } else if (platform === "whatsapp") {
-    const waText = text.replace(/<b>/g, "*").replace(/<\/b>/g, "*");
-    let payload: Record<string, unknown>;
-    if (useKeyboard) {
-      payload = {
-        messaging_product: "whatsapp",
-        to: chatId.toString(),
-        type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: waText },
-          action: {
-            buttons: [
-              { type: "reply", reply: { id: "reporte", title: "🚨 Enviar Reporte" } },
-              { type: "reply", reply: { id: "estado", title: "📍 Estado de mi zona" } },
-            ],
-          },
+  const waText = text.replace(/<b>/g, "*").replace(/<\/b>/g, "*");
+  let payload: Record<string, unknown>;
+  if (useKeyboard) {
+    payload = {
+      messaging_product: "whatsapp",
+      to: chatId.toString(),
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: waText },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: "reporte", title: "🚨 Enviar Reporte" } },
+            { type: "reply", reply: { id: "estado", title: "📍 Estado de mi zona" } },
+          ],
         },
-      };
-    } else {
-      payload = { messaging_product: "whatsapp", to: chatId.toString(), type: "text", text: { body: waText } };
-    }
-    const resWhatsapp = await fetch(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!resWhatsapp.ok) console.error("Error WhatsApp:", resWhatsapp.status, await resWhatsapp.text());
+      },
+    };
+  } else {
+    payload = {
+      messaging_product: "whatsapp",
+      to: chatId.toString(),
+      type: "text",
+      text: { body: waText },
+    };
   }
+  const resWhatsapp = await fetch(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!resWhatsapp.ok) console.error("Error WhatsApp:", resWhatsapp.status, await resWhatsapp.text());
 }
 
 // ==========================================
@@ -344,7 +324,9 @@ serve(async (req) => {
     if (req.method === "GET") {
       const url = new URL(req.url);
       if (url.searchParams.get("hub.mode") === "subscribe") {
-        if (url.searchParams.get("hub.verify_token") === WHATSAPP_VERIFY_TOKEN) return new Response(url.searchParams.get("hub.challenge") || "", { status: 200 });
+        if (url.searchParams.get("hub.verify_token") === WHATSAPP_VERIFY_TOKEN) {
+          return new Response(url.searchParams.get("hub.challenge") || "", { status: 200 });
+        }
         return new Response("Forbidden", { status: 403 });
       }
       return new Response("OK", { status: 200 });
@@ -353,36 +335,34 @@ serve(async (req) => {
     if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
     const body = await req.json();
 
-    let platform: "telegram" | "whatsapp" = "telegram";
     let chatId: string | number = 0;
     let text = "";
     let isPhoto = false;
     let location: { latitude: number; longitude: number } | null = null;
-    let photoData: { fileId: string; } | null = null;
+    let photoData: { mediaId: string; } | null = null;
 
     if (body.object === "whatsapp_business_account") {
-      platform = "whatsapp";
-      const msg = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-      if (!msg) return new Response("OK", { status: 200 });
+      const entry = body.entry?.[0];
+      const changes = entry?.changes?.[0];
+      const msg = changes?.value?.messages?.[0];
+      if (!msg) {
+        if (changes?.value?.statuses) {
+          console.log("Evento de estado de WhatsApp recibido y omitido.");
+        }
+        return new Response("OK", { status: 200 });
+      }
 
       chatId = msg.from;
-      if (msg.type === "text") text = msg.text.body;
-      else if (msg.type === "interactive" && msg.interactive?.button_reply) text = msg.interactive.button_reply.title;
-      else if (msg.type === "location") location = { latitude: msg.location.latitude, longitude: msg.location.longitude };
-      else if (msg.type === "image") isPhoto = true;
-    } else if (body.message) {
-      platform = "telegram";
-      chatId = body.message.chat.id;
-      text = body.message.text || body.message.caption || "";
-      isPhoto = !!body.message.photo;
-      if (isPhoto) {
-        // En Telegram, .photo es un arreglo de tamaños (del más chico al más grande).
-        // Agarramos un tamaño intermedio o el penúltimo para evitar archivos gigantes en Supabase Free.
-        const photos = body.message.photo;
-        const selectedPhoto = photos.length > 1 ? photos[photos.length - 2] : photos[0];
-        photoData = { fileId: selectedPhoto.file_id };
+      if (msg.type === "text") {
+        text = msg.text.body;
+      } else if (msg.type === "interactive" && msg.interactive?.button_reply) {
+        text = msg.interactive.button_reply.title;
+      } else if (msg.type === "location") {
+        location = { latitude: msg.location.latitude, longitude: msg.location.longitude };
+      } else if (msg.type === "image") {
+        isPhoto = true;
+        photoData = { mediaId: msg.image.id };
       }
-      location = body.message.location;
     } else {
       return new Response("OK", { status: 200 });
     }
@@ -394,7 +374,7 @@ serve(async (req) => {
       session.state = "IDLE";
       session.datos_temporales = {};
       await saveDBSession(session);
-      await sendMessage(platform, chatId, "Acción cancelada. ¿En qué más te puedo ayudar?", true);
+      await sendMessage(chatId, "Acción cancelada. ¿En qué más te puedo ayudar?", true);
       return new Response("OK", { status: 200 });
     }
 
@@ -406,26 +386,26 @@ serve(async (req) => {
             session.intentos_fallidos = 0;
             if (text === "🚨 Enviar Reporte" || text.length < 15) {
               session.state = "ESPERANDO_DESCRIPCION";
-              await sendMessage(platform, chatId, "📝 Por favor, <b>describe brevemente cuál es el problema</b> (ej: calle inundada, árbol caído, agua dentro del hogar).");
+              await sendMessage(chatId, "📝 Por favor, <b>describe brevemente cuál es el problema</b> (ej: calle inundada, árbol caído, agua dentro del hogar).");
             } else {
               const aiData = await validateDescriptionWithAI(text);
               if (aiData.es_emergencia) {
                 session.datos_temporales = { descripcion: text, tipo: aiData.tipo, riesgo: aiData.riesgo };
                 session.state = "ESPERANDO_UBICACION_REPORTE";
-                await sendMessage(platform, chatId, "📝 Descripción registrada.\n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de Telegram para mapear el problema.");
+                await sendMessage(chatId, "📝 Descripción registrada.\n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de WhatsApp (Ubicación) para mapear el problema.");
               } else {
-                await sendMessage(platform, chatId, "Tu mensaje no parece describir una emergencia climática válida. Por favor, sé más específico o usa el teclado para navegar.", true);
+                await sendMessage(chatId, "Tu mensaje no parece describir una emergencia climática válida. Por favor, sé más específico o usa el teclado para navegar.", true);
               }
             }
           } else if (intent === "CONSULTA") {
             session.state = "ESPERANDO_UBICACION_CONSULTA";
             session.intentos_fallidos = 0;
-            await sendMessage(platform, chatId, "📍 Para decirte cómo está tu zona, <b>envíame tu ubicación</b> usando el clip 📎 de Telegram.");
+            await sendMessage(chatId, "📍 Para decirte cómo está tu zona, <b>envíame tu ubicación</b> usando el clip 📎 de WhatsApp (Ubicación).");
           } else {
-            await sendMessage(platform, chatId, "No entendí tu mensaje. Puedes elegir una opción del menú debajo.", true);
+            await sendMessage(chatId, "No entendí tu mensaje. Puedes elegir una opción del menú debajo.", true);
           }
         } else {
-          await sendMessage(platform, chatId, "Para comenzar, por favor envíame un mensaje de texto o usa los botones del teclado. 👇", true);
+          await sendMessage(chatId, "Para comenzar, por favor envíame un mensaje de texto o usa los botones del teclado. 👇", true);
         }
         break;
 
@@ -436,21 +416,20 @@ serve(async (req) => {
             session.datos_temporales = { descripcion: text, tipo: aiData.tipo, riesgo: aiData.riesgo };
             session.state = "ESPERANDO_UBICACION_REPORTE";
             session.intentos_fallidos = 0;
-            await sendMessage(platform, chatId, "¡Entendido! \n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 (Adjuntar) -> Ubicación.");
+            await sendMessage(chatId, "¡Entendido! \n\n📍 Ahora, por favor <b>envía tu ubicación actual</b> usando el clip 📎 de WhatsApp (Ubicación).");
           } else {
-            await sendMessage(platform, chatId, "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol). Por favor describe el problema nuevamente o escribe /cancelar.");
+            await sendMessage(chatId, "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol). Por favor describe el problema nuevamente o escribe /cancelar.");
           }
         } else {
-          await sendMessage(platform, chatId, "Por favor, envíame una descripción en texto de lo que está sucediendo.");
+          await sendMessage(chatId, "Por favor, envíame una descripción en texto de lo que está sucediendo.");
         }
         break;
 
       case "ESPERANDO_UBICACION_REPORTE":
         if (location) {
-          await sendMessage(platform, chatId, "⏳ Analizando el clima histórico y actual en esa ubicación...");
+          await sendMessage(chatId, "⏳ Analizando el clima histórico y actual en esa ubicación...");
           const clima = await checkWeatherSeverity(location.latitude, location.longitude);
 
-          // Utilizamos la IA para asignar el riesgo previamente, pero podemos recalcularlo si la lluvia es masiva
           let criticidad = session.datos_temporales.riesgo || "MEDIO";
           if (clima.lluvia_24h_mm > 60) criticidad = "CRITICO";
 
@@ -464,14 +443,14 @@ serve(async (req) => {
 
           session.state = "ESPERANDO_FOTO";
           session.intentos_fallidos = 0;
-          await sendMessage(platform, chatId, `¡Ubicación registrada!\n⛈️ Lluvia acumulada (24h): <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>.\n🚨 Nivel de riesgo detectado: <b>${criticidad}</b>.\n\n📷 (Último paso) Envía una <b>foto del problema</b>, o escribe "omitir" para finalizar el reporte.`);
+          await sendMessage(chatId, `¡Ubicación registrada!\n⛈️ Lluvia acumulada (24h): <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>.\n🚨 Nivel de riesgo detectado: <b>${criticidad}</b>.\n\n📷 (Último paso) Envía una <b>foto del problema</b>, o escribe "omitir" para finalizar el reporte.`);
         } else {
           session.intentos_fallidos++;
           if (session.intentos_fallidos >= 3) {
             session.state = "IDLE";
-            await sendMessage(platform, chatId, "Superaste el límite de intentos. Reporte cancelado.", true);
+            await sendMessage(chatId, "Superaste el límite de intentos. Reporte cancelado.", true);
           } else {
-            await sendMessage(platform, chatId, `❌ No reconozco esa ubicación. Tienes que usar la herramienta de adjuntar de Telegram (clip 📎 -> Ubicación). (Intento ${session.intentos_fallidos}/3)`);
+            await sendMessage(chatId, `❌ No reconozco esa ubicación. Tienes que usar la herramienta de adjuntar de WhatsApp (Ubicación). (Intento ${session.intentos_fallidos}/3)`);
           }
         }
         break;
@@ -481,28 +460,27 @@ serve(async (req) => {
           let fotoUrl = null;
           let descripcion_imagen = null;
 
-          if (isPhoto && photoData?.fileId) {
-            await sendMessage(platform, chatId, "⏳ Procesando tu imagen con IA...");
+          if (isPhoto && photoData?.mediaId) {
+            await sendMessage(chatId, "⏳ Procesando tu imagen con IA...");
             try {
-              // 1. Obtener la foto desde Telegram
-              const fileRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getFile?file_id=${photoData.fileId}`);
-              const fileData = await fileRes.json();
-              if (fileData.ok) {
-                const filePath = fileData.result.file_path;
-                const imgRes = await fetch(`https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${filePath}`);
-                
-                // TODO: Extraer metadatos EXIF (fecha de captura, GPS) de la imagen para validar si es una foto antigua.
-                // Nota: Telegram comprime las fotos enviadas por defecto (como Image) y elimina los metadatos EXIF por privacidad. 
-                // Para recibir metadatos reales y validar, el usuario debería enviar la imagen como "Documento" (Archivo sin comprimir).
-                
+              // 1. Obtener la URL del archivo desde la API de Meta
+              const mediaRes = await fetch(`https://graph.facebook.com/v21.0/${photoData.mediaId}`, {
+                headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` }
+              });
+              const mediaData = await mediaRes.json();
+              if (mediaData.url) {
+                // 2. Descargar la imagen binaria
+                const imgRes = await fetch(mediaData.url, {
+                  headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` }
+                });
                 const imgBlob = await imgRes.blob();
                 
-                // 2. Analizar con Gemini Vision
+                // 3. Analizar con Gemini Vision
                 const arrayBuffer = await imgBlob.arrayBuffer();
                 const base64Image = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
                 descripcion_imagen = await analyzePhotoWithGemini(base64Image, 'image/jpeg');
 
-                // 3. Subir a Supabase Storage
+                // 4. Subir a Supabase Storage
                 const fileName = `${dbChatId}_${Date.now()}.jpg`;
                 const { error: uploadError } = await supabase.storage
                   .from('reports-photos')
@@ -515,7 +493,7 @@ serve(async (req) => {
                 }
               }
             } catch (err) {
-              console.error("Error en flujo de foto:", err);
+              console.error("Error en flujo de foto de WhatsApp:", err);
             }
           }
 
@@ -540,15 +518,15 @@ serve(async (req) => {
 
           if (insertError) {
             console.error("ERROR GUARDANDO REPORTE:", insertError);
-            await sendMessage(platform, chatId, "❌ Ocurrió un error al guardar el reporte en la base de datos.", true);
+            await sendMessage(chatId, "❌ Ocurrió un error al guardar el reporte en la base de datos.", true);
             break;
           }
 
           session.state = "IDLE";
           session.datos_temporales = {};
-          await sendMessage(platform, chatId, "✅ <b>¡Reporte guardado con éxito!</b> Ha sido subido al mapa y equipos han sido notificados. Mantente a salvo.", true);
+          await sendMessage(chatId, "✅ <b>¡Reporte guardado con éxito!</b> Ha sido subido al mapa y equipos han sido notificados. Mantente a salvo.", true);
         } else {
-          await sendMessage(platform, chatId, "Por favor envía una foto o escribe 'omitir' para terminar.");
+          await sendMessage(chatId, "Por favor envía una foto o escribe 'omitir' para terminar.");
         }
         break;
 
@@ -557,14 +535,14 @@ serve(async (req) => {
           const clima = await checkWeatherSeverity(location.latitude, location.longitude);
           const { data: reportesCercanos } = await supabase.rpc("get_reports_nearby", { p_lon: location.longitude, p_lat: location.latitude, p_radius: 2000 });
           session.state = "IDLE";
-          await sendMessage(platform, chatId, `📊 <b>Estado de tu zona (Radio 2km):</b>\n\n🌧️ Lluvia acumulada 24h: <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>\n🚨 Hay <b>${reportesCercanos || 0} reporte(s)</b> cerca de ti.\n\nMantente a salvo.`, true);
+          await sendMessage(chatId, `📊 <b>Estado de tu zona (Radio 2km):</b>\n\n🌧️ Lluvia acumulada 24h: <b>${clima.lluvia_24h_mm.toFixed(1)}mm</b>\n🚨 Hay <b>${reportesCercanos || 0} reporte(s)</b> cerca de ti.\n\nMantente a salvo.`, true);
         } else {
           session.intentos_fallidos++;
           if (session.intentos_fallidos >= 3) {
             session.state = "IDLE";
-            await sendMessage(platform, chatId, "Consulta cancelada por errores de formato.", true);
+            await sendMessage(chatId, "Consulta cancelada por errores de formato.", true);
           } else {
-            await sendMessage(platform, chatId, "Por favor, adjunta tu ubicación usando el clip 📎.");
+            await sendMessage(chatId, "Por favor, adjunta tu ubicación usando el clip 📎.");
           }
         }
         break;
