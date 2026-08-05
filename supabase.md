@@ -15,41 +15,48 @@ Para poder levantar Supabase localmente y probar el código, cada miembro del eq
    ```bash
    npx supabase login
    ```
-   *(Te va a pedir que generes un Access Token desde la web de Supabase y lo pegues en la consola).*
-
+   _(Te va a pedir que generes un Access Token desde la web de Supabase y lo pegues en la consola)._
 
 ---
 
 ## Comandos Principales
 
 ### 1. Servidor Local de Edge Functions
+
 ```bash
 npx supabase functions serve
 ```
-Inicia un entorno local de Supabase para probar nuestras Edge Functions (como nuestro `telegram-bot`). 
+
+Inicia un entorno local de Supabase para probar nuestras Edge Functions (como nuestro `telegram-bot`).
 
 **Ventajas:**
+
 - **Desarrollo rápido:** Permite probar y debugear las funciones en nuestra computadora antes de subirlas a producción.
 - **Hot-reloading:** Detecta cambios en el código de TypeScript/Deno y recarga la función automáticamente.
 
 **Variante importante (Pruebas sin JWT):**
+
 ```bash
 npx supabase functions serve --no-verify-jwt
 ```
-- **¿Para qué sirve?** Desactiva la verificación de seguridad (tokens JWT) en las llamadas locales.
-- **Ventaja:** Ideal para hacer pruebas rápidas desde Postman, cURL o scripts locales sin tener que lidiar con la autenticación de usuarios de Supabase en cada petición. 
 
-*(Nota: En el archivo `supabase/config.toml` se puede configurar `verify_jwt = false` por función de forma permanente para lograr un efecto similar).*
+- **¿Para qué sirve?** Desactiva la verificación de seguridad (tokens JWT) en las llamadas locales.
+- **Ventaja:** Ideal para hacer pruebas rápidas desde Postman, cURL o scripts locales sin tener que lidiar con la autenticación de usuarios de Supabase en cada petición.
+
+_(Nota: En el archivo `supabase/config.toml` se puede configurar `verify_jwt = false` por función de forma permanente para lograr un efecto similar)._
 
 ---
 
 ### 2. Sincronización de Base de Datos
+
 ```bash
 npx supabase db pull
 ```
+
 Descarga la estructura más reciente de la base de datos desde la nube (proyecto remoto de Supabase) hacia nuestro entorno local.
 
 **Ventajas:**
+
 - **Trabajo en equipo sincronizado:** Si alguien hace un cambio en las tablas de la base de datos desde la interfaz web de Supabase (el Dashboard), el resto del equipo puede bajar ese cambio a su código local usando este comando.
 - **Consistencia:** Actualiza y repara el historial de migraciones local, asegurando que todos tengamos exactamente las mismas tablas y configuraciones antes de seguir desarrollando.
 
@@ -60,16 +67,20 @@ Descarga la estructura más reciente de la base de datos desde la nube (proyecto
 Si necesitás interactuar con la base de datos localmente, abrir la consola de administración web de Supabase local o levantar todos los servicios en tu máquina (lo cual requiere que Docker Desktop esté abierto):
 
 **Iniciar los servicios locales:**
+
 ```bash
 npx supabase start
 ```
+
 - **¿Qué hace?** Lee tu configuración local y levanta contenedores de Docker para la base de datos, autenticación, almacenamiento y el panel de control local (Studio).
 - **Ventaja:** Te dará urls locales para probar todo de forma aislada, incluyendo una versión local del panel web en `http://localhost:54323`.
 
 **Detener los servicios locales:**
+
 ```bash
 npx supabase stop
 ```
+
 - **¿Qué hace?** Apaga todos los contenedores locales de Supabase en Docker para liberar memoria RAM y procesador en tu máquina cuando termines de desarrollar.
 
 ---
@@ -79,15 +90,18 @@ npx supabase stop
 Cuando hayas terminado de modificar algo en tu código local y quieras subirlo al proyecto en la nube de Supabase para que funcione en vivo, vas a usar los comandos de `deploy` o `push`.
 
 **Subir una Edge Function (como el bot):**
+
 ```bash
 npx supabase functions deploy telegram-bot
 ```
+
 - **¿Qué hace?** Empaqueta tu código local de la función indicada (en este caso `telegram-bot`) y lo sube a la nube. También aplica las configuraciones que hayas puesto en `supabase/config.toml` (por ejemplo, si le quitaste la verificación de JWT).
-- *(Si querés subir todas las funciones juntas, podés usar `npx supabase functions deploy` sin especificar el nombre).*
+- _(Si querés subir todas las funciones juntas, podés usar `npx supabase functions deploy` sin especificar el nombre)._
 
 **Subir cambios de la Base de Datos:**
+
 ```bash
 npx supabase db push
 ```
-- **¿Qué hace?** Si creaste nuevas migraciones de base de datos localmente (archivos en `supabase/migrations/`), este comando las aplica en tu base de datos remota de producción. ¡Ojo! Solo sube la estructura, no los datos de prueba locales.
 
+- **¿Qué hace?** Si creaste nuevas migraciones de base de datos localmente (archivos en `supabase/migrations/`), este comando las aplica en tu base de datos remota de producción. ¡Ojo! Solo sube la estructura, no los datos de prueba locales.
