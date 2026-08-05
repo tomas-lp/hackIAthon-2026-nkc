@@ -39,11 +39,14 @@ async function sendMessage(platform: 'telegram' | 'whatsapp', chatId: string | n
     } else {
       payload.reply_markup = { remove_keyboard: true };
     }
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    const resTelegram = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    if (!resTelegram.ok) {
+      console.error("Error al enviar mensaje a Telegram:", resTelegram.status, await resTelegram.text());
+    }
   } else if (platform === 'whatsapp') {
     let payload: any;
     // Whatsapp text conversion from HTML bold to Markdown bold
@@ -72,7 +75,7 @@ async function sendMessage(platform: 'telegram' | 'whatsapp', chatId: string | n
         text: { body: waText }
       };
     }
-    await fetch(`https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`, {
+    const resWhatsapp = await fetch(`https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
@@ -80,6 +83,9 @@ async function sendMessage(platform: 'telegram' | 'whatsapp', chatId: string | n
       },
       body: JSON.stringify(payload)
     });
+    if (!resWhatsapp.ok) {
+      console.error("Error al enviar mensaje a WhatsApp:", resWhatsapp.status, await resWhatsapp.text());
+    }
   }
 }
 
@@ -346,6 +352,7 @@ serve(async (req) => {
     if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
     const body = await req.json();
+    console.log("Webhook POST recibido:", JSON.stringify(body));
     
     let platform: 'telegram' | 'whatsapp' = 'telegram';
     let chatId: string | number = 0;
