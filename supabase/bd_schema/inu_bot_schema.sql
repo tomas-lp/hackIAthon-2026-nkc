@@ -1,6 +1,11 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+-- RLS (migración 20260805060000_add_rls.sql):
+--   reports:       SELECT para anon/authenticated; writes solo service_role.
+--   user_sessions: deny-by-default (solo service_role via Edge Function).
+--   spatial_ref_sys: sin RLS (data PostGIS, propiedad de supabase_admin).
+
 CREATE TABLE public.spatial_ref_sys (
   srid integer NOT NULL CHECK (srid > 0 AND srid <= 998999),
   auth_name character varying,
@@ -29,5 +34,11 @@ CREATE TABLE public.reports (
   foto_url text,
   created_at timestamp with time zone DEFAULT now(),
   descripcion text,
+  -- Columnas tipadas (migración 20260805050000_add_typed_columns.sql).
+  -- Valores replican los dominios de types/report.ts y se persisten
+  -- desde la Edge Function telegram-bot al ingestar.
+  tipo text CHECK (tipo IN ('INUNDACION_URBANA', 'LLUVIAS_FUERTES', 'GRANIZO', 'ANEGAMIENTO_VIVIENDA')),
+  riesgo text CHECK (riesgo IN ('BAJO', 'MEDIO', 'ALTO', 'CRITICO')),
+  estado text CHECK (estado IN ('VALIDADO_CLIMA', 'PENDIENTE_VALIDACION', 'DESESTIMADO_SIN_ALERTA', 'DESESTIMADO_IRRELEVANTE')),
   CONSTRAINT reports_pkey PRIMARY KEY (id)
 );

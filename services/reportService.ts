@@ -9,6 +9,29 @@ export interface IReportService {
   getReportById(id: string): Promise<Report | null>;
 }
 
+const REPORT_TYPES: Report["tipo"][] = [
+  "INUNDACION_URBANA",
+  "LLUVIAS_FUERTES",
+  "GRANIZO",
+  "ANEGAMIENTO_VIVIENDA",
+];
+const RISK_LEVELS: Report["riesgo"][] = ["BAJO", "MEDIO", "ALTO", "CRITICO"];
+const VALIDATION_STATUSES: Report["estado"][] = [
+  "VALIDADO_CLIMA",
+  "PENDIENTE_VALIDACION",
+  "DESESTIMADO_SIN_ALERTA",
+  "DESESTIMADO_IRRELEVANTE",
+];
+
+// Guards: distinguen un valor tipado real (persistido en SQL) de uno
+// heredado/legacy que sigue requiriendo la heurística.
+const isReportTipo = (v: string | undefined): v is Report["tipo"] =>
+  !!v && (REPORT_TYPES as string[]).includes(v);
+const isReportRiesgo = (v: string | undefined): v is Report["riesgo"] =>
+  !!v && (RISK_LEVELS as string[]).includes(v);
+const isReportEstado = (v: string | undefined): v is Report["estado"] =>
+  !!v && (VALIDATION_STATUSES as string[]).includes(v);
+
 type ReportDbRow = {
   id: string | number;
   created_at?: string;
@@ -183,15 +206,21 @@ export class SupabaseReportService implements IReportService {
         new Date().toISOString(),
       latitud: Number(lat ?? 0),
       longitud: Number(lon ?? 0),
-      tipo: mapTipo(tipoInferido),
+      // Preferimos las columnas tipadas (si vienen de SQL) y solo usamos la
+      // heurística para filas legacy con esos campos en NULL.
+      tipo: isReportTipo(row.tipo) ? row.tipo : mapTipo(tipoInferido),
       descripcion:
         row.descripcion ??
         row.texto_original ??
         row.motivo_fallo ??
         row.clima_fuente ??
         "",
-      riesgo: mapRiesgo(row.nivel_riesgo ?? row.riesgo ?? row.criticidad),
-      estado: mapEstado(row.estado_validacion ?? row.estado ?? row.criticidad),
+      riesgo: isReportRiesgo(row.riesgo)
+        ? row.riesgo
+        : mapRiesgo(row.nivel_riesgo ?? row.riesgo ?? row.criticidad),
+      estado: isReportEstado(row.estado)
+        ? row.estado
+        : mapEstado(row.estado_validacion ?? row.estado ?? row.criticidad),
       usuario:
         row.usuario_display ??
         row.usuario ??
@@ -246,10 +275,32 @@ export class SupabaseReportService implements IReportService {
     // Keep first 10 mock reports for demo purposes, then append DB-backed reports
     const initialMocks = MOCK_REPORTS.slice(0, 10);
 
-    const { data, error } = await this.supabase
+    // Push-down de filtros a SQL: los filtros tipados se resuelven en la base
+    // (tipo, riesgo, estado) gracias a las columnas agregadas por la migración
+    // 20260805050000_add_typed_columns.sql, y la búsqueda con ILIKE sobre
+    // descripcion. Los mocks se siguen filtrando en memoria (applyFilters).
+    let query = this.supabase
       .from("reports")
       .select("*")
       .order("created_at", { ascending: false });
+
+    if (filters?.tipo && filters.tipo !== "TODOS") {
+      query = query.eq("tipo", filters.tipo);
+    }
+    if (filters?.riesgo && filters.riesgo !== "TODOS") {
+      query = query.eq("riesgo", filters.riesgo);
+    }
+    if (filters?.estado && filters.estado !== "TODOS") {
+      query = query.eq("estado", filters.estado);
+    }
+    if (filters?.ocultarDesestimados) {
+      query = query.in("estado", ["VALIDADO_CLIMA", "PENDIENTE_VALIDACION"]);
+    }
+    if (filters?.busqueda && filters.busqueda.trim() !== "") {
+      query = query.ilike("descripcion", `%${filters.busqueda.trim()}%`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Supabase getReports error:", error.message);
