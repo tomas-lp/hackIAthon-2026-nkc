@@ -195,7 +195,7 @@ async function sendMessage(
     } else {
       payload = { messaging_product: "whatsapp", to: chatId.toString(), type: "text", text: { body: waText } };
     }
-    const resWhatsapp = await fetch(`https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`, {
+    const resWhatsapp = await fetch(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
