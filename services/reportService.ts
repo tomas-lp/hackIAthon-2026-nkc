@@ -64,51 +64,6 @@ type ReportDbRow = {
   ubicacion?: string;
 };
 
-export class MockReportService implements IReportService {
-  async getReports(filters?: ReportFilters): Promise<Report[]> {
-    let reports = [...MOCK_REPORTS];
-
-    if (!filters) return reports;
-
-    if (filters.ocultarDesestimados) {
-      reports = reports.filter(
-        (r) =>
-          r.estado !== "DESESTIMADO_SIN_ALERTA" &&
-          r.estado !== "DESESTIMADO_IRRELEVANTE"
-      );
-    }
-
-    if (filters.tipo && filters.tipo !== "TODOS") {
-      reports = reports.filter((r) => r.tipo === filters.tipo);
-    }
-
-    if (filters.riesgo && filters.riesgo !== "TODOS") {
-      reports = reports.filter((r) => r.riesgo === filters.riesgo);
-    }
-
-    if (filters.estado && filters.estado !== "TODOS") {
-      reports = reports.filter((r) => r.estado === filters.estado);
-    }
-
-    if (filters.busqueda && filters.busqueda.trim() !== "") {
-      const q = filters.busqueda.toLowerCase();
-      reports = reports.filter(
-        (r) =>
-          r.descripcion.toLowerCase().includes(q) ||
-          r.usuario.toLowerCase().includes(q) ||
-          (r.localidad && r.localidad.toLowerCase().includes(q))
-      );
-    }
-
-    return reports;
-  }
-
-  async getReportById(id: string): Promise<Report | null> {
-    const report = MOCK_REPORTS.find((r) => r.id === id);
-    return report || null;
-  }
-}
-
 export class SupabaseReportService implements IReportService {
   private supabase = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -272,13 +227,11 @@ export class SupabaseReportService implements IReportService {
   }
 
   async getReports(filters?: ReportFilters): Promise<Report[]> {
-    // Keep first 10 mock reports for demo purposes, then append DB-backed reports
-    const initialMocks = MOCK_REPORTS.slice(0, 10);
-
     // Push-down de filtros a SQL: los filtros tipados se resuelven en la base
     // (tipo, riesgo, estado) gracias a las columnas agregadas por la migración
     // 20260805050000_add_typed_columns.sql, y la búsqueda con ILIKE sobre
-    // descripcion. Los mocks se siguen filtrando en memoria (applyFilters).
+    // descripcion. Los mocks ya no se inyectan en producción: solo se usan
+    // como fallback si la conexión a Supabase falla.
     let query = this.supabase
       .from("reports")
       .select("*")
@@ -304,38 +257,28 @@ export class SupabaseReportService implements IReportService {
 
     if (error) {
       console.error("Supabase getReports error:", error.message);
-      return this.applyFilters(initialMocks, filters);
+      return this.applyFilters(MOCK_REPORTS, filters);
     }
 
     const dbReports = (data || []).map((r) =>
       this.mapDbRowToReport(r as ReportDbRow)
     );
 
-    // Merge mocks + db results, avoiding duplicate ids
-    const ids = new Set(initialMocks.map((m) => m.id));
-    const merged = [...initialMocks];
-    for (const r of dbReports) {
-      if (!ids.has(r.id)) {
-        merged.push(r);
-        ids.add(r.id);
-      }
-    }
-
-    return this.applyFilters(merged, filters);
+    return this.applyFilters(dbReports, filters);
   }
 
   async getReportById(id: string): Promise<Report | null> {
-    // Check mocks first
-    const mock = MOCK_REPORTS.find((r) => r.id === id);
-    if (mock) return mock;
-
     const { data, error } = await this.supabase
       .from("reports")
       .select("*")
       .eq("id", id)
       .limit(1)
       .single();
-    if (error || !data) return null;
+    if (error || !data) {
+      // Fallback solo ante error de conexión: si getReports devolvió mocks
+      // porque Supabase no responde, permitimos abrir el detalle del mock.
+      return MOCK_REPORTS.find((r) => r.id === id) || null;
+    }
     return this.mapDbRowToReport(data);
   }
 }
