@@ -1,41 +1,14 @@
-"use client";
+import { reportService } from "@/services/reportService";
+import { CrisisDashboard } from "@/features/dashboard/CrisisDashboard";
 
-import { useReports } from "@/hooks/useReports";
-import { Sidebar } from "@/features/dashboard/Sidebar";
-import { ReportMap } from "@/features/mapa/ReportMap";
+export const dynamic = "force-dynamic";
 
-export default function CrisisGraphPage() {
-  const {
-    reports,
-    loading,
-    error,
-    filters,
-    selectedReport,
-    setSelectedReport,
-    updateFilter,
-    resetFilters,
-  } = useReports();
+export default async function CrisisGraphPage() {
+  const reports = await reportService.getReports();
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
-      <Sidebar
-        reports={reports}
-        filters={filters}
-        loading={loading}
-        error={error}
-        selectedReport={selectedReport}
-        onSelectReport={setSelectedReport}
-        onUpdateFilter={updateFilter}
-        onResetFilters={resetFilters}
-      />
-
-      <section className="absolute inset-0 h-full w-full">
-        <ReportMap
-          reports={reports}
-          selectedReport={selectedReport}
-          onSelectReport={setSelectedReport}
-        />
-      </section>
+      <CrisisDashboard initialReports={reports} />
 
       <div className="pointer-events-none absolute bottom-4 right-4 z-50 rounded-2xl border border-white/80 bg-white/90 p-2 shadow-lg shadow-black/10 sm:bottom-6 sm:right-6">
         <div className="flex flex-col items-center gap-1">
