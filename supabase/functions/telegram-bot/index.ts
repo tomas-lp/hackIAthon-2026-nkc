@@ -237,6 +237,8 @@ async function validateDescriptionWithAI(text: string): Promise<{ es_emergencia:
   }
 }
 
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+
 async function analyzePhotoWithGemini(base64Image: string, mimeType: string): Promise<string> {
   const prompt = "Analiza esta imagen y describe brevemente lo que ves, enfocándote especialmente en problemas climáticos, inundaciones, calles anegadas, daños estructurales o árboles caídos. Si es una imagen irrelevante (ej: una selfie o algo que no tiene nada que ver), indícalo.";
   
@@ -256,6 +258,8 @@ async function analyzePhotoWithGemini(base64Image: string, mimeType: string): Pr
     if (res.ok) {
       const data = await res.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar descripción.";
+    } else {
+      console.error("Gemini Vision HTTP Error:", res.status, await res.text());
     }
   } catch (e) {
     console.error("Error analyzing photo with Gemini:", e);
@@ -430,7 +434,7 @@ serve(async (req) => {
                 const imgBlob = await imgRes.blob();
                 
                 const arrayBuffer = await imgBlob.arrayBuffer();
-                const base64Image = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+                const base64Image = encodeBase64(arrayBuffer);
                 descripcion_imagen = await analyzePhotoWithGemini(base64Image, 'image/jpeg');
 
                 const fileName = `${dbChatId}_${Date.now()}.jpg`;
