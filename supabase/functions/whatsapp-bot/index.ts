@@ -169,17 +169,28 @@ async function runAIFallback(prompt: string, expectJson: boolean = true) {
 // ==========================================
 // UTILIDADES DE MENSAJERÍA
 // ==========================================
+// Normaliza números argentinos: 549XXXXXXXXX → 54XXXXXXXXX
+// Meta requiere el formato sin el 9 para que coincida con la lista de permitidos
+function normalizePhoneNumber(phone: string): string {
+  const p = phone.toString().replace(/\D/g, "");
+  if (p.startsWith("549") && p.length >= 12) {
+    return "54" + p.slice(3);
+  }
+  return p;
+}
+
 async function sendMessage(
   chatId: string | number,
   text: string,
   useKeyboard = false
 ) {
+  const to = normalizePhoneNumber(chatId.toString());
   const waText = text.replace(/<b>/g, "*").replace(/<\/b>/g, "*");
   let payload: Record<string, unknown>;
   if (useKeyboard) {
     payload = {
       messaging_product: "whatsapp",
-      to: chatId.toString(),
+      to,
       type: "interactive",
       interactive: {
         type: "button",
@@ -201,13 +212,13 @@ async function sendMessage(
   } else {
     payload = {
       messaging_product: "whatsapp",
-      to: chatId.toString(),
+      to,
       type: "text",
       text: { body: waText },
     };
   }
   const resWhatsapp = await fetch(
-    `https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`,
+    `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_ID}/messages`,
     {
       method: "POST",
       headers: {
@@ -299,9 +310,7 @@ async function analyzeTextIntent(text: string): Promise<string> {
   }
 }
 
-async function validateDescriptionWithAI(
-  text: string
-): Promise<{
+async function validateDescriptionWithAI(text: string): Promise<{
   es_emergencia: boolean;
   tipo: string;
   nivel_descripcion: string;
@@ -662,7 +671,7 @@ serve(async (req) => {
             await sendMessage(chatId, "⏳ Procesando tu imagen con IA...");
             try {
               const mediaRes = await fetch(
-                `https://graph.facebook.com/v21.0/${photoData.mediaId}`,
+                `https://graph.facebook.com/v25.0/${photoData.mediaId}`,
                 {
                   headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
                 }
