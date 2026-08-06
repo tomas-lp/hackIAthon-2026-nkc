@@ -1,6 +1,5 @@
 import "server-only";
 
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   CLIMA_ZONA_LLUVIA_MIN_MM,
   CLIMA_ZONA_PUNTOS,
@@ -14,6 +13,7 @@ import {
   puntajeZona,
 } from "@/lib/zones";
 import { Report, ReportFilters, Zone } from "@/types/report";
+import { createBrowserClient } from "@supabase/ssr";
 
 export interface IReportService {
   getReports(filters?: ReportFilters): Promise<Report[]>;
@@ -65,11 +65,10 @@ type ReportDbRow = {
 };
 
 export class SupabaseReportService implements IReportService {
-  private supabase = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
+  private supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  private supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  private supabase = createBrowserClient(this.supabaseUrl!, this.supabaseKey!);
 
   private mapDbRowToReport(row: ReportDbRow, ahora = new Date()): Report {
     const mapTipo = (t: string) => {
