@@ -8,12 +8,35 @@ import { resolveAddress } from "@/lib/geocode";
 
 interface ReportPopupProps {
   report: Report;
+  fetchAddress: boolean;
 }
 
-export function ReportPopup({ report }: ReportPopupProps) {
+export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
   const [address, setAddress] = useState<string | null>(null);
+  const [prevParams, setPrevParams] = useState({
+    lat: report.latitud,
+    lng: report.longitud,
+    fetch: fetchAddress,
+  });
+
+  if (
+    prevParams.lat !== report.latitud ||
+    prevParams.lng !== report.longitud ||
+    prevParams.fetch !== fetchAddress
+  ) {
+    setPrevParams({
+      lat: report.latitud,
+      lng: report.longitud,
+      fetch: fetchAddress,
+    });
+    setAddress(null);
+  }
 
   useEffect(() => {
+    if (!fetchAddress) {
+      return;
+    }
+
     let isCancelled = false;
 
     resolveAddress(report.latitud, report.longitud)
@@ -31,7 +54,7 @@ export function ReportPopup({ report }: ReportPopupProps) {
     return () => {
       isCancelled = true;
     };
-  }, [report.latitud, report.longitud]);
+  }, [report.latitud, report.longitud, fetchAddress]);
 
   const typeCfg = TYPE_CONFIG[report.tipo];
   const nivelZona = nivelPorPuntaje(report.puntajeReal ?? report.puntajeBase);

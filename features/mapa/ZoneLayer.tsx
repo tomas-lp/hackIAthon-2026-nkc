@@ -8,10 +8,20 @@ interface ZoneLayerProps {
   zones: Zone[];
 }
 
+function isValidZone(zone: Zone): boolean {
+  const { minLat, minLng, maxLat, maxLng } = zone.bounds;
+  return (
+    Number.isFinite(minLat) &&
+    Number.isFinite(minLng) &&
+    Number.isFinite(maxLat) &&
+    Number.isFinite(maxLng)
+  );
+}
+
 export function ZoneLayer({ zones }: ZoneLayerProps) {
   return (
     <>
-      {zones.map((zone) => {
+      {zones.filter(isValidZone).map((zone) => {
         const cfg = ZONE_CONFIG[zone.nivel];
         return (
           <Rectangle

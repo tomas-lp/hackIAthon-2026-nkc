@@ -54,6 +54,9 @@ function createNeutralIcon(isSelected: boolean) {
   });
 }
 
+const DEFAULT_REPORT_ICON = createNeutralIcon(false);
+const SELECTED_REPORT_ICON = createNeutralIcon(true);
+
 export default function ReportMapInternal({
   reports,
   selectedReport,
@@ -61,9 +64,18 @@ export default function ReportMapInternal({
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
 
-  const reportsKey = useMemo(
-    () => reports.map((r) => r.id).join(","),
+  const validReports = useMemo(
+    () =>
+      reports.filter(
+        (report) =>
+          Number.isFinite(report.latitud) && Number.isFinite(report.longitud)
+      ),
     [reports]
+  );
+
+  const reportsKey = useMemo(
+    () => validReports.map((r) => r.id).join(","),
+    [validReports]
   );
   const { zones } = useZones(reportsKey);
 
@@ -94,7 +106,7 @@ export default function ReportMapInternal({
 
         <ZoneLayer zones={zones} />
 
-        {reports.map((report) => {
+        {validReports.map((report) => {
           const isSelected = selectedReport?.id === report.id;
           return (
             <Marker
@@ -103,13 +115,13 @@ export default function ReportMapInternal({
                 markerRefs.current[report.id] = marker;
               }}
               position={[report.latitud, report.longitud]}
-              icon={createNeutralIcon(isSelected)}
+              icon={isSelected ? SELECTED_REPORT_ICON : DEFAULT_REPORT_ICON}
               eventHandlers={{
                 click: () => onSelectReport(report),
               }}
             >
               <Popup className="custom-leaflet-popup">
-                <ReportPopup report={report} />
+                <ReportPopup report={report} fetchAddress={isSelected} />
               </Popup>
             </Marker>
           );

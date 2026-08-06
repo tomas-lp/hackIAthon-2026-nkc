@@ -3,14 +3,14 @@ import { DescriptionLevel, ZoneLevel } from "@/types/report";
 export const CELL_LAT_DEG = 0.0036;
 export const CELL_LON_DEG = 0.00405;
 
-export const REPORTE_ZONA_PUNTOS = 10;
-export const CLIMA_ZONA_PUNTOS = 15;
-export const RECIENTES_ZONA_PUNTOS = 20;
-export const RECIENTES_ZONA_MIN_REPORTES = 5;
+export const REPORTE_ZONA_PUNTOS = 5;
+export const CLIMA_ZONA_PUNTOS = 10;
+export const RECIENTES_ZONA_PUNTOS = 10;
+export const RECIENTES_ZONA_MIN_REPORTES = 10;
 export const CLIMA_ZONA_LLUVIA_MIN_MM = 15;
 export const MAX_EDAD_REPORTE_HORAS = 24;
 
-export interface Cell {
+interface Cell {
   gx: number;
   gy: number;
   id: string;
@@ -75,7 +75,7 @@ export interface ZonaPuntajeInput {
   cantidadReportes: number;
   promedioGravedad: number;
   lluviaMayor15mm: boolean;
-  masDe5ReportesUltimaHora: boolean;
+  masDe10ReportesUltimaHora: boolean;
 }
 
 export function puntajeZona(input: ZonaPuntajeInput): number {
@@ -83,14 +83,14 @@ export function puntajeZona(input: ZonaPuntajeInput): number {
     input.cantidadReportes * REPORTE_ZONA_PUNTOS +
     input.promedioGravedad +
     (input.lluviaMayor15mm ? CLIMA_ZONA_PUNTOS : 0) +
-    (input.masDe5ReportesUltimaHora ? RECIENTES_ZONA_PUNTOS : 0)
+    (input.masDe10ReportesUltimaHora ? RECIENTES_ZONA_PUNTOS : 0)
   );
 }
 
 export function nivelPorPuntaje(puntaje: number): ZoneLevel {
-  if (puntaje <= 15) return "GRIS";
-  if (puntaje <= 35) return "VERDE";
-  if (puntaje <= 60) return "AMARILLO";
-  if (puntaje <= 85) return "NARANJA";
+  if (puntaje <= 20) return "GRIS";
+  if (puntaje <= 50) return "VERDE";
+  if (puntaje <= 70) return "AMARILLO";
+  if (puntaje <= 100) return "NARANJA";
   return "ROJO";
 }

@@ -24,11 +24,11 @@ export const ZONE_CONFIG: Record<
   ZoneLevel,
   { label: string; rango: string; color: string }
 > = {
-  GRIS: { label: "Sin evidencia suficiente", rango: "0-15", color: "#6b7280" },
-  VERDE: { label: "Riesgo muy bajo", rango: "16-35", color: "#22c55e" },
-  AMARILLO: { label: "Riesgo moderado", rango: "36-60", color: "#eab308" },
-  NARANJA: { label: "Riesgo alto", rango: "61-85", color: "#f97316" },
-  ROJO: { label: "Riesgo crítico", rango: ">85", color: "#ef4444" },
+  GRIS: { label: "Sin evidencia suficiente", rango: "0-20", color: "#6b7280" },
+  VERDE: { label: "Riesgo muy bajo", rango: "21-50", color: "#22c55e" },
+  AMARILLO: { label: "Riesgo moderado", rango: "51-70", color: "#eab308" },
+  NARANJA: { label: "Riesgo alto", rango: "71-100", color: "#f97316" },
+  ROJO: { label: "Riesgo crítico", rango: ">100", color: "#ef4444" },
 };
 
 export const TYPE_CONFIG: Record<ReportType, { label: string }> = {

@@ -272,13 +272,14 @@ export class SupabaseReportService implements IReportService {
       ).length;
 
       const lluviaMayor15mm = lluviaMax > CLIMA_ZONA_LLUVIA_MIN_MM;
-      const masDe5ReportesUltimaHora = ultimaHora > RECIENTES_ZONA_MIN_REPORTES;
+      const masDe10ReportesUltimaHora =
+        ultimaHora > RECIENTES_ZONA_MIN_REPORTES;
 
       const puntaje = puntajeZona({
         cantidadReportes: cantidad,
         promedioGravedad: promedio,
         lluviaMayor15mm,
-        masDe5ReportesUltimaHora,
+        masDe10ReportesUltimaHora,
       });
 
       const nivel = nivelPorPuntaje(puntaje);
@@ -305,7 +306,7 @@ export class SupabaseReportService implements IReportService {
         cantidadReportes: cantidad,
         promedioGravedad: promedio,
         climaPuntos: lluviaMayor15mm ? CLIMA_ZONA_PUNTOS : 0,
-        recientesPuntos: masDe5ReportesUltimaHora ? RECIENTES_ZONA_PUNTOS : 0,
+        recientesPuntos: masDe10ReportesUltimaHora ? RECIENTES_ZONA_PUNTOS : 0,
       });
     }
 
