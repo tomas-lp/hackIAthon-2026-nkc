@@ -68,7 +68,7 @@ export function puntajeReal(base: number, horas: number): number | null {
 
 export function esReporteActivo(fecha: string, ahora: Date): boolean {
   const edadHoras = (ahora.getTime() - new Date(fecha).getTime()) / 3600000;
-  return edadHoras >= 0 && edadHoras < MAX_EDAD_REPORTE_HORAS;
+  return edadHoras < MAX_EDAD_REPORTE_HORAS;
 }
 
 export interface ZonaPuntajeInput {

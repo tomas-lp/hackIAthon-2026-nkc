@@ -25,7 +25,7 @@ export function ZoneLayer({ zones }: ZoneLayerProps) {
         const cfg = ZONE_CONFIG[zone.nivel];
         return (
           <Rectangle
-            key={zone.id}
+            key={`${zone.id}-${zone.nivel}-${zone.puntaje}-${zone.cantidadReportes}`}
             bounds={[
               [zone.bounds.minLat, zone.bounds.minLng],
               [zone.bounds.maxLat, zone.bounds.maxLng],
