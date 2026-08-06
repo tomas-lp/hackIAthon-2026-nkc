@@ -48,7 +48,12 @@ export function useReports(initialReports: Report[] = []) {
     );
 
     try {
-      const res = await fetch(`/api/reports?${params.toString()}`, { signal });
+      const ts = Date.now();
+      const separator = params.toString() ? "&" : "";
+      const res = await fetch(
+        `/api/reports?${params.toString()}${separator}v=${ts}`,
+        { signal }
+      );
       if (!res.ok)
         throw new Error(`Error ${res.status}: Error al obtener reportes`);
       const data: Report[] = await res.json();

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { reportService } from "@/services/reportService";
 import { ReportType, ZoneLevel } from "@/types/report";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

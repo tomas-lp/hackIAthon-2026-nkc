@@ -9,7 +9,7 @@ export function useZones(depKey: string) {
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      fetch("/api/zones", { signal: controller.signal })
+      fetch(`/api/zones?v=${depKey}`, { signal: controller.signal })
         .then((res) => {
           if (!res.ok) throw new Error(`Error ${res.status}`);
           return res.json();
