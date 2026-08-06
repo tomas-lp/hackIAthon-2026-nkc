@@ -357,7 +357,6 @@ async function analyzePhotoWithGemini(
     );
     if (res.ok) {
       const data = await res.json();
-      const data = await res.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const cleaned = rawText.replace(/```json|```/g, "").trim();
 
