@@ -10,3 +10,6 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/whatsapp-bot/deno.json"
 entrypoint = "./functions/whatsapp-bot/index.ts"
+
+[analytics]
+enabled = false

@@ -1,17 +1,12 @@
-import { ReportStats, ReportType, RiskLevel } from "@/types/report";
-import { RISK_CONFIG, TYPE_CONFIG } from "@/lib/utils";
-import { CloudRain, CheckCircle2, ShieldAlert, XCircle } from "lucide-react";
+import { ReportStats, ReportType, ZoneLevel } from "@/types/report";
+import { TYPE_CONFIG, ZONE_CONFIG } from "@/lib/utils";
+import { Activity, Camera, CloudRain, MapPin } from "lucide-react";
 
 interface StatsSummaryProps {
   stats: ReportStats;
 }
 
 export function StatsSummary({ stats }: StatsSummaryProps) {
-  const validatedPercent =
-    stats.total > 0
-      ? Math.round((stats.validadosClima / stats.total) * 100)
-      : 0;
-
   return (
     <div className="space-y-4 font-sans">
       {/* Top 4 Quick Metric Cards */}
@@ -19,7 +14,7 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
         <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
-              Reportes Lluvia
+              Reportes
             </span>
             <CloudRain className="w-3.5 h-3.5 text-blue-500" />
           </div>
@@ -34,71 +29,85 @@ export function StatsSummary({ stats }: StatsSummaryProps) {
         <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
-              Validados API Clima
+              Activos 24h
             </span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            <Activity className="w-3.5 h-3.5 text-emerald-500" />
           </div>
           <div className="text-xl font-bold text-emerald-600  font-mono">
-            {stats.validadosClima}{" "}
-            <span className="text-xs font-normal text-zinc-400">
-              ({validatedPercent}%)
-            </span>
+            {stats.activos}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
-            Coincide con Alerta Meteorológica
+            Reportes con menos de 24 hs
           </div>
         </div>
 
         <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
-              Sin Alerta Clima
+              Fotos Validadas
             </span>
-            <XCircle className="w-3.5 h-3.5 text-red-500" />
+            <Camera className="w-3.5 h-3.5 text-violet-500" />
           </div>
-          <div className="text-xl font-bold text-red-600  font-mono">
-            {stats.desestimadosSinAlerta}
+          <div className="text-xl font-bold text-violet-600  font-mono">
+            {stats.fotosValidadas}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
-            Desestimados por API Clima
+            Evidencia fotográfica confirmada por IA
           </div>
         </div>
 
         <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
           <div className="flex items-center justify-between text-zinc-500 mb-1">
             <span className="text-[11px] font-medium uppercase tracking-wider">
-              No Climáticos
+              Zonas Activas
             </span>
-            <ShieldAlert className="w-3.5 h-3.5 text-zinc-400" />
+            <MapPin className="w-3.5 h-3.5 text-orange-500" />
           </div>
-          <div className="text-xl font-bold text-zinc-600  font-mono">
-            {stats.desestimadosIrrelevantes}
+          <div className="text-xl font-bold text-orange-600  font-mono">
+            {stats.zonasActivas}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
-            Desestimados por Grok NLP
+            Celdas de la grilla con reportes
           </div>
         </div>
       </div>
 
-      {/* Breakdown by Risk */}
+      {/* Breakdown by Zone Level */}
       <div className="p-3 bg-zinc-50  border border-zinc-200  rounded-lg">
         <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 block mb-2">
-          Criticidad de Inundación
+          Distribución por Nivel de Zona
         </span>
-        <div className="grid grid-cols-4 gap-1.5 text-center">
-          {(Object.keys(RISK_CONFIG) as RiskLevel[]).map((risk) => {
-            const count = stats.porRiesgo[risk] || 0;
-            const cfg = RISK_CONFIG[risk];
+        <div className="space-y-1.5">
+          {(Object.keys(ZONE_CONFIG) as ZoneLevel[]).map((zone) => {
+            const count = stats.porNivelZona[zone] || 0;
+            const cfg = ZONE_CONFIG[zone];
+            const percentage =
+              stats.zonasActivas > 0
+                ? Math.round((count / stats.zonasActivas) * 100)
+                : 0;
+
             return (
-              <div
-                key={risk}
-                className="p-1.5 bg-white  border border-zinc-100  rounded"
-              >
-                <div className={`text-[10px] font-bold ${cfg.text}`}>
-                  {risk}
+              <div key={zone} className="text-xs space-y-0.5">
+                <div className="flex justify-between text-[11px] text-zinc-600 ">
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="w-2 h-2 rounded-full inline-block"
+                      style={{ backgroundColor: cfg.color }}
+                    />
+                    {cfg.label}
+                  </span>
+                  <span className="font-mono text-zinc-500">
+                    {count} ({percentage}%)
+                  </span>
                 </div>
-                <div className="text-sm font-bold font-mono text-zinc-800 ">
-                  {count}
+                <div className="h-1.5 w-full bg-zinc-200  rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: cfg.color,
+                    }}
+                  />
                 </div>
               </div>
             );
