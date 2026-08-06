@@ -275,9 +275,7 @@ async function analyzeTextIntent(text: string): Promise<string> {
   }
 }
 
-async function validateDescriptionWithAI(
-  text: string
-): Promise<{
+async function validateDescriptionWithAI(text: string): Promise<{
   es_emergencia: boolean;
   tipo: string;
   nivel_descripcion: string;
@@ -310,6 +308,8 @@ async function validateDescriptionWithAI(
   }
 }
 
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+
 function descripcionPuntos(nivel: string): number {
   switch (nivel) {
     case "EVACUADOS":
@@ -333,9 +333,9 @@ function climaPuntos(mm: number): number {
 async function analyzePhotoWithGemini(
   base64Image: string,
   mimeType: string
-): Promise<{ foto_valida: boolean }> {
+): Promise<{ foto_valida: boolean; descripcion: string }> {
   const prompt =
-    'Analiza esta imagen. Determina si corresponde a un problema relacionado con lluvias o inundaciones (calle anegada, agua en vivienda, acumulación de agua, granizo, etc.). Responde SÓLO con JSON: {"foto_valida": true} si es un problema de lluvia/inundación o {"foto_valida": false} si no lo es.';
+    'Analiza esta imagen y describe brevemente lo que ves, enfocándote especialmente en problemas climáticos, inundaciones, calles anegadas, daños estructurales o árboles caídos. Si es una imagen irrelevante (ej: una selfie o algo que no tiene nada que ver), indícalo. Si es posible, incluye también un JSON al inicio como: {"foto_valida": true} o {"foto_valida": false}, luego una descripción. ';
 
   try {
     const res = await fetch(
@@ -357,11 +357,34 @@ async function analyzePhotoWithGemini(
     );
     if (res.ok) {
       const data = await res.json();
-      const rawText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        '{"foto_valida": false}';
-      const parsed = JSON.parse(rawText.replace(/```json|```/g, ""));
-      return { foto_valida: !!parsed.foto_valida };
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const cleaned = rawText.replace(/```json|```/g, "").trim();
+
+      // Default values
+      let foto_valida = false;
+      const descripcion = cleaned || "No se pudo generar descripción.";
+
+      // Try to extract JSON at the start of the response, otherwise infer from text
+      try {
+        const firstJsonMatch = cleaned.match(/^\s*(\{[\s\S]*?\})/);
+        const jsonToParse = firstJsonMatch ? firstJsonMatch[1] : cleaned;
+        const parsed = JSON.parse(jsonToParse);
+        foto_valida = !!parsed.foto_valida;
+      } catch (e) {
+        const low = cleaned.toLowerCase();
+        if (/selfie|irrelevante|no tiene|nada que ver/.test(low))
+          foto_valida = false;
+        else if (
+          /si|sí|true|inundaci|inundad|inundado|anegad|agua|calle anegada|daño/.test(
+            low
+          )
+        )
+          foto_valida = true;
+        else foto_valida = false;
+      }
+
+      return { foto_valida, descripcion };
     }
   } catch (error) {
     console.error("Error analyzing photo with Gemini:", error);
@@ -615,17 +638,13 @@ serve(async (req) => {
                 );
                 const imgBlob = await imgRes.blob();
                 const arrayBuffer = await imgBlob.arrayBuffer();
-                const base64Image = btoa(
-                  new Uint8Array(arrayBuffer).reduce(
-                    (data, byte) => data + String.fromCharCode(byte),
-                    ""
-                  )
-                );
+                const base64Image = encodeBase64(arrayBuffer);
                 const resultado = await analyzePhotoWithGemini(
                   base64Image,
                   "image/jpeg"
                 );
-                fotoValida = resultado.foto_valida;
+                descripcion_imagen = resultado.descripcion;
+                fotoValida = !!resultado.foto_valida;
 
                 const fileName = `${dbChatId}_${Date.now()}.jpg`;
                 const { error: uploadError } = await supabase.storage
