@@ -5,18 +5,52 @@ import { Report } from "@/types/report";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
 import { X, MapPin } from "lucide-react";
+import Image from "next/image";
 
 interface ReportDetailSidebarProps {
   report: Report;
   onClose: () => void;
 }
 
-const mapCriticidad = {
-  CRITICO: { label: "Crítico", color: "bg-red-500" },
-  ALTO: { label: "Grave", color: "bg-orange-400" },
-  MEDIO: { label: "Moderado", color: "bg-yellow-500" },
-  BAJO: { label: "Leve", color: "bg-green-500" },
-};
+function ReportPhoto({ fotoUrl }: { fotoUrl?: string | null }) {
+  const [imgError, setImgError] = useState(false);
+  const [imgLoading, setImgLoading] = useState(true);
+
+  if (!fotoUrl) {
+    return (
+      <div className="aspect-square w-full rounded-xl bg-gray-300 flex items-center justify-center text-sm text-black/50">
+        Sin foto
+      </div>
+    );
+  }
+
+  if (imgError) {
+    return (
+      <div className="aspect-square w-full rounded-xl bg-gray-300 flex items-center justify-center text-sm text-black/50">
+        Imagen no válida
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative aspect-square w-full rounded-xl bg-gray-300">
+      {imgLoading && (
+        <div className="absolute inset-0 flex items-center justify-center text-sm text-black/50">
+          Cargando...
+        </div>
+      )}
+      <Image
+        src={fotoUrl}
+        alt="Foto del reporte"
+        width={300}
+        height={300}
+        className={`w-full aspect-square object-cover rounded-xl ${imgLoading ? "opacity-0" : ""}`}
+        onError={() => setImgError(true)}
+        onLoad={() => setImgLoading(false)}
+      />
+    </div>
+  );
+}
 
 export function ReportDetailSidebar({
   report,
@@ -71,7 +105,7 @@ export function ReportDetailSidebar({
           </span>
         </div>
 
-        <div className="aspect-square w-full rounded-xl bg-gray-300" />
+        <ReportPhoto key={report.fotoUrl} fotoUrl={report.fotoUrl} />
 
         <div className="flex items-center gap-2 text-xs p-2 border border-gray-200 rounded-2xl">
           <MapPin className="h-6 w-6 text-black/90" />
