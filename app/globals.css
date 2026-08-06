@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+@theme {
+  --color-inu: #303870;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #09090b;

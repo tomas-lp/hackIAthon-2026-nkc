@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
+
+const manrope = localFont({
+  src: "./fonts/Manrope.ttf",
+  variable: "--font-manrope",
+});
 
 export const metadata: Metadata = {
   title: "Inu | Sistema de Alertas e Inundaciones",
@@ -13,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="es" className={`${manrope.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );
 }

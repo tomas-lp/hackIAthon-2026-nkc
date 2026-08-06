@@ -3,6 +3,7 @@
 import { useReports } from "@/hooks/useReports";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
+import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
 import { Report } from "@/types/report";
 
 interface CrisisDashboardProps {
@@ -41,6 +42,13 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
           onSelectReport={setSelectedReport}
         />
       </section>
+
+      {selectedReport && (
+        <ReportDetailSidebar
+          report={selectedReport}
+          onClose={() => setSelectedReport(null)}
+        />
+      )}
     </>
   );
 }

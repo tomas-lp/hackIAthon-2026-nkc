@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
-import { TYPE_CONFIG } from "@/lib/utils";
-import { ListFilter, Sparkles } from "lucide-react";
+import { formatDate, TYPE_CONFIG } from "@/lib/utils";
+import { resolveAddress } from "@/lib/geocode";
+import { Sparkles } from "lucide-react";
 
 interface SidebarProps {
   reports: Report[];
@@ -17,6 +18,70 @@ interface SidebarProps {
     value: ReportFilters[K]
   ) => void;
   onResetFilters: () => void;
+}
+
+function ReportCard({
+  report,
+  isSelected,
+  onSelect,
+}: {
+  report: Report;
+  isSelected: boolean;
+  onSelect: (report: Report) => void;
+}) {
+  const [address, setAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    resolveAddress(report.latitud, report.longitud)
+      .then((resolved) => {
+        if (!isCancelled) setAddress(resolved);
+      })
+      .catch(() => {
+        if (!isCancelled) setAddress("Ubicación no disponible");
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [report.latitud, report.longitud]);
+
+  const typeLabel = TYPE_CONFIG[report.tipo].label;
+
+  return (
+    <button
+      onClick={() => onSelect(report)}
+      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
+        isSelected
+          ? "border-gray-200 bg-gray-200"
+          : "border-gray-200 bg-white/80 hover:border-zinc-300 hover:bg-zinc-100"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col p-3">
+          <span className="text-sm font-medium text-black">{typeLabel}</span>
+          <span
+            className="text-xs font-medium text-black/50"
+            suppressHydrationWarning
+          >
+            {formatDate(report.fecha)}
+          </span>
+          <span
+            className="text-xs font-medium text-black/80"
+            title={address ?? report.localidad ?? report.descripcion}
+          >
+            {address ?? report.localidad ?? "Direccion no disponible"}
+          </span>
+        </div>
+        <div className="flex flex-col items-end p-3 gap-1">
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600 w-fit text-nowrap">
+            {report.puntajeBase} pts
+          </span>
+        </div>
+      </div>
+    </button>
+  );
 }
 
 export function Sidebar({
@@ -34,120 +99,93 @@ export function Sidebar({
       (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
     );
 
-    if (!filters.tipo || filters.tipo === "TODOS") {
-      return sortedReports;
-    }
-
-    return sortedReports.filter((report) => report.tipo === filters.tipo);
+    return sortedReports.filter((report) => {
+      if (
+        filters.tipo &&
+        filters.tipo !== "TODOS" &&
+        report.tipo !== filters.tipo
+      )
+        return false;
+      return true;
+    });
   }, [filters.tipo, reports]);
 
   return (
-    <aside className="absolute left-4 top-4 z-[1000] w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200/80 bg-white/95 p-3 shadow-xl backdrop-blur  ">
+    <aside className="absolute flex flex-col gap-4 left-4 top-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs max-h-[60vh] overflow-hidden">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">
-            Mapa de inundaciones
-          </p>
-          <h2 className="text-sm font-semibold text-zinc-900 ">
-            Filtra y revisa los puntos
-          </h2>
-        </div>
-        <div className="rounded-full bg-blue-50 p-2 text-blue-600  ">
-          <ListFilter className="h-4 w-4" />
+        <div className="flex gap-2 bg-inu py-2 px-4 rounded-2xl">
+          <div className="font-black text-4xl leading-8 logo flex justify-center items-center text-white rounded-2xl">
+            INU
+          </div>
+          <span className="text-md text-white/90 leading-4">
+            Sistema de Alerta
+            <br />
+            para Inundaciones
+          </span>
         </div>
       </div>
+      <div className="flex flex-col flex-1 w-full gap-2 overflow-hidden">
+        <div className="w-full flex items-center justify-between">
+          <span className="text-md font-medium text-black text-nowrap">
+            Últimas alertas
+          </span>
+        </div>
 
-      <label className="mt-3 flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500 ">
-        <span>Tipo</span>
-        <select
-          value={filters.tipo || "TODOS"}
-          onChange={(event) =>
-            onUpdateFilter("tipo", event.target.value as ReportType | "TODOS")
-          }
-          className="rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-blue-500   "
-        >
-          <option value="TODOS">Todos los tipos</option>
-          {(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => (
-            <option key={type} value={type}>
-              {TYPE_CONFIG[type].label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
-        <span>{visibleReports.length} puntos</span>
-        {(filters.tipo && filters.tipo !== "TODOS") || filters.busqueda ? (
-          <button
-            onClick={onResetFilters}
-            className="font-medium text-blue-600 transition hover:text-blue-700 "
-          >
-            Limpiar
-          </button>
-        ) : null}
-      </div>
-
-      <div className="mt-2 max-h-[46vh] overflow-y-auto rounded-xl border border-zinc-200/70 bg-zinc-50/70 p-2  ">
-        {loading && (
-          <div className="rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500  ">
-            Cargando puntos de Inu...
+        <div className="flex flex-col gap-2 p-3 rounded-2xl border border-gray-200 bg-white">
+          <span className="text-sm font-medium text-black">Filtrar por</span>
+          <div className="flex gap-2">
+            <select
+              value={filters.tipo || "TODOS"}
+              onChange={(event) =>
+                onUpdateFilter(
+                  "tipo",
+                  event.target.value as ReportType | "TODOS"
+                )
+              }
+              className="w-full rounded-2xl border border-gray-200 bg-white py-1 px-2 text-sm text-zinc-800 outline-none transition focus:border-blue-500"
+            >
+              <option value="TODOS">Tipo</option>
+              {(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => (
+                <option key={type} value={type}>
+                  {TYPE_CONFIG[type].label}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
+        </div>
 
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
-            {error}
-          </div>
-        )}
+        <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
+          {loading && (
+            <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500  ">
+              Cargando alertas...
+            </div>
+          )}
 
-        {!loading && !error && visibleReports.length === 0 && (
-          <div className="rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500  ">
-            No hay puntos para este tipo.
-          </div>
-        )}
+          {error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
+              {error}
+            </div>
+          )}
 
-        {!loading && !error && visibleReports.length > 0 && (
-          <div className="space-y-2">
-            {visibleReports.map((report) => {
-              const isSelected = selectedReport?.id === report.id;
-              const typeLabel = TYPE_CONFIG[report.tipo].label;
+          {!loading && !error && visibleReports.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500  ">
+              No hay puntos para este tipo.
+            </div>
+          )}
 
-              return (
-                <button
+          {!loading && !error && visibleReports.length > 0 && (
+            <div className="gap-2 flex flex-col overflow-auto">
+              {visibleReports.map((report) => (
+                <ReportCard
                   key={report.id}
-                  onClick={() => onSelectReport(report)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-                    isSelected
-                      ? "border-blue-500 bg-blue-50/80  "
-                      : "border-transparent bg-white/80 hover:border-zinc-300 hover:bg-zinc-100  "
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-medium text-zinc-900 ">
-                      {typeLabel}
-                    </span>
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600  ">
-                      {report.puntajeBase} pts
-                    </span>
-                  </div>
-                  <div className="mt-1 text-[11px] text-zinc-500 ">
-                    <span
-                      className="line-clamp-1"
-                      title={report.localidad || report.descripcion}
-                    >
-                      {report.localidad || report.descripcion}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-3 flex items-center gap-2 rounded-lg bg-zinc-50 px-2.5 py-2 text-[11px] text-zinc-500  ">
-        <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-        <span>Selecciona un punto para enfocarlo en el mapa.</span>
+                  report={report}
+                  isSelected={selectedReport?.id === report.id}
+                  onSelect={onSelectReport}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );
