@@ -20,6 +20,7 @@ export interface Report {
   puntajeFoto: number;
   puntajeClima: number;
   fotoValida: boolean;
+  fotoUrl?: string | null;
   lluviaMm: number;
   puntajeReal: number | null;
 }
