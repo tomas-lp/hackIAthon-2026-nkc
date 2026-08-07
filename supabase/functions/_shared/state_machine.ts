@@ -116,7 +116,10 @@ export async function processMessage(
           lluvia_mm: 0,
           clima_fuente: "Pendiente",
           tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
-          criticidad: `score:${score}`,
+          puntaje_base: score,
+          puntaje_descripcion: 0,
+          puntaje_foto: session.datos_temporales.tiene_foto ? 5 : 0,
+          puntaje_clima: 0,
           foto_valida: !!session.datos_temporales.tiene_foto,
         });
 
