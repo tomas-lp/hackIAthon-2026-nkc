@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -9,7 +9,6 @@ import { Report } from "@/types/report";
 import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
-import { ReportPopup } from "./ReportPopup";
 import { Flame } from "lucide-react";
 
 interface ReportMapInternalProps {
@@ -22,8 +21,33 @@ const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
 const INITIAL_ZOOM = 8;
 const NEUTRAL_COLOR = "#3b82f6";
 
-function createNeutralIcon(isSelected: boolean) {
-  const size = isSelected ? 30 : 20;
+function ZoomTracker({ onZoomChange }: { onZoomChange: (z: number) => void }) {
+  const map = useMapEvents({
+    zoom: () => {
+      onZoomChange(map.getZoom());
+    },
+    zoomend: () => {
+      onZoomChange(map.getZoom());
+    }
+  });
+  
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, [map, onZoomChange]);
+  
+  return null;
+}
+
+function createNeutralIcon(isSelected: boolean, zoom: number) {
+  // Ajuste lineal del tamaño del icono en función del nivel de zoom
+  // Si zoom es bajo (lejos), icono pequeño. Si zoom alto (cerca), icono normal.
+  const minSize = isSelected ? 12 : 8;
+  const maxSize = isSelected ? 30 : 20;
+  
+  // zoom asume rango típico de 8 a 18
+  let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
+  size = Math.max(minSize, Math.min(maxSize, size));
+  
   const letter = "!";
 
   return L.divIcon({
@@ -34,14 +58,14 @@ function createNeutralIcon(isSelected: boolean) {
         width: ${size}px;
         height: ${size}px;
         border-radius: 50%;
-        border: 2px solid #ffffff;
+        border: ${isSelected ? 2 : 1.5}px solid #ffffff;
         box-shadow: ${isSelected ? "0 0 0 4px rgba(59,130,246,0.4), 0 4px 12px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.25)"};
         display: flex;
         align-items: center;
         justify-content: center;
         color: #ffffff;
         font-weight: 700;
-        font-size: ${isSelected ? "12px" : "10px"};
+        font-size: ${Math.max(6, size * 0.6)}px;
         font-family: system-ui, sans-serif;
       ">
         ${letter}
@@ -53,15 +77,16 @@ function createNeutralIcon(isSelected: boolean) {
   });
 }
 
-const DEFAULT_REPORT_ICON = createNeutralIcon(false);
-const SELECTED_REPORT_ICON = createNeutralIcon(true);
-
 export default function ReportMapInternal({
   reports,
   selectedReport,
   onSelectReport,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
+  const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
+
+  const defaultIcon = useMemo(() => createNeutralIcon(false, currentZoom), [currentZoom]);
+  const selectedIcon = useMemo(() => createNeutralIcon(true, currentZoom), [currentZoom]);
 
   const validReports = useMemo(
     () =>
@@ -86,15 +111,6 @@ export default function ReportMapInternal({
     []
   );
 
-  useEffect(() => {
-    if (selectedReport) {
-      const marker = markerRefs.current[selectedReport.id];
-      if (marker) {
-        marker.openPopup();
-      }
-    }
-  }, [selectedReport]);
-
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
       <MapContainer
@@ -109,7 +125,8 @@ export default function ReportMapInternal({
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        <MapController selectedReport={selectedReport} />
+        <ZoomTracker onZoomChange={setCurrentZoom} />
+        <MapController selectedReport={selectedReport} reports={validReports} markerRefs={markerRefs} />
 
         <HeatLayer points={heatPoints} />
 
@@ -122,14 +139,11 @@ export default function ReportMapInternal({
                 markerRefs.current[report.id] = marker;
               }}
               position={[report.latitud, report.longitud]}
-              icon={isSelected ? SELECTED_REPORT_ICON : DEFAULT_REPORT_ICON}
+              icon={isSelected ? selectedIcon : defaultIcon}
               eventHandlers={{
                 click: () => onSelectReport(report),
               }}
             >
-              <Popup className="custom-leaflet-popup">
-                <ReportPopup report={report} fetchAddress={isSelected} />
-              </Popup>
             </Marker>
           );
         })}
