@@ -348,3 +348,69 @@ export async function analyzePhoto(
     descripcion_breve: "Fallo el análisis visual",
   };
 }
+
+export async function transcribeAudio(
+  base64Audio: string,
+  mimeType: string,
+  extension: string = "ogg"
+): Promise<string | null> {
+  const binaryString = atob(base64Audio);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const blob = new Blob([bytes], { type: mimeType });
+  const file = new File([blob], `audio.${extension}`, { type: mimeType });
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("model", "whisper-large-v3-turbo"); // o whisper-large-v3
+  formData.append("language", "es");
+
+  try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const res = await fetch(
+      "https://api.groq.com/openai/v1/audio/transcriptions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY_1}`,
+        },
+        body: formData,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(id);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "Desconocido");
+      console.error(`Error Groq Whisper HTTP ${res.status}: ${errText}`);
+
+      // Intentar fallback a GROQ_API_KEY_2 si falla por Rate Limit o Auth
+      if (res.status === 429 || res.status === 401) {
+        console.info("Reintentando con GROQ_API_KEY_2...");
+        const fallbackRes = await fetch(
+          "https://api.groq.com/openai/v1/audio/transcriptions",
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${GROQ_API_KEY_2}` },
+            body: formData,
+          }
+        );
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          return fallbackData.text || null;
+        }
+      }
+      return null;
+    }
+
+    const data = await res.json();
+    return data.text || null;
+  } catch (err) {
+    console.error("Excepción en transcribeAudio:", err);
+    return null;
+  }
+}

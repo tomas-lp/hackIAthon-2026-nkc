@@ -60,7 +60,7 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
   const badgeColor = heatColor(report.puntajeReal ?? report.puntajeBase);
 
   return (
-    <div className="p-4">
+    <div className="p-4 w-[280px]">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <p className="text-[9px] uppercase tracking-[0.2em] text-zinc-400">

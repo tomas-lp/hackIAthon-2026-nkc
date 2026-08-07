@@ -54,6 +54,7 @@ type ReportDbRow = {
   puntaje_base?: number;
   foto_valida?: boolean;
   foto_url?: string;
+  es_audio?: boolean;
 };
 
 export class SupabaseReportService implements IReportService {
@@ -147,6 +148,7 @@ export class SupabaseReportService implements IReportService {
       fotoUrl: row.foto_url ?? null,
       lluviaMm,
       puntajeReal: calcPuntajeReal(puntajeBase, edadHoras),
+      es_audio: !!row.es_audio,
     };
   }
 
