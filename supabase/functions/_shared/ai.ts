@@ -215,9 +215,7 @@ export async function classifyIntent(
   }
 }
 
-export async function validateDescription(
-  text: string
-): Promise<{
+export async function validateDescription(text: string): Promise<{
   es_emergencia: boolean;
   tipo: string;
   nivel_descripcion: string;
@@ -265,64 +263,86 @@ export async function analyzePhoto(
   nivel_agua?: string;
   descripcion_breve: string;
 }> {
-  const model = GEMINI_MODELS.vision[0]; // gemini-2.5-flash
+  const models = GEMINI_MODELS.vision;
 
-  const payload = {
-    contents: [
-      {
-        parts: [
-          { text: "Analiza esta imagen de reporte ciudadano." },
-          { inlineData: { mimeType, data: base64Image } },
-        ],
-      },
-    ],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          foto_valida: {
-            type: "BOOLEAN",
-            description:
-              "true si muestra inundación, calle anegada, daño climático o árbol caído. false en caso contrario.",
-          },
-          nivel_agua: {
-            type: "STRING",
-            enum: ["ALTO", "MEDIO", "BAJO", "NULO"],
-          },
-          descripcion_breve: {
-            type: "STRING",
-            description: "Descripción muy corta (máximo 15 palabras).",
-          },
+  for (const model of models) {
+    const isThinkingModel =
+      model.includes("2.0") ||
+      model.includes("2.5") ||
+      model.includes("3.5") ||
+      model.includes("3.6");
+
+    const payload = {
+      contents: [
+        {
+          parts: [
+            { text: "Analiza esta imagen de reporte ciudadano." },
+            { inlineData: { mimeType, data: base64Image } },
+          ],
         },
-        required: ["foto_valida", "nivel_agua", "descripcion_breve"],
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            foto_valida: {
+              type: "BOOLEAN",
+              description:
+                "true si muestra inundación, calle anegada, daño climático o árbol caído. false en caso contrario.",
+            },
+            nivel_agua: {
+              type: "STRING",
+              enum: ["ALTO", "MEDIO", "BAJO", "NULO"],
+            },
+            descripcion_breve: {
+              type: "STRING",
+              description: "Descripción muy corta (máximo 15 palabras).",
+            },
+          },
+          required: ["foto_valida", "nivel_agua", "descripcion_breve"],
+        },
+        ...(isThinkingModel ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
-    },
-  };
-
-  try {
-    const res = await fetchWithTimeout(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      },
-      TIMEOUTS.photo_analysis
-    );
-
-    if (!res.ok) throw new Error("Gemini Vision API falló");
-    const data = await res.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return JSON.parse(rawText);
-  } catch (err) {
-    console.error("Error analyzing photo:", err);
-    return {
-      foto_valida: false,
-      descripcion_breve: "Fallo el análisis visual",
     };
+
+    try {
+      console.info(`Intentando análisis de foto con modelo: ${model}`);
+      const res = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        TIMEOUTS.photo_analysis
+      );
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Desconocido");
+        throw new Error(`HTTP ${res.status}: ${errText}`);
+      }
+
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error("Respuesta vacía de Gemini");
+
+      const result = JSON.parse(rawText.replace(/```json|```/g, ""));
+      console.info(`Análisis exitoso con ${model}:`, JSON.stringify(result));
+      return result;
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error(
+        `Fallo análisis de foto con el modelo ${model}:`,
+        error.message
+      );
+      // Continuamos al siguiente modelo
+    }
   }
+
+  console.error("Todos los modelos de visión de Gemini fallaron.");
+  return {
+    foto_valida: false,
+    descripcion_breve: "Fallo el análisis visual",
+  };
 }
