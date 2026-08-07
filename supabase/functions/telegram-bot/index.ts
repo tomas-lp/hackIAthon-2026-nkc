@@ -371,7 +371,7 @@ async function analyzePhotoWithGemini(
         const jsonToParse = firstJsonMatch ? firstJsonMatch[1] : cleaned;
         const parsed = JSON.parse(jsonToParse);
         foto_valida = !!parsed.foto_valida;
-      } catch (e) {
+      } catch {
         const low = cleaned.toLowerCase();
         if (/selfie|irrelevante|no tiene|nada que ver/.test(low))
           foto_valida = false;

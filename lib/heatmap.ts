@@ -6,6 +6,7 @@ export type HeatPoint = [number, number, number];
 export interface HeatmapConfig {
   radius: number;
   blur: number;
+  radiusMeters: number;
   maxZoom: number;
   minOpacity: number;
   gradient: Record<string, string>;
@@ -15,6 +16,7 @@ export interface HeatmapConfig {
 export const HEATMAP_CONFIG: HeatmapConfig = {
   radius: 30,
   blur: 20,
+  radiusMeters: 100,
   maxZoom: 12,
   minOpacity: 0.05,
   gradient: {
@@ -24,8 +26,35 @@ export const HEATMAP_CONFIG: HeatmapConfig = {
     0.8: "#f97316",
     1.0: "#ef4444",
   },
-  maxIntensity: 60,
+  maxIntensity: 80,
 };
+
+export function metersToPixels(
+  metros: number,
+  latitud: number,
+  zoom: number
+): number {
+  const metrosPorPixel =
+    (156543.03392 * Math.cos((latitud * Math.PI) / 180)) / Math.pow(2, zoom);
+  return metros / metrosPorPixel;
+}
+
+export function heatmapRadiusAt(
+  zoom: number,
+  latitud: number
+): { radius: number; blur: number } {
+  const { radius, blur, radiusMeters } = HEATMAP_CONFIG;
+  if (radiusMeters <= 0) return { radius, blur };
+
+  const px = metersToPixels(radiusMeters, latitud, zoom);
+
+  // Clamped to a minimum of 12px radius and 8px blur to prevent width/height from becoming 0
+  // while keeping the circles smaller as requested by the user, and capped to 150px/100px.
+  const r = Math.max(12, Math.min(150, Math.round(px)));
+  const b = Math.max(8, Math.min(100, Math.round(px * (blur / radius))));
+
+  return { radius: r, blur: b };
+}
 
 export function normalizeIntensity(
   intensidad: number,

@@ -5,7 +5,6 @@ import { Report } from "@/types/report";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
 import { X, MapPin } from "lucide-react";
-import Image from "next/image";
 
 interface ReportDetailSidebarProps {
   report: Report;
@@ -39,7 +38,8 @@ function ReportPhoto({ fotoUrl }: { fotoUrl?: string | null }) {
           Cargando...
         </div>
       )}
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={fotoUrl}
         alt="Foto del reporte"
         width={300}
