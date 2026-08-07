@@ -21,9 +21,25 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    if (!body.message) return new Response("OK", { status: 200 });
+    if (!body.message && !body.callback_query)
+      return new Response("OK", { status: 200 });
 
-    const msg = body.message;
+    let msg = body.message;
+    let callbackData = null;
+
+    if (body.callback_query) {
+      msg = body.callback_query.message;
+      callbackData = body.callback_query.data;
+      // Responder al callback para que no se quede cargando en la app
+      fetch(`${TELEGRAM_API}/answerCallbackQuery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ callback_query_id: body.callback_query.id }),
+      }).catch(() => {});
+    }
+
+    if (!msg) return new Response("OK", { status: 200 });
+
     const chatId = msg.chat.id;
 
     const adapter: IMessengerAdapter = {
@@ -32,10 +48,27 @@ serve(async (req) => {
       sendMessage: async (text: string) => {
         await sendTelegramMessage(chatId, text);
       },
+      sendMenu: async (
+        text: string,
+        buttons: { id: string; title: string }[]
+      ) => {
+        const inline_keyboard = buttons.map((b) => [
+          { text: b.title, callback_data: b.id },
+        ]);
+        await fetch(`${TELEGRAM_API}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text,
+            reply_markup: { inline_keyboard },
+          }),
+        });
+      },
     };
 
     const incoming: IncomingMessage = {
-      text: msg.text,
+      text: callbackData || msg.text,
       location: msg.location
         ? {
             latitude: msg.location.latitude,

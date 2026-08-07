@@ -13,6 +13,10 @@ export interface IMessengerAdapter {
   platform: "telegram" | "whatsapp";
   chatId: number;
   sendMessage(text: string): Promise<void>;
+  sendMenu?(
+    text: string,
+    buttons: { id: string; title: string }[]
+  ): Promise<void>;
 }
 
 export interface IncomingMessage {
@@ -58,29 +62,72 @@ export async function processMessage(
         text.toLowerCase() === "hola" ||
         text.toLowerCase() === "hi"
       ) {
-        await adapter.sendMessage(
-          "¡Hola! Soy Inú, tu asistente frente a las inundaciones.\nPuedes reportar una emergencia climática o consultar cómo está tu zona eligiendo una opción del menú debajo.\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
-        );
+        const msg =
+          "¡Hola! Soy Inú, tu asistente frente a las inundaciones.\nPuedes reportar una emergencia climática o consultar cómo está tu zona eligiendo una opción del menú debajo.";
+        if (adapter.sendMenu) {
+          await adapter.sendMenu(msg, [
+            { id: "REPORTE", title: "🚨 Enviar Reporte" },
+            { id: "CONSULTA", title: "📍 Estado de mi zona" },
+          ]);
+        } else {
+          await adapter.sendMessage(
+            msg + "\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
+          );
+        }
         break;
       }
 
       if (text) {
         const intent = await classifyIntent(text);
         if (intent === "REPORTE") {
-          await adapter.sendMessage(
-            "📝 Por favor, **describe brevemente cuál es el problema** (ej: calle inundada, árbol caído, agua dentro del hogar)."
-          );
-          session.state = "ESPERANDO_DESCRIPCION_REPORTE";
-          session.datos_temporales = { tipo_reporte: "emergencia" };
+          // Evitar fast-track si el usuario tocó el botón (payload directo)
+          if (text === "🚨 Enviar Reporte" || text === "REPORTE") {
+            await adapter.sendMessage(
+              "📝 Por favor, **describe brevemente cuál es el problema** (ej: calle inundada, árbol caído, agua dentro del hogar)."
+            );
+            session.state = "ESPERANDO_DESCRIPCION_REPORTE";
+            session.datos_temporales = { tipo_reporte: "emergencia" };
+          } else {
+            // Intentar Fast-Track
+            const val = await validateDescription(text);
+            if (val.es_emergencia) {
+              session.datos_temporales = {
+                tipo_reporte: "emergencia",
+                descripcion: text,
+                tipo: val.tipo,
+                nivel_descripcion: val.nivel_descripcion,
+              };
+              await adapter.sendMessage(
+                "¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** usando el clip 📎 de WhatsApp (Ubicación)."
+              );
+              session.state = "ESPERANDO_UBICACION_REPORTE";
+            } else {
+              // No parece emergencia válida según IA, pero quiere reportar
+              await adapter.sendMessage(
+                "📝 Por favor, **describe brevemente cuál es el problema** (ej: calle inundada, árbol caído, agua dentro del hogar)."
+              );
+              session.state = "ESPERANDO_DESCRIPCION_REPORTE";
+              session.datos_temporales = { tipo_reporte: "emergencia" };
+            }
+          }
         } else if (intent === "CONSULTA") {
           await adapter.sendMessage(
             "Para darte información del clima y estado de tu zona, por favor comparte tu ubicación."
           );
           session.state = "ESPERANDO_UBICACION_CONSULTA";
         } else {
-          await adapter.sendMessage(
-            "No entendí tu mensaje. Puedes elegir una opción del menú debajo.\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
-          );
+          const errMsg =
+            "No entendí tu mensaje. Puedes elegir una opción del menú debajo.";
+          if (adapter.sendMenu) {
+            await adapter.sendMenu(errMsg, [
+              { id: "REPORTE", title: "🚨 Enviar Reporte" },
+              { id: "CONSULTA", title: "📍 Estado de mi zona" },
+            ]);
+          } else {
+            await adapter.sendMessage(
+              errMsg + "\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
+            );
+          }
         }
       } else {
         await adapter.sendMessage(

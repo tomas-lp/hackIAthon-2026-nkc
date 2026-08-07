@@ -74,12 +74,46 @@ serve(async (req) => {
       sendMessage: async (text: string) => {
         await sendWhatsAppMessage(sender, text);
       },
+      sendMenu: async (
+        text: string,
+        buttons: { id: string; title: string }[]
+      ) => {
+        const normalizedTo = normalizePhoneNumber(sender);
+        await fetch(
+          `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_ID}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: normalizedTo,
+              type: "interactive",
+              interactive: {
+                type: "button",
+                body: { text },
+                action: {
+                  buttons: buttons.map((b) => ({
+                    type: "reply",
+                    reply: { id: b.id, title: b.title.substring(0, 20) },
+                  })),
+                },
+              },
+            }),
+          }
+        );
+      },
     };
 
     const incoming: IncomingMessage = {};
 
     if (msg.type === "text") {
       incoming.text = msg.text.body;
+    } else if (msg.type === "interactive") {
+      incoming.text =
+        msg.interactive?.button_reply?.id || msg.interactive?.list_reply?.id;
     } else if (msg.type === "location") {
       incoming.location = {
         latitude: msg.location.latitude,
