@@ -102,7 +102,12 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
       });
       const arrayBuffer = await resMedia.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
 
       incoming.photo = {
         base64,
