@@ -6,6 +6,7 @@ import {
   saveDBSession,
   saveReport,
   uploadPhoto,
+  countNearbyReports,
   BotSession,
 } from "./sessions.ts";
 
@@ -112,7 +113,7 @@ export async function processMessage(
           }
         } else if (intent === "CONSULTA") {
           await adapter.sendMessage(
-            "Para darte información del clima y estado de tu zona, por favor comparte tu ubicación."
+            "📍 Para decirte cómo está tu zona, envíame tu ubicación usando el clip 📎 de WhatsApp (Ubicación)."
           );
           session.state = "ESPERANDO_UBICACION_CONSULTA";
         } else {
@@ -358,15 +359,16 @@ export async function processMessage(
           message.location.latitude,
           message.location.longitude
         );
-        if (weather) {
-          await adapter.sendMessage(
-            `📊 Clima actual en tu zona: ${weather.temp_c}°C, ${weather.condition}. Lluvia: ${weather.precip_mm}mm.`
-          );
-        } else {
-          await adapter.sendMessage(
-            "No pude obtener el clima de tu zona en este momento."
-          );
-        }
+        const nearbyCount = await countNearbyReports(
+          message.location.latitude,
+          message.location.longitude,
+          2
+        );
+        const lluvia = weather ? weather.precip_mm : 0;
+        await adapter.sendMessage(
+          `📊 Estado de tu zona (Radio 2km):\n\n🌧️ Lluvia acumulada 24h: ${lluvia}mm\n🚨 Hay ${nearbyCount} reporte(s) cerca de ti.\n\nMantente a salvo.`
+        );
+
         session.state = "IDLE";
         session.datos_temporales = {};
         session.intentos_fallidos = 0;

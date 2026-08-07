@@ -196,8 +196,10 @@ export async function classifyIntent(
   const cleanText = text.substring(0, 500);
 
   // 1. Shortcuts exactos
-  if (cleanText === "🚨 Enviar Reporte") return "REPORTE";
-  if (cleanText === "📍 Estado de mi zona") return "CONSULTA";
+  if (cleanText === "🚨 Enviar Reporte" || cleanText === "REPORTE")
+    return "REPORTE";
+  if (cleanText === "📍 Estado de mi zona" || cleanText === "CONSULTA")
+    return "CONSULTA";
 
   // 2. Regex rápido
   const lower = cleanText.toLowerCase();
@@ -221,7 +223,7 @@ export async function validateDescription(text: string): Promise<{
   nivel_descripcion: string;
 }> {
   const cleanText = text.substring(0, 500);
-  const prompt = `Analiza este texto de un ciudadano reportando un problema. Responde SÓLO con JSON:
+  const prompt = `Analiza este texto de un ciudadano reportando un problema. Considera como emergencia válida (es_emergencia: true) cualquier reporte relacionado con lluvia, inundación, granizo, árboles caídos, anegamientos o problemas climáticos, incluso si el tono es casual o no parece muy grave. Responde SÓLO con JSON:
 {
   "es_emergencia": true/false,
   "tipo": "INUNDACION_URBANA" | "LLUVIAS_FUERTES" | "GRANIZO" | "ANEGAMIENTO_VIVIENDA",
