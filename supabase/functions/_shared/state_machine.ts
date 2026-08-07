@@ -28,6 +28,27 @@ export async function processMessage(
   const session: BotSession = await getDBSession(chatId);
 
   const text = message.text || "";
+  const cleanText = text.trim().toLowerCase();
+
+  // Lógica de cancelación global
+  const palabrasCancelacion = [
+    "cancelar",
+    "salir",
+    "reiniciar",
+    "abortar",
+    "/cancel",
+    "cancel",
+  ];
+  if (palabrasCancelacion.includes(cleanText)) {
+    session.state = "IDLE";
+    session.datos_temporales = {};
+    session.intentos_fallidos = 0;
+    await saveDBSession(session);
+    await adapter.sendMessage(
+      "❌ Proceso cancelado. He reiniciado tu sesión. ¿Quieres reportar una emergencia o consultar el estado de tu zona?"
+    );
+    return;
+  }
 
   switch (session.state) {
     case "IDLE":
