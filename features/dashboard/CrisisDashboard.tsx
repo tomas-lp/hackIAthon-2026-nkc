@@ -6,20 +6,25 @@ import { useSafeZones } from "@/hooks/useSafeZones";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
-import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
+import { AuthWidget } from "@/features/dashboard/AuthWidget";
 import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
 import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
 
+import { User } from "@supabase/supabase-js";
+
 interface CrisisDashboardProps {
   initialReports: Report[];
+  user?: User | null;
 }
 
-export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+export function CrisisDashboard({
+  initialReports,
+  user,
+}: CrisisDashboardProps) {
+  const isAdmin = !!user;
 
   // Zonas Seguras state
   const { safeZones, refresh: refreshSafeZones } = useSafeZones();
@@ -134,22 +139,7 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         />
       </section>
 
-      {!hideMainUI && (
-        <AuthWidget
-          isAdmin={isAdmin}
-          onLoginClick={() => setShowLoginModal(true)}
-          onLogoutClick={() => setIsAdmin(false)}
-        />
-      )}
-
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLogin={() => {
-          setIsAdmin(true);
-          setShowLoginModal(false);
-        }}
-      />
+      {!hideMainUI && <AuthWidget isAdmin={isAdmin} />}
 
       {!hideMainUI && selectedReport && (
         <ReportDetailSidebar
