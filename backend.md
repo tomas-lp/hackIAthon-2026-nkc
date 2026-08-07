@@ -71,7 +71,10 @@ Almacena los reportes validados e ingestados por los bots.
 - **`lon`** (`double precision`, NOT NULL): Longitud GPS.
 - **`location`** (`geometry(Point, 4326)` / USER-DEFINED): Punto espacial en formato PostGIS (`POINT(lon lat)`).
 - **`descripcion`** (`text`): Texto del reporte o descripción generada automáticamente por IA en fotos.
-- **`criticidad`** (`text`): Nivel o puntuación de criticidad (ej: `score:80`).
+- **`puntaje_base`** (`integer` / `double precision`): Puntaje total calculado del reporte.
+- **`puntaje_descripcion`** (`integer`): Puntaje asignado según la gravedad descrita (ej: EVACUADOS da 35pts).
+- **`puntaje_foto`** (`integer`): Puntaje adicional si la foto fue validada por IA.
+- **`puntaje_clima`** (`integer`): Puntaje asignado según la severidad del clima actual en la zona.
 - **`tipo`** (`text`, CHECK Constraint):
   - `'INUNDACION_URBANA'`
   - `'LLUVIAS_FUERTES'`
