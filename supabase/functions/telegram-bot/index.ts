@@ -5,7 +5,7 @@ import {
   IncomingMessage,
 } from "../_shared/state_machine.ts";
 
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
+const TELEGRAM_BOT_TOKEN = Deno.env.get("BOT_TELEGRAM_TOKEN") ?? "";
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 async function sendTelegramMessage(chatId: number, text: string) {
@@ -25,11 +25,10 @@ serve(async (req) => {
 
     const msg = body.message;
     const chatId = msg.chat.id;
-    const userId = msg.from.id.toString();
 
     const adapter: IMessengerAdapter = {
       platform: "telegram",
-      userId,
+      chatId,
       sendMessage: async (text: string) => {
         await sendTelegramMessage(chatId, text);
       },

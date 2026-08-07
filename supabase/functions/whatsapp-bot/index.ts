@@ -9,21 +9,34 @@ const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const WHATSAPP_PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "";
 const WHATSAPP_VERIFY_TOKEN =
   Deno.env.get("WHATSAPP_VERIFY_TOKEN") ?? "mi_super_secreto_whatsapp";
-const WHATSAPP_API = `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}`;
+
+// Normaliza números argentinos: 549XXXXXXXXX → 54XXXXXXXXX
+function normalizePhoneNumber(phone: string): string {
+  const p = phone.toString().replace(/\D/g, "");
+  if (p.startsWith("549") && p.length >= 12) {
+    return "54" + p.slice(3);
+  }
+  return p;
+}
 
 async function sendWhatsAppMessage(to: string, text: string) {
-  await fetch(`${WHATSAPP_API}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: to,
-      text: { body: text },
-    }),
-  });
+  const normalizedTo = normalizePhoneNumber(to);
+  await fetch(
+    `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: normalizedTo,
+        type: "text",
+        text: { body: text },
+      }),
+    }
+  );
 }
 
 serve(async (req) => {
@@ -51,12 +64,13 @@ serve(async (req) => {
     }
 
     const msg = body.entry[0].changes[0].value.messages[0];
-    const sender = msg.from; // Número de teléfono que funciona como userId
-    const userId = sender;
+    const sender = msg.from; // Número de teléfono
+    // Para la BD usamos un hash numérico del teléfono como chat_id
+    const chatId = parseInt(sender.replace(/\D/g, "").slice(-10));
 
     const adapter: IMessengerAdapter = {
       platform: "whatsapp",
-      userId,
+      chatId,
       sendMessage: async (text: string) => {
         await sendWhatsAppMessage(sender, text);
       },
@@ -76,7 +90,7 @@ serve(async (req) => {
 
       // Obtener URL del archivo
       const resUrl = await fetch(
-        `https://graph.facebook.com/v17.0/${mediaId}`,
+        `https://graph.facebook.com/v25.0/${mediaId}`,
         {
           headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
         }

@@ -3,36 +3,62 @@ import { SUPABASE_URL, SUPABASE_KEY } from "./constants.ts";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-export async function getSession(
-  userId: string,
-  platform: "telegram" | "whatsapp"
-) {
+// Esquema real de user_sessions:
+//   chat_id bigint PK, state text, intentos_fallidos int, datos_temporales jsonb, ultima_interaccion timestamptz
+
+export type BotSession = {
+  chat_id: number;
+  state: string;
+  intentos_fallidos: number;
+  datos_temporales: Record<string, unknown>;
+  ultima_interaccion: string;
+};
+
+export async function getDBSession(chatId: number): Promise<BotSession> {
   const { data, error } = await supabase
     .from("user_sessions")
-    .select("estado, contexto_reporte")
-    .eq("user_id", userId)
-    .eq("platform", platform)
+    .select("*")
+    .eq("chat_id", chatId)
     .single();
 
-  if (error || !data) return { estado: "IDLE", contexto_reporte: {} };
-  return { estado: data.estado, contexto_reporte: data.contexto_reporte || {} };
+  const now = new Date();
+
+  if (error || !data) {
+    const newSession: BotSession = {
+      chat_id: chatId,
+      state: "IDLE",
+      intentos_fallidos: 0,
+      datos_temporales: {},
+      ultima_interaccion: now.toISOString(),
+    };
+    await supabase.from("user_sessions").upsert(newSession);
+    return newSession;
+  }
+
+  // Reset de sesión si lleva más de 10 minutos inactiva
+  if (now.getTime() - new Date(data.ultima_interaccion).getTime() > 600000) {
+    const resetSession: BotSession = {
+      chat_id: chatId,
+      state: "IDLE",
+      intentos_fallidos: 0,
+      datos_temporales: {},
+      ultima_interaccion: now.toISOString(),
+    };
+    await supabase.from("user_sessions").upsert(resetSession);
+    return resetSession;
+  }
+
+  return data as BotSession;
 }
 
-export async function updateSession(
-  userId: string,
-  platform: "telegram" | "whatsapp",
-  estado: string,
-  contexto: Record<string, unknown> = {}
-) {
-  const { error } = await supabase
-    .from("user_sessions")
-    .upsert({ user_id: userId, platform, estado, contexto_reporte: contexto });
-
-  if (error) console.error("Error updating session:", error);
+export async function saveDBSession(session: BotSession) {
+  session.ultima_interaccion = new Date().toISOString();
+  const { error } = await supabase.from("user_sessions").upsert(session);
+  if (error) console.error("Error saving session:", error);
 }
 
 export async function saveReport(reportData: Record<string, unknown>) {
-  const { error } = await supabase.from("reportes").insert(reportData);
+  const { error } = await supabase.from("reports").insert(reportData);
 
   if (error) {
     console.error("Error saving report:", error);
