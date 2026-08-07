@@ -1,10 +1,11 @@
 import { classifyIntent, validateDescription, analyzePhoto } from "./ai.ts";
 import { fetchCurrentWeather } from "./weather.ts";
-import { calculateTrustScore } from "./scoring.ts";
+import { descripcionPuntos, climaPuntos } from "./scoring.ts";
 import {
   getDBSession,
   saveDBSession,
   saveReport,
+  uploadPhoto,
   BotSession,
 } from "./sessions.ts";
 
@@ -96,6 +97,8 @@ export async function processMessage(
           session.datos_temporales.descripcion = analisis.descripcion_breve;
           session.datos_temporales.nivel_agua = analisis.nivel_agua;
           session.datos_temporales.tiene_foto = true;
+          session.datos_temporales.foto_base64 = message.photo.base64;
+          session.datos_temporales.foto_mime = message.photo.mimeType;
           await adapter.sendMessage(
             "Recibí la foto. ¡Entendido! Por favor, envíame tu ubicación para registrar el reporte."
           );
@@ -120,13 +123,39 @@ export async function processMessage(
 
     case "ESPERANDO_UBICACION_REPORTE":
       if (message.location) {
+        await adapter.sendMessage(
+          "⏳ Analizando el clima y procesando tu reporte..."
+        );
         session.datos_temporales.lat = message.location.latitude;
         session.datos_temporales.lon = message.location.longitude;
 
-        const score = calculateTrustScore(
-          !!session.datos_temporales.tiene_foto,
-          true
+        const weather = await fetchCurrentWeather(
+          message.location.latitude,
+          message.location.longitude
         );
+        const precipMm = weather ? weather.precip_mm : 0;
+        const climaFuente = weather ? "WeatherAPI" : "Desconocida";
+
+        let fotoUrl = null;
+        if (
+          session.datos_temporales.tiene_foto &&
+          session.datos_temporales.foto_base64 &&
+          session.datos_temporales.foto_mime
+        ) {
+          fotoUrl = await uploadPhoto(
+            chatId,
+            session.datos_temporales.foto_base64 as string,
+            session.datos_temporales.foto_mime as string
+          );
+        }
+
+        const nivelDescripcion = String(
+          session.datos_temporales.nivel_descripcion || "AGUA_CALLE"
+        );
+        const puntajeDescripcion = descripcionPuntos(nivelDescripcion);
+        const puntajeFoto = session.datos_temporales.tiene_foto ? 5 : 0;
+        const puntajeClima = climaPuntos(precipMm);
+        const puntajeBase = puntajeDescripcion + puntajeFoto + puntajeClima;
 
         await saveReport({
           chat_id: chatId,
@@ -134,18 +163,19 @@ export async function processMessage(
           lat: message.location.latitude,
           lon: message.location.longitude,
           location: `POINT(${message.location.longitude} ${message.location.latitude})`,
-          lluvia_mm: 0,
-          clima_fuente: "Pendiente",
+          lluvia_mm: precipMm,
+          clima_fuente: climaFuente,
           tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
-          puntaje_base: score,
-          puntaje_descripcion: 0,
-          puntaje_foto: session.datos_temporales.tiene_foto ? 5 : 0,
-          puntaje_clima: 0,
+          puntaje_base: puntajeBase,
+          puntaje_descripcion: puntajeDescripcion,
+          puntaje_foto: puntajeFoto,
+          puntaje_clima: puntajeClima,
           foto_valida: !!session.datos_temporales.tiene_foto,
+          foto_url: fotoUrl,
         });
 
         await adapter.sendMessage(
-          "✅ ¡Reporte guardado con éxito! Las autoridades ya están notificadas. Mantente a salvo."
+          `✅ ¡Reporte guardado con éxito! Puntaje de evidencia: ${puntajeBase} pts. Las autoridades ya están notificadas. Mantente a salvo.`
         );
         session.state = "IDLE";
         session.datos_temporales = {};

@@ -65,3 +65,39 @@ export async function saveReport(reportData: Record<string, unknown>) {
     throw error;
   }
 }
+
+export async function uploadPhoto(
+  chatId: number,
+  base64: string,
+  mimeType: string
+): Promise<string | null> {
+  try {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const fileName = `${chatId}_${Date.now()}.jpg`;
+    const { error } = await supabase.storage
+      .from("reports-photos")
+      .upload(fileName, bytes, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Error subiendo foto a Supabase storage:", error);
+      return null;
+    }
+
+    // Usamos el cliente de Supabase para obtener la URL pública
+    const { data } = supabase.storage
+      .from("reports-photos")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  } catch (err) {
+    console.error("Exception in uploadPhoto:", err);
+    return null;
+  }
+}
