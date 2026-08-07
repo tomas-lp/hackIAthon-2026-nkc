@@ -170,15 +170,9 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
       });
       const arrayBuffer = await resMedia.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
 
       const transcripcion = await transcribeAudio(
-        base64,
+        arrayBuffer,
         audioObj.mime_type || "audio/ogg",
         "ogg"
       );

@@ -114,15 +114,9 @@ serve(async (req) => {
         `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`
       );
       const arrayBuffer = await audioRes.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
 
       const transcripcion = await transcribeAudio(
-        base64,
+        arrayBuffer,
         audioObj.mime_type || "audio/ogg",
         "ogg"
       );

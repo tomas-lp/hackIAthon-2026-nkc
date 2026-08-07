@@ -350,18 +350,13 @@ export async function analyzePhoto(
 }
 
 export async function transcribeAudio(
-  base64Audio: string,
+  arrayBuffer: ArrayBuffer,
   mimeType: string,
   extension: string = "ogg"
 ): Promise<string | null> {
-  const binaryString = atob(base64Audio);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-
-  const blob = new Blob([bytes], { type: mimeType });
-  const file = new File([blob], `audio.${extension}`, { type: mimeType });
+  const file = new File([arrayBuffer], `audio.${extension}`, {
+    type: mimeType,
+  });
 
   const formData = new FormData();
   formData.append("file", file);
