@@ -52,7 +52,7 @@ export function SafeZoneDetailSidebar({
         </button>
       </div>
 
-      <div className="flex flex-col rounded-[14px] border border-emerald-100 bg-white p-3.5 gap-4 shadow-sm">
+      <div className="flex flex-col rounded-[14px] border border-zinc-100 bg-white p-3.5 gap-4 shadow-sm">
         <div className="flex flex-col gap-1">
           <span className="text-[16px] font-bold text-zinc-900 leading-snug">
             {safeZone.nombre}

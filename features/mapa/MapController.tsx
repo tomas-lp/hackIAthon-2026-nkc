@@ -68,13 +68,16 @@ export function MapController({
       );
 
       if (bounds.isValid()) {
+        const currentZoom = map.getZoom();
+        const targetMaxZoom = Math.max(currentZoom, 16);
+
         // Usamos fitBounds en lugar de flyToBounds para que sea una transición directa y rápida,
         // evitando el "zoom out" pronunciado que desincroniza el mapa de calor y rompe la UI.
         map.fitBounds(bounds, {
           padding: [50, 50],
           duration: 0.5,
           animate: true,
-          maxZoom: 16,
+          maxZoom: targetMaxZoom,
         });
 
         // Retrasamos la apertura del popup para que la animación termine limpia sin interrupciones de UI.
@@ -89,9 +92,15 @@ export function MapController({
       selectedSafeZone &&
       isValidLatLng(selectedSafeZone.latitud, selectedSafeZone.longitud)
     ) {
-      map.flyTo([selectedSafeZone.latitud, selectedSafeZone.longitud], 16, {
-        duration: 0.5,
-      });
+      const currentZoom = map.getZoom();
+      const targetZoom = Math.max(currentZoom, 16);
+      map.flyTo(
+        [selectedSafeZone.latitud, selectedSafeZone.longitud],
+        targetZoom,
+        {
+          duration: 0.5,
+        }
+      );
     }
   }, [map, selectedReport, reports, markerRefs, selectedSafeZone]);
 

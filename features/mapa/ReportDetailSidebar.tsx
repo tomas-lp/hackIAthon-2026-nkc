@@ -18,12 +18,7 @@ function ReportPhoto({ fotoUrl }: { fotoUrl?: string | null }) {
   const [imgLoading, setImgLoading] = useState(true);
 
   if (!fotoUrl || imgError) {
-    return (
-      <div className="w-full rounded-xl bg-zinc-50 border border-zinc-200 flex items-center justify-center py-6 text-xs font-medium text-zinc-400 gap-2">
-        <ImageOff className="w-4 h-4" />
-        {imgError ? "Imagen no válida" : "Foto no disponible"}
-      </div>
-    );
+    return null;
   }
 
   return (
