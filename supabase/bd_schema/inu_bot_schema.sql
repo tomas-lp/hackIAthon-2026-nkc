@@ -1,4 +1,4 @@
--- WARNING: This schema is for context only and is not meant to be run.
+-- WARNING: This schema is for context only and is not meant to be run directly.
 -- Table order and constraints may not be valid for execution.
 
 -- RLS (migración 20260805060000_add_rls.sql):
@@ -14,6 +14,7 @@ CREATE TABLE public.spatial_ref_sys (
   proj4text character varying,
   CONSTRAINT spatial_ref_sys_pkey PRIMARY KEY (srid)
 );
+
 CREATE TABLE public.user_sessions (
   chat_id bigint NOT NULL,
   state text NOT NULL DEFAULT 'IDLE'::text,
@@ -22,23 +23,33 @@ CREATE TABLE public.user_sessions (
   ultima_interaccion timestamp with time zone DEFAULT now(),
   CONSTRAINT user_sessions_pkey PRIMARY KEY (chat_id)
 );
+
 CREATE TABLE public.reports (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   chat_id bigint NOT NULL,
   lat double precision NOT NULL,
   lon double precision NOT NULL,
   location USER-DEFINED NOT NULL,
-  criticidad text NOT NULL,
+  
+  -- Puntuación / Criticidad
+  puntaje_base double precision DEFAULT 0,
+  puntaje_descripcion double precision DEFAULT 0,
+  puntaje_foto double precision DEFAULT 0,
+  puntaje_clima double precision DEFAULT 0,
+  
+  -- Datos clima y multimedia
   lluvia_mm double precision,
   clima_fuente text,
   foto_url text,
+  foto_valida boolean,
+  
   created_at timestamp with time zone DEFAULT now(),
   descripcion text,
+  
   -- Columnas tipadas (migración 20260805050000_add_typed_columns.sql).
-  -- Valores replican los dominios de types/report.ts y se persisten
-  -- desde la Edge Function telegram-bot al ingestar.
   tipo text CHECK (tipo IN ('INUNDACION_URBANA', 'LLUVIAS_FUERTES', 'GRANIZO', 'ANEGAMIENTO_VIVIENDA')),
   riesgo text CHECK (riesgo IN ('BAJO', 'MEDIO', 'ALTO', 'CRITICO')),
   estado text CHECK (estado IN ('VALIDADO_CLIMA', 'PENDIENTE_VALIDACION', 'DESESTIMADO_SIN_ALERTA', 'DESESTIMADO_IRRELEVANTE')),
+  
   CONSTRAINT reports_pkey PRIMARY KEY (id)
 );

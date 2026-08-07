@@ -8,11 +8,18 @@ interface MapControllerProps {
   selectedReport: Report | null;
 }
 
+function isValidLatLng(lat: number, lng: number): boolean {
+  return Number.isFinite(lat) && Number.isFinite(lng);
+}
+
 export function MapController({ selectedReport }: MapControllerProps) {
   const map = useMap();
 
   useEffect(() => {
-    if (selectedReport) {
+    if (
+      selectedReport &&
+      isValidLatLng(selectedReport.latitud, selectedReport.longitud)
+    ) {
       map.flyTo([selectedReport.latitud, selectedReport.longitud], 13, {
         duration: 1.2,
       });

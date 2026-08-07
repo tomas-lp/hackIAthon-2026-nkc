@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reportService } from "@/services/reportService";
-import { ReportType, RiskLevel, ValidationStatus } from "@/types/report";
+import { ReportType } from "@/types/report";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
     const tipo = (searchParams.get("tipo") as ReportType | "TODOS") || "TODOS";
-    const riesgo =
-      (searchParams.get("riesgo") as RiskLevel | "TODOS") || "TODOS";
-    const estado =
-      (searchParams.get("estado") as ValidationStatus | "TODOS") || "TODOS";
     const busqueda = searchParams.get("busqueda") || "";
-    const ocultarDesestimados =
-      searchParams.get("ocultarDesestimados") === "true";
 
     const reports = await reportService.getReports({
       tipo,
-      riesgo,
-      estado,
       busqueda,
-      ocultarDesestimados,
     });
 
     return NextResponse.json(reports, {

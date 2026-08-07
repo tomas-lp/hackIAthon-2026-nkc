@@ -1,8 +1,11 @@
 import "server-only";
 
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { MOCK_REPORTS } from "@/lib/mockReports";
+import {
+  MAX_EDAD_REPORTE_HORAS,
+  puntajeReal as calcPuntajeReal,
+} from "@/lib/zones";
 import { Report, ReportFilters } from "@/types/report";
+import { createBrowserClient } from "@supabase/ssr";
 
 export interface IReportService {
   getReports(filters?: ReportFilters): Promise<Report[]>;
@@ -15,22 +18,9 @@ const REPORT_TYPES: Report["tipo"][] = [
   "GRANIZO",
   "ANEGAMIENTO_VIVIENDA",
 ];
-const RISK_LEVELS: Report["riesgo"][] = ["BAJO", "MEDIO", "ALTO", "CRITICO"];
-const VALIDATION_STATUSES: Report["estado"][] = [
-  "VALIDADO_CLIMA",
-  "PENDIENTE_VALIDACION",
-  "DESESTIMADO_SIN_ALERTA",
-  "DESESTIMADO_IRRELEVANTE",
-];
 
-// Guards: distinguen un valor tipado real (persistido en SQL) de uno
-// heredado/legacy que sigue requiriendo la heurística.
 const isReportTipo = (v: string | undefined): v is Report["tipo"] =>
   !!v && (REPORT_TYPES as string[]).includes(v);
-const isReportRiesgo = (v: string | undefined): v is Report["riesgo"] =>
-  !!v && (RISK_LEVELS as string[]).includes(v);
-const isReportEstado = (v: string | undefined): v is Report["estado"] =>
-  !!v && (VALIDATION_STATUSES as string[]).includes(v);
 
 type ReportDbRow = {
   id: string | number;
@@ -51,27 +41,28 @@ type ReportDbRow = {
   texto_original?: string;
   motivo_fallo?: string;
   clima_fuente?: string;
-  nivel_riesgo?: string;
-  riesgo?: string;
-  criticidad?: string;
-  estado_validacion?: string;
-  estado?: string;
   usuario_display?: string;
   usuario?: string;
   telegram_username?: string;
   chat_id?: number | string;
   localidad?: string;
   ubicacion?: string;
+  lluvia_mm?: number;
+  puntaje_descripcion?: number;
+  puntaje_foto?: number;
+  puntaje_clima?: number;
+  puntaje_base?: number;
+  foto_valida?: boolean;
+  foto_url?: string;
 };
 
 export class SupabaseReportService implements IReportService {
-  private supabase = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
+  private supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  private supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  private mapDbRowToReport(row: ReportDbRow): Report {
+  private supabase = createBrowserClient(this.supabaseUrl!, this.supabaseKey!);
+
+  private mapDbRowToReport(row: ReportDbRow, ahora = new Date()): Report {
     const mapTipo = (t: string) => {
       if (!t) return "INUNDACION_URBANA" as Report["tipo"];
       const lower = t.toLowerCase();
@@ -85,36 +76,6 @@ export class SupabaseReportService implements IReportService {
       if (lower.includes("rescat"))
         return "ANEGAMIENTO_VIVIENDA" as Report["tipo"];
       return "INUNDACION_URBANA" as Report["tipo"];
-    };
-
-    const mapRiesgo = (r: string | undefined) => {
-      if (!r) return "MEDIO" as Report["riesgo"];
-      const lower = r.toLowerCase();
-      if (lower === "bajo") return "BAJO" as Report["riesgo"];
-      if (lower === "medio") return "MEDIO" as Report["riesgo"];
-      if (lower === "alto") return "ALTO" as Report["riesgo"];
-      if (lower === "critico" || lower === "crítico")
-        return "CRITICO" as Report["riesgo"];
-      if (lower.includes("amar")) return "BAJO" as Report["riesgo"];
-      if (lower.includes("naran")) return "ALTO" as Report["riesgo"];
-      if (lower.includes("roj")) return "CRITICO" as Report["riesgo"];
-      return "MEDIO" as Report["riesgo"];
-    };
-
-    const mapEstado = (estadoRaw: unknown) => {
-      const value = String(estadoRaw ?? "").toLowerCase();
-      if (!value) return "VALIDADO_CLIMA" as Report["estado"];
-      if (value.includes("valid")) return "VALIDADO_CLIMA" as Report["estado"];
-      if (value.includes("pend"))
-        return "PENDIENTE_VALIDACION" as Report["estado"];
-      if (value.includes("sin"))
-        return "DESESTIMADO_SIN_ALERTA" as Report["estado"];
-      if (value.includes("irrelev"))
-        return "DESESTIMADO_IRRELEVANTE" as Report["estado"];
-      if (value.includes("amar")) return "VALIDADO_CLIMA" as Report["estado"];
-      if (value.includes("naran") || value.includes("roj"))
-        return "PENDIENTE_VALIDACION" as Report["estado"];
-      return "VALIDADO_CLIMA" as Report["estado"];
     };
 
     // Try common field names (latitude/longitude) or geojson/wkt from PostGIS
@@ -152,17 +113,17 @@ export class SupabaseReportService implements IReportService {
       row.motivo_fallo ??
       "";
 
+    const fecha =
+      row.created_at ?? row.creado_en ?? row.fecha ?? new Date().toISOString();
+    const edadHoras = (ahora.getTime() - new Date(fecha).getTime()) / 3600000;
+    const puntajeBase = Number(row.puntaje_base ?? 0);
+    const lluviaMm = Number(row.lluvia_mm ?? 0);
+
     return {
       id: String(row.id),
-      fecha:
-        row.created_at ??
-        row.creado_en ??
-        row.fecha ??
-        new Date().toISOString(),
+      fecha,
       latitud: Number(lat ?? 0),
       longitud: Number(lon ?? 0),
-      // Preferimos las columnas tipadas (si vienen de SQL) y solo usamos la
-      // heurística para filas legacy con esos campos en NULL.
       tipo: isReportTipo(row.tipo) ? row.tipo : mapTipo(tipoInferido),
       descripcion:
         row.descripcion ??
@@ -170,12 +131,6 @@ export class SupabaseReportService implements IReportService {
         row.motivo_fallo ??
         row.clima_fuente ??
         "",
-      riesgo: isReportRiesgo(row.riesgo)
-        ? row.riesgo
-        : mapRiesgo(row.nivel_riesgo ?? row.riesgo ?? row.criticidad),
-      estado: isReportEstado(row.estado)
-        ? row.estado
-        : mapEstado(row.estado_validacion ?? row.estado ?? row.criticidad),
       usuario:
         row.usuario_display ??
         row.usuario ??
@@ -184,8 +139,15 @@ export class SupabaseReportService implements IReportService {
         "",
       localidad:
         row.localidad ?? row.ubicacion ?? row.chat_id?.toString?.() ?? null,
-      grokPayload: undefined,
-    } as Report;
+      puntajeBase,
+      puntajeDescripcion: Number(row.puntaje_descripcion ?? 0),
+      puntajeFoto: Number(row.puntaje_foto ?? 0),
+      puntajeClima: Number(row.puntaje_clima ?? 0),
+      fotoValida: !!row.foto_valida,
+      fotoUrl: row.foto_url ?? null,
+      lluviaMm,
+      puntajeReal: calcPuntajeReal(puntajeBase, edadHoras),
+    };
   }
 
   private applyFilters(reports: Report[], filters?: ReportFilters): Report[] {
@@ -193,24 +155,8 @@ export class SupabaseReportService implements IReportService {
 
     if (!filters) return filtered;
 
-    if (filters.ocultarDesestimados) {
-      filtered = filtered.filter(
-        (r) =>
-          r.estado !== "DESESTIMADO_SIN_ALERTA" &&
-          r.estado !== "DESESTIMADO_IRRELEVANTE"
-      );
-    }
-
     if (filters.tipo && filters.tipo !== "TODOS") {
       filtered = filtered.filter((r) => r.tipo === filters.tipo);
-    }
-
-    if (filters.riesgo && filters.riesgo !== "TODOS") {
-      filtered = filtered.filter((r) => r.riesgo === filters.riesgo);
-    }
-
-    if (filters.estado && filters.estado !== "TODOS") {
-      filtered = filtered.filter((r) => r.estado === filters.estado);
     }
 
     if (filters.busqueda && filters.busqueda.trim() !== "") {
@@ -227,27 +173,19 @@ export class SupabaseReportService implements IReportService {
   }
 
   async getReports(filters?: ReportFilters): Promise<Report[]> {
-    // Push-down de filtros a SQL: los filtros tipados se resuelven en la base
-    // (tipo, riesgo, estado) gracias a las columnas agregadas por la migración
-    // 20260805050000_add_typed_columns.sql, y la búsqueda con ILIKE sobre
-    // descripcion. Los mocks ya no se inyectan en producción: solo se usan
-    // como fallback si la conexión a Supabase falla.
+    // Reportes >24 hs se excluyen del cálculo y del mapa.
+    const since = new Date(
+      Date.now() - MAX_EDAD_REPORTE_HORAS * 3600000
+    ).toISOString();
+
     let query = this.supabase
       .from("reports")
       .select("*")
+      .gte("created_at", since)
       .order("created_at", { ascending: false });
 
     if (filters?.tipo && filters.tipo !== "TODOS") {
       query = query.eq("tipo", filters.tipo);
-    }
-    if (filters?.riesgo && filters.riesgo !== "TODOS") {
-      query = query.eq("riesgo", filters.riesgo);
-    }
-    if (filters?.estado && filters.estado !== "TODOS") {
-      query = query.eq("estado", filters.estado);
-    }
-    if (filters?.ocultarDesestimados) {
-      query = query.in("estado", ["VALIDADO_CLIMA", "PENDIENTE_VALIDACION"]);
     }
     if (filters?.busqueda && filters.busqueda.trim() !== "") {
       query = query.ilike("descripcion", `%${filters.busqueda.trim()}%`);
@@ -257,7 +195,7 @@ export class SupabaseReportService implements IReportService {
 
     if (error) {
       console.error("Supabase getReports error:", error.message);
-      return this.applyFilters(MOCK_REPORTS, filters);
+      return [];
     }
 
     const dbReports = (data || []).map((r) =>
@@ -275,9 +213,8 @@ export class SupabaseReportService implements IReportService {
       .limit(1)
       .single();
     if (error || !data) {
-      // Fallback solo ante error de conexión: si getReports devolvió mocks
-      // porque Supabase no responde, permitimos abrir el detalle del mock.
-      return MOCK_REPORTS.find((r) => r.id === id) || null;
+      console.error("Supabase getReportById error:", error?.message);
+      return null;
     }
     return this.mapDbRowToReport(data);
   }

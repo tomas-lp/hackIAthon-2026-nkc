@@ -2,17 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { Report } from "@/types/report";
-import { formatDate, RISK_CONFIG, TYPE_CONFIG } from "@/lib/utils";
+import { formatDate, TYPE_CONFIG } from "@/lib/utils";
+import { heatColor } from "@/lib/heatmap";
 import { resolveAddress } from "@/lib/geocode";
 
 interface ReportPopupProps {
   report: Report;
+  fetchAddress: boolean;
 }
 
-export function ReportPopup({ report }: ReportPopupProps) {
+export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
   const [address, setAddress] = useState<string | null>(null);
+  const [prevParams, setPrevParams] = useState({
+    lat: report.latitud,
+    lng: report.longitud,
+    fetch: fetchAddress,
+  });
+
+  if (
+    prevParams.lat !== report.latitud ||
+    prevParams.lng !== report.longitud ||
+    prevParams.fetch !== fetchAddress
+  ) {
+    setPrevParams({
+      lat: report.latitud,
+      lng: report.longitud,
+      fetch: fetchAddress,
+    });
+    setAddress(null);
+  }
 
   useEffect(() => {
+    if (!fetchAddress) {
+      return;
+    }
+
     let isCancelled = false;
 
     resolveAddress(report.latitud, report.longitud)
@@ -30,10 +54,10 @@ export function ReportPopup({ report }: ReportPopupProps) {
     return () => {
       isCancelled = true;
     };
-  }, [report.latitud, report.longitud]);
+  }, [report.latitud, report.longitud, fetchAddress]);
 
-  const riskCfg = RISK_CONFIG[report.riesgo];
   const typeCfg = TYPE_CONFIG[report.tipo];
+  const badgeColor = heatColor(report.puntajeReal ?? report.puntajeBase);
 
   return (
     <div className="p-4">
@@ -47,9 +71,10 @@ export function ReportPopup({ report }: ReportPopupProps) {
           </p>
         </div>
         <span
-          className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${riskCfg.bg} ${riskCfg.text} ${riskCfg.border}`}
+          className="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-white"
+          style={{ backgroundColor: badgeColor }}
         >
-          {riskCfg.label}
+          {report.puntajeBase} pts
         </span>
       </div>
 
@@ -76,10 +101,24 @@ export function ReportPopup({ report }: ReportPopupProps) {
 
         <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1">
           <span className="uppercase tracking-[0.16em] text-zinc-500">
-            Criticidad
+            Evidencia
           </span>
-          <span className="font-medium text-zinc-700">{riskCfg.label}</span>
+          <span className="font-medium text-zinc-700">
+            {report.puntajeDescripcion} desc + {report.puntajeFoto} foto +{" "}
+            {report.puntajeClima} clima
+          </span>
         </div>
+
+        {report.puntajeReal !== null && (
+          <div className="flex items-center justify-between gap-2 rounded-md bg-zinc-50 px-2 py-1">
+            <span className="uppercase tracking-[0.16em] text-zinc-500">
+              Puntaje actual
+            </span>
+            <span className="font-medium text-zinc-700">
+              {report.puntajeReal} pts
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,11 +6,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { Report } from "@/types/report";
-import { RISK_CONFIG } from "@/lib/utils";
-import { HeatmapLayer, HeatmapPoint } from "./HeatmapLayer";
+import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
+import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { ReportPopup } from "./ReportPopup";
-import { Layers } from "lucide-react";
+import { Flame } from "lucide-react";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -20,22 +20,17 @@ interface ReportMapInternalProps {
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
 const INITIAL_ZOOM = 8;
+const NEUTRAL_COLOR = "#3b82f6";
 
-function createRiskIcon(
-  riskKey: keyof typeof RISK_CONFIG,
-  isSelected: boolean,
-  isDismissed: boolean
-) {
-  const config = RISK_CONFIG[riskKey] || RISK_CONFIG.BAJO;
-  const size = isSelected ? 30 : 22;
-  const letter = riskKey[0];
-  const opacity = isDismissed ? "0.5" : "1.0";
+function createNeutralIcon(isSelected: boolean) {
+  const size = isSelected ? 30 : 20;
+  const letter = "!";
 
   return L.divIcon({
     className: "custom-report-marker",
     html: `
       <div style="
-        background-color: ${isDismissed ? "#71717a" : config.color};
+        background-color: ${NEUTRAL_COLOR};
         width: ${size}px;
         height: ${size}px;
         border-radius: 50%;
@@ -48,7 +43,6 @@ function createRiskIcon(
         font-weight: 700;
         font-size: ${isSelected ? "12px" : "10px"};
         font-family: system-ui, sans-serif;
-        opacity: ${opacity};
       ">
         ${letter}
       </div>
@@ -59,14 +53,38 @@ function createRiskIcon(
   });
 }
 
+const DEFAULT_REPORT_ICON = createNeutralIcon(false);
+const SELECTED_REPORT_ICON = createNeutralIcon(true);
+
 export default function ReportMapInternal({
   reports,
   selectedReport,
   onSelectReport,
 }: ReportMapInternalProps) {
-  const showHeatmap = true;
-  const showMarkers = true;
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
+
+  const validReports = useMemo(
+    () =>
+      reports.filter(
+        (report) =>
+          Number.isFinite(report.latitud) && Number.isFinite(report.longitud)
+      ),
+    [reports]
+  );
+
+  const heatPoints = useMemo(
+    () => buildHeatPoints(validReports),
+    [validReports]
+  );
+
+  const heatGradientCss = useMemo(
+    () =>
+      Object.entries(HEATMAP_CONFIG.gradient)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([stop, color]) => `${color} ${Number(stop) * 100}%`)
+        .join(", "),
+    []
+  );
 
   useEffect(() => {
     if (selectedReport) {
@@ -76,21 +94,6 @@ export default function ReportMapInternal({
       }
     }
   }, [selectedReport]);
-
-  // Transform reports into heatmap intensity points (excluding dismissed from heatmap to focus intensity on active alerts!)
-  const heatmapPoints: HeatmapPoint[] = useMemo(() => {
-    return reports
-      .filter(
-        (r) =>
-          r.estado !== "DESESTIMADO_SIN_ALERTA" &&
-          r.estado !== "DESESTIMADO_IRRELEVANTE"
-      )
-      .map((r) => ({
-        lat: r.latitud,
-        lng: r.longitud,
-        intensity: RISK_CONFIG[r.riesgo]?.weight || 0.25,
-      }));
-  }, [reports]);
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
@@ -108,49 +111,45 @@ export default function ReportMapInternal({
 
         <MapController selectedReport={selectedReport} />
 
-        {showHeatmap && <HeatmapLayer points={heatmapPoints} />}
+        <HeatLayer points={heatPoints} />
 
-        {showMarkers &&
-          reports.map((report) => {
-            const isSelected = selectedReport?.id === report.id;
-            const isDismissed =
-              report.estado === "DESESTIMADO_SIN_ALERTA" ||
-              report.estado === "DESESTIMADO_IRRELEVANTE";
-
-            return (
-              <Marker
-                key={report.id}
-                ref={(marker) => {
-                  markerRefs.current[report.id] = marker;
-                }}
-                position={[report.latitud, report.longitud]}
-                icon={createRiskIcon(report.riesgo, isSelected, isDismissed)}
-                eventHandlers={{
-                  click: () => onSelectReport(report),
-                }}
-              >
-                <Popup className="custom-leaflet-popup">
-                  <ReportPopup report={report} />
-                </Popup>
-              </Marker>
-            );
-          })}
+        {validReports.map((report) => {
+          const isSelected = selectedReport?.id === report.id;
+          return (
+            <Marker
+              key={report.id}
+              ref={(marker) => {
+                markerRefs.current[report.id] = marker;
+              }}
+              position={[report.latitud, report.longitud]}
+              icon={isSelected ? SELECTED_REPORT_ICON : DEFAULT_REPORT_ICON}
+              eventHandlers={{
+                click: () => onSelectReport(report),
+              }}
+            >
+              <Popup className="custom-leaflet-popup">
+                <ReportPopup report={report} fetchAddress={isSelected} />
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-1000 bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex items-center gap-3">
+      <div className="absolute bottom-4 left-4 z-1000 bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex flex-col gap-1">
         <span className="font-medium text-zinc-500 flex items-center gap-1">
-          <Layers className="w-3 h-3 text-blue-500" /> Criticidad:
+          <Flame className="w-3 h-3 text-orange-500" /> Riesgo por intensidad:
         </span>
-        {Object.entries(RISK_CONFIG).map(([key, cfg]) => (
-          <div key={key} className="flex items-center gap-1">
-            <span
-              className="w-2.5 h-2.5 rounded-full inline-block"
-              style={{ backgroundColor: cfg.color }}
-            />
-            <span className="text-zinc-700  font-mono text-[10px]">{key}</span>
-          </div>
-        ))}
+        <div
+          className="h-2 w-40 rounded-full"
+          style={{
+            background: `linear-gradient(to right, ${heatGradientCss})`,
+          }}
+        />
+        <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+          <span>Bajo</span>
+          <span>Alto</span>
+        </div>
       </div>
     </div>
   );
