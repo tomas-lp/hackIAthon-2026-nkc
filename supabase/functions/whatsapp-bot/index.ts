@@ -6,8 +6,10 @@ import {
 } from "../_shared/state_machine.ts";
 
 const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? "";
-const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") ?? "";
-const WHATSAPP_API = `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_NUMBER_ID}`;
+const WHATSAPP_PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "";
+const WHATSAPP_VERIFY_TOKEN =
+  Deno.env.get("WHATSAPP_VERIFY_TOKEN") ?? "mi_super_secreto_whatsapp";
+const WHATSAPP_API = `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}`;
 
 async function sendWhatsAppMessage(to: string, text: string) {
   await fetch(`${WHATSAPP_API}/messages`, {
@@ -30,7 +32,7 @@ serve(async (req) => {
     const url = new URL(req.url);
     if (
       url.searchParams.get("hub.mode") === "subscribe" &&
-      url.searchParams.get("hub.verify_token") === "mi_super_secreto_whatsapp"
+      url.searchParams.get("hub.verify_token") === WHATSAPP_VERIFY_TOKEN
     ) {
       return new Response(url.searchParams.get("hub.challenge"), {
         status: 200,
