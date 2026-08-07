@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Report } from "@/types/report";
-import { formatDate, TYPE_CONFIG, ZONE_CONFIG } from "@/lib/utils";
-import { nivelPorPuntaje } from "@/lib/zones";
+import { formatDate, TYPE_CONFIG } from "@/lib/utils";
+import { heatColor } from "@/lib/heatmap";
 import { resolveAddress } from "@/lib/geocode";
 
 interface ReportPopupProps {
@@ -57,8 +57,7 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
   }, [report.latitud, report.longitud, fetchAddress]);
 
   const typeCfg = TYPE_CONFIG[report.tipo];
-  const nivelZona = nivelPorPuntaje(report.puntajeReal ?? report.puntajeBase);
-  const zonaCfg = ZONE_CONFIG[nivelZona];
+  const badgeColor = heatColor(report.puntajeReal ?? report.puntajeBase);
 
   return (
     <div className="p-4">
@@ -73,7 +72,7 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
         </div>
         <span
           className="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-white"
-          style={{ backgroundColor: zonaCfg.color }}
+          style={{ backgroundColor: badgeColor }}
         >
           {report.puntajeBase} pts
         </span>

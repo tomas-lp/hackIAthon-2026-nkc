@@ -6,12 +6,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { Report } from "@/types/report";
-import { ZONE_CONFIG } from "@/lib/utils";
-import { ZoneLayer } from "./ZoneLayer";
+import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
+import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { ReportPopup } from "./ReportPopup";
-import { useZones } from "@/hooks/useZones";
-import { Layers } from "lucide-react";
+import { Flame } from "lucide-react";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -73,11 +72,19 @@ export default function ReportMapInternal({
     [reports]
   );
 
-  const reportsKey = useMemo(
-    () => validReports.map((r) => r.id).join(","),
+  const heatPoints = useMemo(
+    () => buildHeatPoints(validReports),
     [validReports]
   );
-  const { zones } = useZones(reportsKey);
+
+  const heatGradientCss = useMemo(
+    () =>
+      Object.entries(HEATMAP_CONFIG.gradient)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([stop, color]) => `${color} ${Number(stop) * 100}%`)
+        .join(", "),
+    []
+  );
 
   useEffect(() => {
     if (selectedReport) {
@@ -104,7 +111,7 @@ export default function ReportMapInternal({
 
         <MapController selectedReport={selectedReport} />
 
-        <ZoneLayer zones={zones} />
+        <HeatLayer points={heatPoints} />
 
         {validReports.map((report) => {
           const isSelected = selectedReport?.id === report.id;
@@ -131,20 +138,17 @@ export default function ReportMapInternal({
       {/* Legend */}
       <div className="absolute bottom-4 left-4 z-1000 bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex flex-col gap-1">
         <span className="font-medium text-zinc-500 flex items-center gap-1">
-          <Layers className="w-3 h-3 text-blue-500" /> Riesgo por zona:
+          <Flame className="w-3 h-3 text-orange-500" /> Riesgo por intensidad:
         </span>
-        <div className="flex flex-wrap items-center gap-3">
-          {Object.entries(ZONE_CONFIG).map(([key, cfg]) => (
-            <div key={key} className="flex items-center gap-1">
-              <span
-                className="w-2.5 h-2.5 rounded-full inline-block"
-                style={{ backgroundColor: cfg.color }}
-              />
-              <span className="text-zinc-700  font-mono text-[10px]">
-                {key} {cfg.rango}
-              </span>
-            </div>
-          ))}
+        <div
+          className="h-2 w-40 rounded-full"
+          style={{
+            background: `linear-gradient(to right, ${heatGradientCss})`,
+          }}
+        />
+        <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+          <span>Bajo</span>
+          <span>Alto</span>
         </div>
       </div>
     </div>

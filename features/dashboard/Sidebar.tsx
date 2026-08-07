@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
-import { Sparkles } from "lucide-react";
 
 interface SidebarProps {
   reports: Report[];
@@ -92,7 +91,6 @@ export function Sidebar({
   selectedReport,
   onSelectReport,
   onUpdateFilter,
-  onResetFilters,
 }: SidebarProps) {
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
