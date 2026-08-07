@@ -23,7 +23,6 @@ export function useReports(initialReports: Report[] = []) {
 
   const [filters, setFilters] = useState<ReportFilters>({
     tipo: "TODOS",
-    nivelZona: "TODOS",
     busqueda: "",
   });
 
@@ -139,7 +138,7 @@ export function useReports(initialReports: Report[] = []) {
   );
 
   const resetFilters = useCallback(() => {
-    setFilters({ tipo: "TODOS", nivelZona: "TODOS", busqueda: "" });
+    setFilters({ tipo: "TODOS", busqueda: "" });
   }, []);
 
   return {

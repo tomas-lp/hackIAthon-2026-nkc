@@ -35,6 +35,55 @@ export function normalizeIntensity(
   return Math.min(intensidad / maxIntensidad, 1);
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const value = hex.replace("#", "");
+  const full =
+    value.length === 3
+      ? value
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : value;
+  const num = parseInt(full, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function lerpColor(hexA: string, hexB: string, t: number): string {
+  const a = hexToRgb(hexA);
+  const b = hexToRgb(hexB);
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
+  return `rgb(${r}, ${g}, ${bl})`;
+}
+
+export function heatColor(
+  intensidad: number,
+  maxIntensidad: number = HEATMAP_CONFIG.maxIntensity
+): string {
+  const valor = normalizeIntensity(intensidad, maxIntensidad);
+  const stops = Object.entries(HEATMAP_CONFIG.gradient)
+    .map(([stop, color]) => ({ stop: Number(stop), color }))
+    .sort((a, b) => a.stop - b.stop);
+
+  if (stops.length === 0) return "#3b82f6";
+  if (valor <= stops[0].stop) return stops[0].color;
+  if (valor >= stops[stops.length - 1].stop) {
+    return stops[stops.length - 1].color;
+  }
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    const lower = stops[i];
+    const upper = stops[i + 1];
+    if (valor >= lower.stop && valor <= upper.stop) {
+      const t = (valor - lower.stop) / (upper.stop - lower.stop);
+      return lerpColor(lower.color, upper.color, t);
+    }
+  }
+
+  return stops[stops.length - 1].color;
+}
+
 interface BuildHeatPointsOptions {
   ahora?: Date;
   maxIntensidad?: number;

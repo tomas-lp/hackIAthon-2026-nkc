@@ -1,24 +1,15 @@
 import "server-only";
 
 import {
-  CLIMA_ZONA_LLUVIA_MIN_MM,
-  CLIMA_ZONA_PUNTOS,
   MAX_EDAD_REPORTE_HORAS,
-  RECIENTES_ZONA_MIN_REPORTES,
-  RECIENTES_ZONA_PUNTOS,
-  cellBounds,
-  esReporteActivo,
-  nivelPorPuntaje,
   puntajeReal as calcPuntajeReal,
-  puntajeZona,
 } from "@/lib/zones";
-import { Report, ReportFilters, Zone } from "@/types/report";
+import { Report, ReportFilters } from "@/types/report";
 import { createBrowserClient } from "@supabase/ssr";
 
 export interface IReportService {
   getReports(filters?: ReportFilters): Promise<Report[]>;
   getReportById(id: string): Promise<Report | null>;
-  getZones(filters?: ReportFilters): Promise<Zone[]>;
 }
 
 const REPORT_TYPES: Report["tipo"][] = [
@@ -226,93 +217,6 @@ export class SupabaseReportService implements IReportService {
       return null;
     }
     return this.mapDbRowToReport(data);
-  }
-
-  async getZones(filters?: ReportFilters): Promise<Zone[]> {
-    const ahora = new Date();
-    const since = new Date(
-      ahora.getTime() - MAX_EDAD_REPORTE_HORAS * 3600000
-    ).toISOString();
-
-    let query = this.supabase
-      .from("reports")
-      .select("*")
-      .gte("created_at", since);
-
-    if (filters?.tipo && filters.tipo !== "TODOS") {
-      query = query.eq("tipo", filters.tipo);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("Supabase getZones error:", error.message);
-      return [];
-    }
-
-    const activos = (data || [])
-      .map((r) => this.mapDbRowToReport(r as ReportDbRow, ahora))
-      .filter((r) => esReporteActivo(r.fecha, ahora));
-
-    const porCelda = new Map<string, Report[]>();
-    for (const report of activos) {
-      const cellId = cellBounds(report.latitud, report.longitud).id;
-      const celda = porCelda.get(cellId) ?? [];
-      celda.push(report);
-      porCelda.set(cellId, celda);
-    }
-
-    const zonas: Zone[] = [];
-    for (const [cellId, reportes] of porCelda) {
-      const cantidad = reportes.length;
-      const promedio = Math.round(
-        reportes.reduce((sum, r) => sum + (r.puntajeReal ?? 0), 0) / cantidad
-      );
-      const lluviaMax = Math.max(...reportes.map((r) => r.lluviaMm || 0));
-      const ultimaHora = reportes.filter(
-        (r) => (ahora.getTime() - new Date(r.fecha).getTime()) / 3600000 <= 1
-      ).length;
-
-      const lluviaMayor15mm = lluviaMax > CLIMA_ZONA_LLUVIA_MIN_MM;
-      const masDe10ReportesUltimaHora =
-        ultimaHora > RECIENTES_ZONA_MIN_REPORTES;
-
-      const puntaje = puntajeZona({
-        cantidadReportes: cantidad,
-        promedioGravedad: promedio,
-        lluviaMayor15mm,
-        masDe10ReportesUltimaHora,
-      });
-
-      const nivel = nivelPorPuntaje(puntaje);
-
-      if (
-        filters?.nivelZona &&
-        filters.nivelZona !== "TODOS" &&
-        nivel !== filters.nivelZona
-      ) {
-        continue;
-      }
-
-      const cell = cellBounds(reportes[0].latitud, reportes[0].longitud);
-      zonas.push({
-        id: cellId,
-        bounds: {
-          minLat: cell.minLat,
-          minLng: cell.minLng,
-          maxLat: cell.maxLat,
-          maxLng: cell.maxLng,
-        },
-        nivel,
-        puntaje,
-        cantidadReportes: cantidad,
-        promedioGravedad: promedio,
-        climaPuntos: lluviaMayor15mm ? CLIMA_ZONA_PUNTOS : 0,
-        recientesPuntos: masDe10ReportesUltimaHora ? RECIENTES_ZONA_PUNTOS : 0,
-      });
-    }
-
-    zonas.sort((a, b) => b.puntaje - a.puntaje);
-    return zonas;
   }
 }
 
