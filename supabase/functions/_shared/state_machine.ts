@@ -149,10 +149,13 @@ export async function processMessage(
         );
         session.state = "IDLE";
         session.datos_temporales = {};
+        session.intentos_fallidos = 0;
       } else {
         session.intentos_fallidos++;
         if (session.intentos_fallidos >= 3) {
           session.state = "IDLE";
+          session.datos_temporales = {};
+          session.intentos_fallidos = 0;
           await adapter.sendMessage(
             "Superaste el límite de intentos. Reporte cancelado."
           );
@@ -180,10 +183,14 @@ export async function processMessage(
           );
         }
         session.state = "IDLE";
+        session.datos_temporales = {};
+        session.intentos_fallidos = 0;
       } else {
         session.intentos_fallidos++;
         if (session.intentos_fallidos >= 3) {
           session.state = "IDLE";
+          session.datos_temporales = {};
+          session.intentos_fallidos = 0;
           await adapter.sendMessage(
             "Consulta cancelada por errores de formato."
           );
@@ -198,6 +205,7 @@ export async function processMessage(
     default:
       session.state = "IDLE";
       session.datos_temporales = {};
+      session.intentos_fallidos = 0;
       await adapter.sendMessage(
         "Reiniciando la conversación... ¿En qué te ayudo?"
       );
