@@ -123,6 +123,7 @@ serve(async (req) => {
 
       if (transcripcion) {
         incoming.text = transcripcion;
+        incoming.esAudio = true;
       } else {
         await sendTelegramMessage(
           chatId,

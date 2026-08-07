@@ -42,6 +42,7 @@ CREATE TABLE public.reports (
   clima_fuente text,
   foto_url text,
   foto_valida boolean,
+  es_audio boolean DEFAULT false,
   
   created_at timestamp with time zone DEFAULT now(),
   descripcion text,

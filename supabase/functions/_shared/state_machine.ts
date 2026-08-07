@@ -24,6 +24,7 @@ export interface IncomingMessage {
   text?: string;
   location?: { latitude: number; longitude: number };
   photo?: { base64: string; mimeType: string };
+  esAudio?: boolean;
 }
 
 export async function processMessage(
@@ -97,6 +98,7 @@ export async function processMessage(
                 descripcion: text,
                 tipo: val.tipo,
                 nivel_descripcion: val.nivel_descripcion,
+                es_audio: message.esAudio || false,
               };
               await adapter.sendMessage(
                 "¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** usando el clip 📎 de WhatsApp (Ubicación)."
@@ -185,6 +187,7 @@ export async function processMessage(
       session.datos_temporales.descripcion = descripcionAI;
       session.datos_temporales.tipo = tipoAI;
       session.datos_temporales.nivel_descripcion = nivelDescAI;
+      session.datos_temporales.es_audio = message.esAudio || false;
       if (session.datos_temporales.tiene_foto) {
         session.datos_temporales.nivel_agua = nivelAguaAI;
       }
@@ -251,6 +254,7 @@ export async function processMessage(
             puntaje_clima: puntajeClima,
             foto_valida: true,
             foto_url: fotoUrl,
+            es_audio: session.datos_temporales.es_audio || false,
           });
 
           await adapter.sendMessage(
@@ -341,6 +345,7 @@ export async function processMessage(
         puntaje_clima: puntajeClima,
         foto_valida: fotoValida,
         foto_url: fotoUrl,
+        es_audio: session.datos_temporales.es_audio || false,
       });
 
       await adapter.sendMessage(
