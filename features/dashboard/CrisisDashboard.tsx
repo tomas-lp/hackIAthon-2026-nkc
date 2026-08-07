@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
+import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
 import { Report } from "@/types/report";
 
 interface CrisisDashboardProps {
@@ -11,6 +13,9 @@ interface CrisisDashboardProps {
 }
 
 export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
   const {
     reports,
     loading,
@@ -33,6 +38,7 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         onSelectReport={setSelectedReport}
         onUpdateFilter={updateFilter}
         onResetFilters={resetFilters}
+        isAdmin={isAdmin}
       />
 
       <section className="absolute inset-0 h-full w-full">
@@ -43,10 +49,26 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         />
       </section>
 
+      <AuthWidget
+        isAdmin={isAdmin}
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogoutClick={() => setIsAdmin(false)}
+      />
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={() => {
+          setIsAdmin(true);
+          setShowLoginModal(false);
+        }}
+      />
+
       {selectedReport && (
         <ReportDetailSidebar
           report={selectedReport}
           onClose={() => setSelectedReport(null)}
+          isAdmin={isAdmin}
         />
       )}
     </>

@@ -1,7 +1,6 @@
 import { reportService } from "@/services/reportService";
 import { CrisisDashboard } from "@/features/dashboard/CrisisDashboard";
 import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
-import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 

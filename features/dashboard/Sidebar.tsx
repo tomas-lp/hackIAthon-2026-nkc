@@ -17,16 +17,19 @@ interface SidebarProps {
     value: ReportFilters[K]
   ) => void;
   onResetFilters: () => void;
+  isAdmin?: boolean;
 }
 
 function ReportCard({
   report,
   isSelected,
   onSelect,
+  isAdmin,
 }: {
   report: Report;
   isSelected: boolean;
   onSelect: (report: Report) => void;
+  isAdmin?: boolean;
 }) {
   const [address, setAddress] = useState<string | null>(null);
 
@@ -73,11 +76,13 @@ function ReportCard({
             {address ?? report.localidad ?? "Direccion no disponible"}
           </span>
         </div>
-        <div className="flex flex-col items-end p-3 gap-1">
-          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600 w-fit text-nowrap">
-            {report.puntajeBase} pts
-          </span>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-col items-end p-3 gap-1">
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600 w-fit text-nowrap">
+              {report.puntajeBase} pts
+            </span>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -91,6 +96,7 @@ export function Sidebar({
   selectedReport,
   onSelectReport,
   onUpdateFilter,
+  isAdmin,
 }: SidebarProps) {
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
@@ -142,7 +148,9 @@ export function Sidebar({
               }
               className="w-full rounded-2xl border border-gray-200 bg-white py-1 px-2 text-sm text-zinc-800 outline-none transition focus:border-blue-500"
             >
-              <option value="" disabled hidden>Tipo</option>
+              <option value="" disabled hidden>
+                Tipo
+              </option>
               <option value="TODOS">Todos</option>
               {(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => (
                 <option key={type} value={type}>
@@ -180,6 +188,7 @@ export function Sidebar({
                   report={report}
                   isSelected={selectedReport?.id === report.id}
                   onSelect={onSelectReport}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
