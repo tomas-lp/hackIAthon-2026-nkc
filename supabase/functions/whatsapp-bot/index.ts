@@ -4,6 +4,7 @@ import {
   IMessengerAdapter,
   IncomingMessage,
 } from "../_shared/state_machine.ts";
+import { transcribeAudio } from "../_shared/ai.ts";
 
 const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const WHATSAPP_PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "";
@@ -150,6 +151,46 @@ serve(async (req) => {
 
       if (msg.image.caption) {
         incoming.text = msg.image.caption;
+      }
+    } else if (msg.type === "audio" || msg.type === "voice") {
+      const audioObj = msg.audio || msg.voice;
+      const mediaId = audioObj.id;
+
+      // Obtener URL del archivo
+      const resUrl = await fetch(
+        `https://graph.facebook.com/v25.0/${mediaId}`,
+        {
+          headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+        }
+      );
+      const dataUrl = await resUrl.json();
+
+      // Descargar archivo
+      const resMedia = await fetch(dataUrl.url, {
+        headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+      });
+      const arrayBuffer = await resMedia.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+
+      const transcripcion = await transcribeAudio(
+        base64,
+        audioObj.mime_type || "audio/ogg",
+        "ogg"
+      );
+
+      if (transcripcion) {
+        incoming.text = transcripcion;
+      } else {
+        await sendWhatsAppMessage(
+          sender,
+          "⚠️ No pude entender el audio. Por favor, escribime tu mensaje o intentá hablar un poco más claro."
+        );
+        return new Response("OK", { status: 200 });
       }
     }
 
