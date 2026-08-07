@@ -4,6 +4,7 @@ import {
   IMessengerAdapter,
   IncomingMessage,
 } from "../_shared/state_machine.ts";
+import { transcribeAudio } from "../_shared/ai.ts";
 
 const TELEGRAM_BOT_TOKEN = Deno.env.get("BOT_TELEGRAM_TOKEN") ?? "";
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
@@ -101,6 +102,40 @@ serve(async (req) => {
         base64,
         mimeType: "image/jpeg",
       };
+    } else if (msg.voice || msg.audio) {
+      const audioObj = msg.voice || msg.audio;
+      const fileId = audioObj.file_id;
+
+      const fileRes = await fetch(`${TELEGRAM_API}/getFile?file_id=${fileId}`);
+      const fileData = await fileRes.json();
+      const filePath = fileData.result.file_path;
+
+      const audioRes = await fetch(
+        `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`
+      );
+      const arrayBuffer = await audioRes.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+
+      const transcripcion = await transcribeAudio(
+        base64,
+        audioObj.mime_type || "audio/ogg",
+        "ogg"
+      );
+
+      if (transcripcion) {
+        incoming.text = transcripcion;
+      } else {
+        await sendTelegramMessage(
+          chatId,
+          "⚠️ No pude entender el audio. Por favor, escribime tu mensaje o intentá hablar un poco más claro."
+        );
+        return new Response("OK", { status: 200 });
+      }
     }
 
     await processMessage(adapter, incoming);
