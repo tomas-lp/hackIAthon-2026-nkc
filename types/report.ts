@@ -21,6 +21,7 @@ export interface Report {
   fotoUrl?: string | null;
   lluviaMm: number;
   puntajeReal: number | null;
+  es_audio?: boolean;
 }
 
 export interface ReportFilters {

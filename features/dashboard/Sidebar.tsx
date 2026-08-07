@@ -133,7 +133,7 @@ export function Sidebar({
           <span className="text-sm font-medium text-black">Filtrar por</span>
           <div className="flex gap-2">
             <select
-              value={filters.tipo || "TODOS"}
+              value={filters.tipo || ""}
               onChange={(event) =>
                 onUpdateFilter(
                   "tipo",
@@ -142,7 +142,8 @@ export function Sidebar({
               }
               className="w-full rounded-2xl border border-gray-200 bg-white py-1 px-2 text-sm text-zinc-800 outline-none transition focus:border-blue-500"
             >
-              <option value="TODOS">Tipo</option>
+              <option value="" disabled hidden>Tipo</option>
+              <option value="TODOS">Todos</option>
               {(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => (
                 <option key={type} value={type}>
                   {TYPE_CONFIG[type].label}
