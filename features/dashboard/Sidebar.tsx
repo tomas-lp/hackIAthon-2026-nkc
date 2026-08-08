@@ -276,7 +276,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs overflow-visible ${
+      className={`flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs overflow-hidden ${
         isAdmin ? "max-h-[85vh]" : "max-h-[60vh]"
       }`}
     >
@@ -302,7 +302,7 @@ export function Sidebar({
           </button>
         )}
       </div>
-      <div className="flex flex-col flex-1 w-full gap-4 overflow-visible">
+      <div className="flex flex-col flex-1 w-full gap-4 overflow-hidden">
         {isAdmin && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
