@@ -321,7 +321,7 @@ export function Sidebar({
 
             {safeZones.length > 0 && (
               <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
-                <div className="gap-2 flex flex-col overflow-auto">
+                <div className="gap-2 flex flex-col overflow-auto pr-2">
                   {safeZones.map((sz) => (
                     <SafeZoneCard
                       key={sz.id}
@@ -373,7 +373,7 @@ export function Sidebar({
             )}
 
             {!loading && !error && visibleReports.length > 0 && (
-              <div className="gap-2 flex flex-col overflow-auto">
+              <div className="gap-2 flex flex-col overflow-auto pr-2">
                 {visibleReports.map((report) => (
                   <ReportCard
                     key={report.id}
