@@ -302,7 +302,7 @@ export function Sidebar({
           </button>
         )}
       </div>
-      <div className="flex flex-col flex-1 w-full gap-4 overflow-hidden">
+      <div className="flex flex-col flex-1 w-full gap-4 overflow-visible">
         {isAdmin && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
