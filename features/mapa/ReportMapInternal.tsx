@@ -270,7 +270,7 @@ export default function ReportMapInternal({
       </MapContainer>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-1000 bg-white/90 backdrop-blur-md border border-zinc-200 rounded-xl px-4 py-3 text-xs flex flex-col gap-1.5 shadow-sm">
+      <div className="absolute bottom-4 left-4 z-1000 bg-white/50 backdrop-blur-xs border border-gray-200 rounded-xl px-4 py-3 text-xs flex flex-col gap-1.5">
         <span className="font-medium text-zinc-600 flex items-center gap-1.5">
           <Flame className="w-4 h-4 text-orange-500" /> Riesgo por intensidad:
         </span>

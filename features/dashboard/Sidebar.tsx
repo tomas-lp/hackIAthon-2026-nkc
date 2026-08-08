@@ -280,7 +280,7 @@ export function Sidebar({
         isAdmin ? "max-h-[85vh]" : "max-h-[60vh]"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex gap-2 bg-inu py-2 px-4 rounded-2xl">
           <div className="font-black text-4xl leading-8 logo flex justify-center items-center text-white rounded-2xl">
             INU
@@ -355,7 +355,7 @@ export function Sidebar({
 
           <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
             {loading && (
-              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500  ">
+              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
                 Cargando alertas...
               </div>
             )}
@@ -367,7 +367,7 @@ export function Sidebar({
             )}
 
             {!loading && !error && visibleReports.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-4 text-center text-xs text-zinc-500  ">
+              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
                 No hay puntos para este tipo.
               </div>
             )}

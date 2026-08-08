@@ -38,7 +38,7 @@ export function SafeZoneDetailSidebar({
   }, [safeZone.latitud, safeZone.longitud]);
 
   return (
-    <aside className="absolute right-4 top-28 z-[1000] w-80 max-w-80 rounded-2xl border border-white/40 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-2.5 backdrop-blur-md animate-in slide-in-from-right-4 duration-200">
+    <aside className="absolute right-4 top-28 z-[1000] w-80 max-w-80 rounded-2xl border border-gray-200 bg-white/50 p-2.5 backdrop-blur-xs animate-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between mb-2 px-1.5 pt-1">
         <span className="text-sm font-semibold text-zinc-800 tracking-tight flex items-center gap-1.5">
           <ShieldCheck className="h-4 w-4 text-emerald-600" />
@@ -52,7 +52,7 @@ export function SafeZoneDetailSidebar({
         </button>
       </div>
 
-      <div className="flex flex-col rounded-[14px] border border-zinc-100 bg-white p-3.5 gap-4 shadow-sm">
+      <div className="flex flex-col rounded-[14px] border border-gray-200 bg-white p-3.5 gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[16px] font-bold text-zinc-900 leading-snug">
             {safeZone.nombre}
