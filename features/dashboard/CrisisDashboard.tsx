@@ -12,6 +12,7 @@ import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
+import { ChevronRight } from "lucide-react";
 
 interface CrisisDashboardProps {
   initialReports: Report[];
@@ -20,6 +21,7 @@ interface CrisisDashboardProps {
 export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Zonas Seguras state
   const { safeZones, refresh: refreshSafeZones } = useSafeZones();
@@ -84,34 +86,60 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
   return (
     <>
       {!hideMainUI && (
-        <Sidebar
-          reports={reports}
-          filters={filters}
-          loading={loading}
-          error={error}
-          selectedReport={selectedReport}
-          onSelectReport={(report) => {
-            setSelectedReport(report);
-            setSelectedSafeZone(null);
+        <div
+          className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
+          style={{
+            transform: sidebarCollapsed ? "translateX(-110%)" : "translateX(0)",
           }}
-          onUpdateFilter={updateFilter}
-          onResetFilters={resetFilters}
-          isAdmin={isAdmin}
-          safeZones={safeZones}
-          selectedSafeZone={selectedSafeZone}
-          onSelectSafeZone={(zone) => {
-            setSelectedSafeZone(zone);
-            setSelectedReport(null);
-            setIsEditingSafeZones(false);
-            setIsCreatingSafeZone(false);
-            setDraftLocation(null);
+        >
+          <Sidebar
+            reports={reports}
+            filters={filters}
+            loading={loading}
+            error={error}
+            selectedReport={selectedReport}
+            onSelectReport={(report) => {
+              setSelectedReport(report);
+              setSelectedSafeZone(null);
+            }}
+            onUpdateFilter={updateFilter}
+            onResetFilters={resetFilters}
+            isAdmin={isAdmin}
+            safeZones={safeZones}
+            selectedSafeZone={selectedSafeZone}
+            onSelectSafeZone={(zone) => {
+              setSelectedSafeZone(zone);
+              setSelectedReport(null);
+              setIsEditingSafeZones(false);
+              setIsCreatingSafeZone(false);
+              setDraftLocation(null);
+            }}
+            onCreateSafeZone={() => {
+              setIsCreatingSafeZone(true);
+              setSelectedReport(null);
+              setSelectedSafeZone(null);
+            }}
+            onCollapse={() => setSidebarCollapsed(true)}
+          />
+        </div>
+      )}
+
+      {/* Tongue tab — always rendered, slides in/out smoothly */}
+      {!hideMainUI && (
+        <button
+          id="sidebar-expand-btn"
+          onClick={() => setSidebarCollapsed(false)}
+          title="Mostrar panel"
+          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-300 bg-gray-200/90 px-1.5 py-3 text-gray-600 backdrop-blur-sm shadow-md hover:bg-gray-300 hover:text-gray-800 cursor-pointer"
+          style={{
+            transform: sidebarCollapsed ? "translateX(0)" : "translateX(-100%)",
+            transition: sidebarCollapsed
+              ? "transform 200ms ease-out 350ms" /* slide in AFTER sidebar finishes hiding */
+              : "transform 200ms ease-in" /* slide out immediately when sidebar opens */,
           }}
-          onCreateSafeZone={() => {
-            setIsCreatingSafeZone(true);
-            setSelectedReport(null);
-            setSelectedSafeZone(null);
-          }}
-        />
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       )}
 
       <section className="absolute inset-0 h-full w-full">

@@ -70,7 +70,7 @@ export function ReportDetailSidebar({
   const typeCfg = TYPE_CONFIG[report.tipo];
 
   return (
-    <aside className="absolute right-4 top-20 z-[1000] w-80 max-w-80 rounded-2xl border border-white/40 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-2.5 backdrop-blur-md">
+    <aside className="absolute right-4 top-28 z-[1000] w-80 max-w-80 rounded-2xl border border-white/40 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-2.5 backdrop-blur-md">
       <div className="flex items-center justify-between mb-2 px-1.5 pt-1">
         <span className="text-sm font-semibold text-zinc-800 tracking-tight">
           Detalle de Alerta
