@@ -10,6 +10,7 @@ import { SafeZone } from "@/types/safeZone";
 import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
+import { LocateButton } from "./LocateButton";
 import { Flame } from "lucide-react";
 
 interface ReportMapInternalProps {
@@ -264,6 +265,8 @@ export default function ReportMapInternal({
             zIndexOffset={1001}
           />
         )}
+
+        <LocateButton />
       </MapContainer>
 
       {/* Legend */}
