@@ -1,11 +1,100 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
-import { ShieldCheck, Plus, Edit } from "lucide-react";
+import {
+  ShieldCheck,
+  Plus,
+  Edit,
+  ChevronLeft,
+  ChevronDown,
+  Check,
+} from "lucide-react";
+
+function FilterDropdown({
+  value,
+  onChange,
+}: {
+  value: ReportType | "TODOS" | "";
+  onChange: (val: ReportType | "TODOS") => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const options: { value: ReportType | "TODOS"; label: string }[] = [
+    { value: "TODOS", label: "Todos" },
+    ...(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => ({
+      value: type,
+      label: TYPE_CONFIG[type].label,
+    })),
+  ];
+
+  const currentLabel =
+    options.find((opt) => opt.value === (value || "TODOS"))?.label || "Todos";
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`w-full flex items-center justify-between bg-white py-2 px-3 text-sm text-zinc-800 transition-all duration-200 cursor-pointer ${
+          isOpen
+            ? "rounded-t-2xl border border-gray-200 border-b-gray-100 bg-gray-100/90 shadow-xs"
+            : "rounded-2xl border border-gray-200 hover:bg-gray-100"
+        }`}
+      >
+        <span className="truncate font-medium">{currentLabel}</span>
+        <ChevronDown
+          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-gray-700" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full z-50 -mt-px flex flex-col rounded-b-2xl border border-t-0 border-gray-200 bg-white p-1.5 shadow-lg animate-in fade-in duration-150">
+          {options.map((opt) => {
+            const isSelected = opt.value === (value || "TODOS");
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
+                  isSelected
+                    ? "bg-gray-100 font-semibold text-zinc-900"
+                    : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check className="h-4 w-4 text-zinc-700" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface SidebarProps {
   reports: Report[];
@@ -24,6 +113,7 @@ interface SidebarProps {
   onCreateSafeZone?: () => void;
   selectedSafeZone?: SafeZone | null;
   onSelectSafeZone?: (zone: SafeZone) => void;
+  onCollapse?: () => void;
 }
 
 function SafeZoneCard({
@@ -166,6 +256,7 @@ export function Sidebar({
   onCreateSafeZone,
   selectedSafeZone,
   onSelectSafeZone,
+  onCollapse,
 }: SidebarProps) {
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
@@ -185,7 +276,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`absolute flex flex-col gap-4 left-4 top-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs overflow-hidden ${
+      className={`flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs overflow-visible ${
         isAdmin ? "max-h-[85vh]" : "max-h-[60vh]"
       }`}
     >
@@ -200,8 +291,18 @@ export function Sidebar({
             para Inundaciones
           </span>
         </div>
+        {onCollapse && (
+          <button
+            id="sidebar-collapse-btn"
+            onClick={onCollapse}
+            title="Ocultar panel"
+            className="rounded-lg border border-gray-200 bg-gray-100/80 p-1.5 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        )}
       </div>
-      <div className="flex flex-col flex-1 w-full gap-4 overflow-hidden">
+      <div className="flex flex-col flex-1 w-full gap-4 overflow-visible">
         {isAdmin && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -242,29 +343,13 @@ export function Sidebar({
             </span>
           </div>
 
-          <div className="flex flex-col gap-2 p-3 rounded-2xl border border-gray-200 bg-white">
+          <div className="relative z-20 flex flex-col gap-2 p-3 rounded-2xl border border-gray-200 bg-white">
             <span className="text-sm font-medium text-black">Filtrar por</span>
             <div className="flex gap-2">
-              <select
+              <FilterDropdown
                 value={filters.tipo || ""}
-                onChange={(event) =>
-                  onUpdateFilter(
-                    "tipo",
-                    event.target.value as ReportType | "TODOS"
-                  )
-                }
-                className="w-full rounded-2xl border border-gray-200 bg-white py-1 px-2 text-sm text-zinc-800 outline-none transition focus:border-blue-500"
-              >
-                <option value="" disabled hidden>
-                  Tipo
-                </option>
-                <option value="TODOS">Todos</option>
-                {(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => (
-                  <option key={type} value={type}>
-                    {TYPE_CONFIG[type].label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => onUpdateFilter("tipo", val)}
+              />
             </div>
           </div>
 
