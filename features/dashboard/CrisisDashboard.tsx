@@ -7,6 +7,7 @@ import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
 import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
+import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
 import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { Report } from "@/types/report";
@@ -72,6 +73,8 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       setDraftLocation(null);
       setIsCreatingSafeZone(false);
       setShowSafeZoneModal(false);
+      setSelectedReport(null);
+      setSelectedSafeZone(null);
     }
     refreshSafeZones();
   };
@@ -85,62 +88,63 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
 
   return (
     <>
-      {!hideMainUI && (
-        <div
-          className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
-          style={{
-            transform: sidebarCollapsed ? "translateX(-110%)" : "translateX(0)",
+      {/* Main Sidebar - always mounted for transitions */}
+      <div
+        className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
+        style={{
+          transform:
+            sidebarCollapsed || hideMainUI
+              ? "translateX(-110%)"
+              : "translateX(0)",
+        }}
+      >
+        <Sidebar
+          reports={reports}
+          filters={filters}
+          loading={loading}
+          error={error}
+          selectedReport={selectedReport}
+          onSelectReport={(report) => {
+            setSelectedReport(report);
+            setSelectedSafeZone(null);
           }}
-        >
-          <Sidebar
-            reports={reports}
-            filters={filters}
-            loading={loading}
-            error={error}
-            selectedReport={selectedReport}
-            onSelectReport={(report) => {
-              setSelectedReport(report);
-              setSelectedSafeZone(null);
-            }}
-            onUpdateFilter={updateFilter}
-            onResetFilters={resetFilters}
-            isAdmin={isAdmin}
-            safeZones={safeZones}
-            selectedSafeZone={selectedSafeZone}
-            onSelectSafeZone={(zone) => {
-              setSelectedSafeZone(zone);
-              setSelectedReport(null);
-              setIsEditingSafeZones(false);
-              setIsCreatingSafeZone(false);
-              setDraftLocation(null);
-            }}
-            onCreateSafeZone={() => {
-              setIsCreatingSafeZone(true);
-              setSelectedReport(null);
-              setSelectedSafeZone(null);
-            }}
-            onCollapse={() => setSidebarCollapsed(true)}
-          />
-        </div>
-      )}
-
+          onUpdateFilter={updateFilter}
+          onResetFilters={resetFilters}
+          isAdmin={isAdmin}
+          safeZones={safeZones}
+          selectedSafeZone={selectedSafeZone}
+          onSelectSafeZone={(zone) => {
+            setSelectedSafeZone(zone);
+            setSelectedReport(null);
+            setIsEditingSafeZones(false);
+            setIsCreatingSafeZone(false);
+            setDraftLocation(null);
+          }}
+          onCreateSafeZone={() => {
+            setIsCreatingSafeZone(true);
+          }}
+          onCollapse={() => setSidebarCollapsed(true)}
+        />
+      </div>
       {/* Tongue tab — always rendered, slides in/out smoothly */}
-      {!hideMainUI && (
-        <button
-          id="sidebar-expand-btn"
-          onClick={() => setSidebarCollapsed(false)}
-          title="Mostrar panel"
-          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-300 bg-gray-200/90 px-1.5 py-3 text-gray-600 backdrop-blur-sm shadow-md hover:bg-gray-300 hover:text-gray-800 cursor-pointer"
-          style={{
-            transform: sidebarCollapsed ? "translateX(0)" : "translateX(-100%)",
-            transition: sidebarCollapsed
+      <button
+        id="sidebar-expand-btn"
+        onClick={() => setSidebarCollapsed(false)}
+        title="Mostrar panel"
+        className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+        style={{
+          transform:
+            sidebarCollapsed && !hideMainUI
+              ? "translateX(0)"
+              : "translateX(-100%)",
+          transition:
+            sidebarCollapsed && !hideMainUI
               ? "transform 200ms ease-out 350ms" /* slide in AFTER sidebar finishes hiding */
-              : "transform 200ms ease-in" /* slide out immediately when sidebar opens */,
-          }}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      )}
+              : "transform 200ms ease-in" /* slide out immediately when sidebar opens or UI hidden */,
+        }}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
 
       <section className="absolute inset-0 h-full w-full">
         <ReportMap
@@ -162,13 +166,13 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         />
       </section>
 
-      {!hideMainUI && (
-        <AuthWidget
-          isAdmin={isAdmin}
-          onLoginClick={() => setShowLoginModal(true)}
-          onLogoutClick={() => setIsAdmin(false)}
-        />
-      )}
+      {/* Auth widget - conditionally rendered is fine since it's top right, but sliding out is better */}
+      <AuthWidget
+        isAdmin={isAdmin}
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogoutClick={() => setIsAdmin(false)}
+        isHidden={hideMainUI}
+      />
 
       <LoginModal
         isOpen={showLoginModal}
@@ -179,13 +183,14 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         }}
       />
 
-      {!hideMainUI && selectedReport && (
-        <ReportDetailSidebar
-          report={selectedReport}
-          onClose={() => setSelectedReport(null)}
-          isAdmin={isAdmin}
-        />
-      )}
+      <BotQRWidget isHidden={hideMainUI} />
+
+      <ReportDetailSidebar
+        report={selectedReport}
+        isOpen={!!selectedReport && !hideMainUI}
+        onClose={() => setSelectedReport(null)}
+        isAdmin={isAdmin}
+      />
 
       {hideMainUI && !showSafeZoneModal && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
@@ -194,10 +199,9 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
               setIsCreatingSafeZone(false);
               setIsEditingSafeZones(false);
               setDraftLocation(null);
-              setSelectedSafeZone(null);
               setShowSafeZoneModal(false);
             }}
-            className="rounded-full bg-red-50 border border-red-100 px-6 py-3 text-sm font-bold text-red-600 shadow-xl transition-colors hover:bg-red-100 hover:text-red-700"
+            className="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-6 py-3 text-sm font-bold text-red-600 shadow-xl transition-all duration-200 hover:bg-red-50 hover:scale-105 active:scale-95 cursor-pointer"
           >
             Cancelar
           </button>
@@ -207,7 +211,7 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
                 if (draftLocation) setShowSafeZoneModal(true);
               }}
               disabled={!draftLocation}
-              className="rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-xl transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600"
+              className="flex items-center justify-center gap-2 rounded-full border border-blue-200 bg-white px-6 py-3 text-sm font-bold text-blue-700 shadow-xl transition-all duration-200 hover:bg-blue-50 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed cursor-pointer"
             >
               Confirmar
             </button>
@@ -236,14 +240,13 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         />
       )}
 
-      {selectedSafeZone && !isEditingSingleSafeZone && (
-        <SafeZoneDetailSidebar
-          safeZone={selectedSafeZone}
-          onClose={() => setSelectedSafeZone(null)}
-          onEdit={isAdmin ? () => setIsEditingSingleSafeZone(true) : undefined}
-          onDelete={isAdmin ? handleDeleteSafeZone : undefined}
-        />
-      )}
+      <SafeZoneDetailSidebar
+        safeZone={selectedSafeZone}
+        isOpen={!!selectedSafeZone && !hideMainUI && !isEditingSingleSafeZone}
+        onClose={() => setSelectedSafeZone(null)}
+        onEdit={isAdmin ? () => setIsEditingSingleSafeZone(true) : undefined}
+        onDelete={isAdmin ? handleDeleteSafeZone : undefined}
+      />
     </>
   );
 }

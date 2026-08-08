@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 
 type BotType = "telegram" | "whatsapp" | null;
 
-export function BotQRWidget() {
+export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
   const [activeBot, setActiveBot] = useState<BotType>(null);
 
   // Temporalmente usamos el mismo QR hasta que esté listo el de WhatsApp
@@ -15,10 +15,13 @@ export function BotQRWidget() {
   return (
     <>
       {/* Floating Widget */}
-      <div className="absolute bottom-6 right-6 z-[1000] flex flex-col items-end gap-2">
-        <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 bg-white/50 backdrop-blur-xs px-3 py-1.5 rounded-full border border-gray-200">
-          QR a bot
-        </span>
+      <div
+        className={`absolute bottom-6 right-6 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out ${
+          isHidden
+            ? "translate-y-28 opacity-0 pointer-events-none"
+            : "translate-y-0 opacity-100"
+        }`}
+      >
         <div className="flex items-center gap-4 bg-white/50 backdrop-blur-xs p-3 rounded-2xl border border-zinc-200/80 transition-all hover:bg-white">
           <button
             onClick={() => setActiveBot("whatsapp")}

@@ -6,19 +6,27 @@ interface AuthWidgetProps {
   isAdmin: boolean;
   onLoginClick: () => void;
   onLogoutClick: () => void;
+  isHidden?: boolean;
 }
 
 export function AuthWidget({
   isAdmin,
   onLoginClick,
   onLogoutClick,
+  isHidden,
 }: AuthWidgetProps) {
   return (
-    <div className="absolute right-4 top-4 z-[1000]">
+    <div
+      className={`absolute right-4 top-4 z-[1000] transition-all duration-300 ease-in-out ${
+        isHidden
+          ? "-translate-y-20 opacity-0 pointer-events-none"
+          : "translate-y-0 opacity-100"
+      }`}
+    >
       {isAdmin ? (
         <button
           onClick={onLogoutClick}
-          className="flex items-center gap-2 rounded-full border border-white/40 bg-white/60 px-4 py-2 text-sm font-semibold text-red-500/90 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:border-zinc-300"
+          className="flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm transition-colors hover:bg-red-50"
         >
           <LogOut className="h-4 w-4" />
           Cerrar sesión
@@ -81,7 +89,7 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
 
           <button
             onClick={onLogin}
-            className="mt-2 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700 active:bg-blue-800"
+            className="mt-2 w-full rounded-xl bg-white border border-blue-600 px-4 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 active:bg-blue-100"
           >
             Ingresar
           </button>
