@@ -1,6 +1,5 @@
 import { reportService } from "@/services/reportService";
 import { CrisisDashboard } from "@/features/dashboard/CrisisDashboard";
-import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +9,6 @@ export default async function CrisisGraphPage() {
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
       <CrisisDashboard initialReports={reports} />
-
-      <BotQRWidget />
     </main>
   );
 }

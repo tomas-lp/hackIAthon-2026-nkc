@@ -59,11 +59,10 @@ function MapEventsHandler({
   return null;
 }
 
-function createNeutralIcon(isSelected: boolean, zoom: number) {
-  // Ajuste lineal del tamaño del icono en función del nivel de zoom
-  // Si zoom es bajo (lejos), icono pequeño. Si zoom alto (cerca), icono normal.
-  const minSize = isSelected ? 12 : 8;
-  const maxSize = isSelected ? 30 : 20;
+function createNeutralIcon(zoom: number, isNew: boolean = false) {
+  // Siempre creamos el icono base con el tamaño normal para no romper el layout de Leaflet
+  const minSize = 8;
+  const maxSize = 20;
 
   // zoom asume rango típico de 8 a 18
   let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
@@ -72,15 +71,15 @@ function createNeutralIcon(isSelected: boolean, zoom: number) {
   const letter = "!";
 
   return L.divIcon({
-    className: "custom-report-marker",
+    className: `custom-report-marker`,
     html: `
-      <div style="
+      <div class="marker-inner ${isNew ? "animate-spawn" : ""}" style="
         background-color: ${NEUTRAL_COLOR};
         width: ${size}px;
         height: ${size}px;
         border-radius: 50%;
-        border: ${isSelected ? 2 : 1.5}px solid #ffffff;
-        box-shadow: ${isSelected ? "0 0 0 4px rgba(59,130,246,0.4), 0 4px 12px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.25)"};
+        border: 1.5px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -98,43 +97,27 @@ function createNeutralIcon(isSelected: boolean, zoom: number) {
   });
 }
 
-function createSafeZoneIcon(
-  isSelected: boolean,
-  zoom: number,
-  isDraft: boolean = false
-) {
-  const minSize = isSelected ? 24 : 18;
-  const maxSize = isSelected ? 48 : 36;
+function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
+  const minSize = 18;
+  const maxSize = 36;
   let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
   size = Math.max(minSize, Math.min(maxSize, size));
 
   const bgColor = isDraft ? "#6ee7b7" : "#10b981"; // emerald-300 vs emerald-500
-  const letter = "✓";
 
   return L.divIcon({
-    className: "custom-safe-zone-marker",
+    className: `custom-safe-zone-marker`,
     html: `
-      <div style="
-        background-color: ${bgColor};
-        width: ${size}px;
-        height: ${size}px;
-        border-radius: 6px;
-        border: ${isSelected ? 2 : 1.5}px solid #ffffff;
-        box-shadow: ${isSelected ? "0 0 0 4px rgba(16,185,129,0.4), 0 4px 12px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.25)"};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ffffff;
-        font-weight: 800;
-        font-size: ${Math.max(8, size * 0.6)}px;
-        font-family: system-ui, sans-serif;
-      ">
-        ${letter}
+      <div class="marker-inner" style="display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); width: ${size}px; height: ${size * 1.15}px;">
+        <svg width="100%" height="100%" viewBox="0 0 24 24" fill="${bgColor}" stroke="#ffffff" stroke-width="0.75">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M9 12.5l2.5 2.5 4.5-5.5" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
+    iconSize: [size, size * 1.15],
+    iconAnchor: [size / 2, (size * 1.15) / 2],
+    popupAnchor: [0, -(size * 1.15) / 2],
   });
 }
 
@@ -154,26 +137,49 @@ export default function ReportMapInternal({
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
 
   const defaultIcon = useMemo(
-    () => createNeutralIcon(false, currentZoom),
+    () => createNeutralIcon(currentZoom),
     [currentZoom]
   );
-  const selectedIcon = useMemo(
-    () => createNeutralIcon(true, currentZoom),
+  const newDefaultIcon = useMemo(
+    () => createNeutralIcon(currentZoom, true),
     [currentZoom]
   );
 
   const defaultSzIcon = useMemo(
-    () => createSafeZoneIcon(false, currentZoom),
-    [currentZoom]
-  );
-  const selectedSzIcon = useMemo(
-    () => createSafeZoneIcon(true, currentZoom),
+    () => createSafeZoneIcon(currentZoom),
     [currentZoom]
   );
   const draftSzIcon = useMemo(
-    () => createSafeZoneIcon(true, currentZoom, true),
+    () => createSafeZoneIcon(currentZoom, true),
     [currentZoom]
   );
+
+  // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
+  useEffect(() => {
+    Object.values(markerRefs.current).forEach((marker) => {
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+    });
+    if (selectedReport?.id) {
+      const selectedMarker = markerRefs.current[selectedReport.id];
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (selectedMarker && selectedMarker._icon)
+        selectedMarker._icon.classList.add("is-selected");
+    }
+  }, [selectedReport]);
+
+  useEffect(() => {
+    Object.values(szMarkerRefs.current).forEach((marker) => {
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+    });
+    if (selectedSafeZone?.id) {
+      const selectedMarker = szMarkerRefs.current[selectedSafeZone.id];
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (selectedMarker && selectedMarker._icon)
+        selectedMarker._icon.classList.add("is-selected");
+    }
+  }, [selectedSafeZone]);
 
   const validReports = useMemo(
     () =>
@@ -197,6 +203,9 @@ export default function ReportMapInternal({
         .join(", "),
     []
   );
+
+  // eslint-disable-next-line react-hooks/purity
+  const nowTimestamp = useMemo(() => Date.now(), []);
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
@@ -225,6 +234,7 @@ export default function ReportMapInternal({
 
         {validReports.map((report) => {
           const isSelected = selectedReport?.id === report.id;
+          const isNew = nowTimestamp - new Date(report.fecha).getTime() < 10000;
           return (
             <Marker
               key={report.id}
@@ -232,9 +242,10 @@ export default function ReportMapInternal({
                 markerRefs.current[report.id] = marker;
               }}
               position={[report.latitud, report.longitud]}
-              icon={isSelected ? selectedIcon : defaultIcon}
+              icon={isNew ? newDefaultIcon : defaultIcon}
               eventHandlers={{
-                click: () => onSelectReport(report),
+                click: () =>
+                  isSelected ? onSelectReport(null) : onSelectReport(report),
               }}
             ></Marker>
           );
@@ -249,9 +260,12 @@ export default function ReportMapInternal({
                 szMarkerRefs.current[sz.id] = marker;
               }}
               position={[sz.latitud, sz.longitud]}
-              icon={isSelected ? selectedSzIcon : defaultSzIcon}
+              icon={defaultSzIcon}
               eventHandlers={{
-                click: () => onSelectSafeZone?.(sz),
+                click: () =>
+                  isSelected
+                    ? onSelectSafeZone?.(null)
+                    : onSelectSafeZone?.(sz),
               }}
               zIndexOffset={1000} // Ensure safe zones render on top of reports
             />
