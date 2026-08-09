@@ -384,6 +384,7 @@ export async function processMessage(
               puntaje_clima: puntajeClima,
               foto_valida: true,
               foto_url: fotoUrl,
+              adjunto_foto: true,
               descripcion_imagen:
                 session.datos_temporales.descripcion_imagen || null,
               es_audio: session.datos_temporales.es_audio || false,
@@ -536,6 +537,7 @@ export async function processMessage(
               puntaje_clima: puntajeClima,
               foto_valida: true,
               foto_url: fotoUrl,
+              adjunto_foto: true,
               descripcion_imagen:
                 session.datos_temporales.descripcion_imagen || null,
               es_audio: session.datos_temporales.es_audio || false,
