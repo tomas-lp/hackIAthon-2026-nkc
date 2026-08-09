@@ -64,6 +64,23 @@ export function HeatLayer({ points }: HeatLayerProps) {
 
       patchSimpleheat();
 
+      // Patch leaflet.heat to prevent "Cannot read properties of null (reading 'getSize')"
+      // which happens when a redraw is queued via requestAnimFrame but the layer is removed
+      // before it executes.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const HeatLayerProto = (L as any).HeatLayer?.prototype;
+      if (HeatLayerProto && !HeatLayerProto._onRemovePatched) {
+        HeatLayerProto._onRemovePatched = true;
+        const originalOnRemove = HeatLayerProto.onRemove;
+        HeatLayerProto.onRemove = function (m: L.Map) {
+          if (this._frame) {
+            L.Util.cancelAnimFrame(this._frame);
+            this._frame = null;
+          }
+          return originalOnRemove.call(this, m);
+        };
+      }
+
       const { maxZoom, minOpacity, gradient } = HEATMAP_CONFIG;
       const initial = heatmapRadiusAt(map.getZoom(), map.getCenter().lat);
       const layer = L.heatLayer(points, {
