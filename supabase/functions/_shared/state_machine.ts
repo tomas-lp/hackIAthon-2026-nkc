@@ -591,26 +591,29 @@ export async function processMessage(
       let puntajeFoto = 0;
       let fotoUrl = null;
       let fotoValida = false;
-
+      let adjuntoFoto = false;
       if (message.photo) {
+        adjuntoFoto = true;
         await adapter.sendMessage("⏳ Procesando tu imagen con IA...");
         const analisis = await analyzePhoto(
           message.photo.base64,
           message.photo.mimeType
         );
 
+        session.datos_temporales.descripcion_imagen =
+          analisis.descripcion_breve;
+        fotoValida = analisis.foto_valida;
+
         if (analisis.foto_valida) {
           puntajeFoto = 5;
-          fotoValida = true;
-          session.datos_temporales.descripcion_imagen =
-            analisis.descripcion_breve;
           fotoUrl = await uploadPhoto(
             chatId,
             message.photo.base64,
             message.photo.mimeType
           );
+        } else {
+          // Eliminamos el mensaje de advertencia visual para que sea un fallback silencioso
         }
-        // Eliminamos el mensaje de advertencia visual para que sea un fallback silencioso
       } else if (text && text.toLowerCase().includes("omitir")) {
         // Usuario omite foto
       } else {
@@ -644,6 +647,7 @@ export async function processMessage(
         puntaje_clima: puntajeClima,
         foto_valida: fotoValida,
         foto_url: fotoUrl,
+        adjunto_foto: adjuntoFoto,
         descripcion_imagen: session.datos_temporales.descripcion_imagen || null,
         es_audio: session.datos_temporales.es_audio || false,
       });
