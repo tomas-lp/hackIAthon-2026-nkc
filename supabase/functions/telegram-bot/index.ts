@@ -93,11 +93,9 @@ serve(async (req) => {
       );
       const arrayBuffer = await imgRes.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      const { encode } =
+        await import("https://deno.land/std@0.177.0/encoding/base64.ts");
+      const base64 = encode(bytes);
 
       incoming.photo = {
         base64,

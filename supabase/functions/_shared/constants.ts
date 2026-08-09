@@ -25,17 +25,17 @@ export const GROQ_MODELS = {
 export const GEMINI_MODELS = {
   text: ["gemini-3.5-flash-lite", "gemini-3.6-flash"],
   vision: [
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-image",
+    "gemini-3.6-flash",
     "gemini-2.5-flash",
-    "gemini-3.5-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
   ],
 };
 
 export const TIMEOUTS = {
   ai_call: 8000, // 8s máximo por llamada IA
   weather: 5000, // 5s para clima
-  photo_analysis: 10000, // 10s para análisis de foto
+  photo_analysis: 20000, // 20s para análisis de foto
 };
 
 // ==========================================

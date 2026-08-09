@@ -17,6 +17,16 @@ import {
   BotSession,
 } from "./sessions.ts";
 
+function getPautasSeguridad(score: number): string {
+  if (score >= 40) {
+    return "🚨 *ALERTA MÁXIMA:* Desconecte la energía eléctrica.\nBusque un lugar elevado inmediatamente.\nNo intente caminar o conducir por zonas inundadas.";
+  } else if (score >= 20) {
+    return "⚠️ *PRECAUCIÓN ALTA:* Manténgase alejado de cables caídos.\nEvite salir si no es estrictamente necesario.\nEleve sus pertenencias de valor.";
+  } else {
+    return "ℹ️ *RECOMENDACIÓN:* Manténgase informado.\nEvite sacar la basura para no obstruir desagües y circule con precaución.";
+  }
+}
+
 export interface IMessengerAdapter {
   platform: "telegram" | "whatsapp";
   chatId: number;
@@ -60,35 +70,40 @@ export async function processMessage(
     session.intentos_fallidos = 0;
     await saveDBSession(session);
     await adapter.sendMessage(
-      "❌ Proceso cancelado. He reiniciado tu sesión. ¿Quieres reportar una emergencia o consultar el estado de tu zona?"
+      "❌ Proceso cancelado.\nRecuerda que Inú está siempre disponible ante emergencias o consultas climáticas.\nPuedes escribir *hola* en cualquier momento para volver al menú principal."
     );
     return;
   }
 
   const attachLocationHint =
     adapter.platform === "whatsapp"
-      ? "usando el clip 📎 de WhatsApp (Ubicación)"
-      : "usando el botón de adjuntar 📎 (Ubicación) de Telegram";
+      ? "usando el clip 📎 de WhatsApp (Ubicación) o escribiendo tu dirección exacta"
+      : "usando el botón de adjuntar 📎 (Ubicación) de Telegram o escribiendo tu dirección exacta";
 
   switch (session.state) {
     case "IDLE": {
-      if (
-        text === "/start" ||
-        text.toLowerCase() === "hola" ||
-        text.toLowerCase() === "hi"
-      ) {
-        const msg =
-          "¡Hola! Soy Inú, tu asistente frente a las inundaciones.\nPuedes reportar una emergencia climática o consultar cómo está tu zona eligiendo una opción del menú debajo.";
+      const welcomeMsg =
+        "¡Hola! Soy Inú, tu asistente frente a las inundaciones.\nPuedes reportar una emergencia climática o consultar cómo está tu zona eligiendo una opción del menú debajo.\n\n💡 *Recuerda:* Puedes cancelar cualquier proceso en cualquier momento escribiendo 'cancelar'.";
+
+      const sendWelcomeMenu = async () => {
         if (adapter.sendMenu) {
-          await adapter.sendMenu(msg, [
+          await adapter.sendMenu(welcomeMsg, [
             { id: "REPORTE", title: "🚨 Enviar Reporte" },
             { id: "CONSULTA", title: "📍 Estado de mi zona" },
           ]);
         } else {
           await adapter.sendMessage(
-            msg + "\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
+            welcomeMsg + "\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
           );
         }
+      };
+
+      if (
+        text === "/start" ||
+        text.toLowerCase() === "hola" ||
+        text.toLowerCase() === "hi"
+      ) {
+        await sendWelcomeMenu();
         break;
       }
 
@@ -105,7 +120,7 @@ export async function processMessage(
           // Evitar fast-track si el usuario tocó el botón (payload directo)
           if (text === "🚨 Enviar Reporte" || text === "REPORTE") {
             await adapter.sendMessage(
-              "📝 Por favor, **describe brevemente cuál es el problema** (ej: calle inundada, árbol caído, agua dentro del hogar)."
+              "📝 Por favor, describe brevemente cuál es el problema.\nPor ejemplo: calle anegada, árbol caído o agua ingresando a las viviendas."
             );
             session.state = "ESPERANDO_DESCRIPCION_REPORTE";
             session.datos_temporales = { tipo_reporte: "emergencia" };
@@ -129,6 +144,7 @@ export async function processMessage(
                   foto_base64: message.photo.base64,
                   foto_mime: message.photo.mimeType,
                   nivel_agua: analisis.nivel_agua || "NULO",
+                  descripcion_imagen: analisis.descripcion_breve,
                 };
                 esEmergencia = true;
                 finalDesc = text
@@ -138,7 +154,7 @@ export async function processMessage(
                 esEmergencia = esEmergencia || val.es_emergencia;
               } else {
                 await adapter.sendMessage(
-                  "La imagen no parece mostrar una inundación o problema relacionado. Por favor, describe el problema en texto o envía otra foto."
+                  "La imagen no parece mostrar una inundación o problema relacionado.\nPor favor, describe el problema en texto o envía otra foto."
                 );
                 session.state = "ESPERANDO_DESCRIPCION_REPORTE";
                 session.datos_temporales = { tipo_reporte: "emergencia" };
@@ -188,14 +204,14 @@ export async function processMessage(
                 session.state = "CONFIRMANDO_DIRECCION";
               } else {
                 await adapter.sendMessage(
-                  `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
+                  `¡Entendido!\n\n📍 Ahora, por favor envía tu ubicación ${attachLocationHint}.`
                 );
                 session.state = "ESPERANDO_UBICACION_REPORTE";
               }
             } else {
               // No parece emergencia válida según IA, pero quiere reportar
               await adapter.sendMessage(
-                "📝 Por favor, **describe brevemente cuál es el problema** (ej: calle inundada, árbol caído, agua dentro del hogar)."
+                "📝 Por favor, describe brevemente cuál es el problema.\nPor ejemplo: calle anegada, árbol caído o agua ingresando a las viviendas."
               );
               session.state = "ESPERANDO_DESCRIPCION_REPORTE";
               session.datos_temporales = { tipo_reporte: "emergencia" };
@@ -203,27 +219,15 @@ export async function processMessage(
           }
         } else if (intent === "CONSULTA") {
           await adapter.sendMessage(
-            `📍 Para decirte cómo está tu zona, envíame tu ubicación ${attachLocationHint}.`
+            `📍 Para decirte cómo está tu zona, compártela ${attachLocationHint}.`
           );
           session.state = "ESPERANDO_UBICACION_CONSULTA";
         } else {
-          const errMsg =
-            "No entendí tu mensaje. Puedes elegir una opción del menú debajo.";
-          if (adapter.sendMenu) {
-            await adapter.sendMenu(errMsg, [
-              { id: "REPORTE", title: "🚨 Enviar Reporte" },
-              { id: "CONSULTA", title: "📍 Estado de mi zona" },
-            ]);
-          } else {
-            await adapter.sendMessage(
-              errMsg + "\n\n🚨 Enviar Reporte\n📍 Estado de mi zona"
-            );
-          }
+          // Si no se entiende el mensaje o es desconocido, directamente mandar el menú de saludo inicial
+          await sendWelcomeMenu();
         }
       } else {
-        await adapter.sendMessage(
-          "Por favor, envíame un mensaje de texto para empezar."
-        );
+        await sendWelcomeMenu();
       }
       break;
     }
@@ -247,12 +251,14 @@ export async function processMessage(
           session.datos_temporales.foto_ya_procesada = true;
           session.datos_temporales.foto_base64 = message.photo.base64;
           session.datos_temporales.foto_mime = message.photo.mimeType;
+          session.datos_temporales.descripcion_imagen =
+            analisis.descripcion_breve;
           descripcionAI = text ? text : analisis.descripcion_breve;
           nivelAguaAI = analisis.nivel_agua || "NULO";
           esEmergencia = true;
         } else {
           await adapter.sendMessage(
-            "La imagen no parece mostrar una inundación o problema relacionado. Por favor, describe el problema en texto o envía otra foto."
+            "La imagen no parece mostrar una inundación o problema relacionado.\nPor favor, describe el problema en texto o envía otra foto."
           );
           break;
         }
@@ -278,7 +284,7 @@ export async function processMessage(
 
       if (!esEmergencia) {
         await adapter.sendMessage(
-          "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol). Por favor describe el problema nuevamente o escribe /cancelar."
+          "⚠️ Tu mensaje no parece estar relacionado con una emergencia climática (lluvia, calle anegada, caída de árbol).\nPor favor describe el problema nuevamente o escribe /cancelar."
         );
         break;
       }
@@ -305,7 +311,7 @@ export async function processMessage(
         session.state = "CONFIRMANDO_DIRECCION";
       } else {
         await adapter.sendMessage(
-          `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
+          `¡Entendido!\n\n📍 Ahora, por favor envía tu ubicación ${attachLocationHint}.`
         );
         session.state = "ESPERANDO_UBICACION_REPORTE";
       }
@@ -327,14 +333,8 @@ export async function processMessage(
         );
 
         if (coords) {
-          // Simulamos un message.location para reutilizar la lógica
           message.location = { latitude: coords.lat, longitude: coords.lon };
-          // Pasamos el estado para que se procese en la lógica de ESPERANDO_UBICACION_REPORTE
           session.state = "ESPERANDO_UBICACION_REPORTE";
-          // Llevamos a cabo el procesamiento manualmente llamando a la función recursiva o simplemente
-          // insertando el código, pero como estamos en un switch, avanzamos y dejamos que lo llame o lo duplicamos.
-          // Para no hacer trampa con recursión, lo redirigimos y hacemos await processMessage pero rompe session,
-          // así que mejor copio la inicialización de coordenadas aquí:
 
           await adapter.sendMessage(
             "⏳ Analizando el clima histórico y actual en esa ubicación..."
@@ -386,31 +386,34 @@ export async function processMessage(
               puntaje_clima: puntajeClima,
               foto_valida: true,
               foto_url: fotoUrl,
+              descripcion_imagen:
+                session.datos_temporales.descripcion_imagen || null,
               es_audio: session.datos_temporales.es_audio || false,
             });
 
+            const pautas = getPautasSeguridad(puntajeTotal);
             await adapter.sendMessage(
-              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
+              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
             );
             session.state = "IDLE";
             session.datos_temporales = {};
             session.intentos_fallidos = 0;
           } else {
             await adapter.sendMessage(
-              `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
+              `¡Ubicación registrada!\n🌧️ Lluvia acumulada en las últimas 24h: ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 Como paso final opcional, puedes enviarme una foto del problema o escribir *omitir* para finalizar el reporte.`
             );
             session.state = "ESPERANDO_FOTO_REPORTE";
           }
         } else {
           await adapter.sendMessage(
-            "❌ No fue posible verificar esa dirección exacta en la zona metropolitana. Por favor, comparta su ubicación exacta usando el botón del clip 📎 en WhatsApp y seleccione 'Ubicación'."
+            `❌ No fue posible verificar esa dirección exacta.\nPor favor, comparte tu ubicación ${attachLocationHint}.`
           );
           session.state = "ESPERANDO_UBICACION_REPORTE";
         }
       } else {
         // Asumimos "No" u otra cosa
         await adapter.sendMessage(
-          "Entendido. Por favor, comparta su ubicación exacta usando el botón del clip 📎 en WhatsApp y seleccione 'Ubicación'."
+          `Entendido.\nPor favor, comparte tu ubicación ${attachLocationHint}.`
         );
         session.state = "ESPERANDO_UBICACION_REPORTE";
       }
@@ -472,18 +475,21 @@ export async function processMessage(
             puntaje_clima: puntajeClima,
             foto_valida: true,
             foto_url: fotoUrl,
+            descripcion_imagen:
+              session.datos_temporales.descripcion_imagen || null,
             es_audio: session.datos_temporales.es_audio || false,
           });
 
+          const pautas = getPautasSeguridad(puntajeTotal);
           await adapter.sendMessage(
-            `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
+            `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
           );
           session.state = "IDLE";
           session.datos_temporales = {};
           session.intentos_fallidos = 0;
         } else {
           await adapter.sendMessage(
-            `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
+            `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una *foto del problema* para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
           );
           session.state = "ESPERANDO_FOTO_REPORTE";
         }
@@ -543,18 +549,21 @@ export async function processMessage(
               puntaje_clima: puntajeClima,
               foto_valida: true,
               foto_url: fotoUrl,
+              descripcion_imagen:
+                session.datos_temporales.descripcion_imagen || null,
               es_audio: session.datos_temporales.es_audio || false,
             });
 
+            const pautas = getPautasSeguridad(puntajeTotal);
             await adapter.sendMessage(
-              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
+              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
             );
             session.state = "IDLE";
             session.datos_temporales = {};
             session.intentos_fallidos = 0;
           } else {
             await adapter.sendMessage(
-              `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
+              `¡Ubicación registrada!\n🌧️ Lluvia acumulada en las últimas 24h: ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 Como paso final opcional, puedes enviarme una foto del problema o escribir *omitir* para finalizar el reporte.`
             );
             session.state = "ESPERANDO_FOTO_REPORTE";
           }
@@ -569,7 +578,7 @@ export async function processMessage(
             );
           } else {
             await adapter.sendMessage(
-              `❌ No fue posible verificar esa dirección. Por favor, comparta su ubicación exacta usando el botón del clip 📎 en WhatsApp y seleccione 'Ubicación'. (Intento ${session.intentos_fallidos}/3)`
+              `❌ No fue posible verificar esa dirección.\nPor favor, comparte tu ubicación ${attachLocationHint}.\n\nIntento ${session.intentos_fallidos} de 3.`
             );
           }
         }
@@ -584,7 +593,7 @@ export async function processMessage(
           );
         } else {
           await adapter.sendMessage(
-            `❌ No reconozco esa ubicación. Usa la herramienta de adjuntar ubicación. (Intento ${session.intentos_fallidos}/3)`
+            `❌ No reconozco esa ubicación.\nPor favor, comparte tu ubicación ${attachLocationHint}.\n\nIntento ${session.intentos_fallidos} de 3.`
           );
         }
       }
@@ -606,16 +615,15 @@ export async function processMessage(
         if (analisis.foto_valida) {
           puntajeFoto = 5;
           fotoValida = true;
+          session.datos_temporales.descripcion_imagen =
+            analisis.descripcion_breve;
           fotoUrl = await uploadPhoto(
             chatId,
             message.photo.base64,
             message.photo.mimeType
           );
-        } else {
-          await adapter.sendMessage(
-            "⚠️ La imagen no parece ser de una emergencia válida. Se guardará el reporte de todas formas sin puntos extra por foto."
-          );
         }
+        // Eliminamos el mensaje de advertencia visual para que sea un fallback silencioso
       } else if (text && text.toLowerCase().includes("omitir")) {
         // Usuario omite foto
       } else {
@@ -649,11 +657,13 @@ export async function processMessage(
         puntaje_clima: puntajeClima,
         foto_valida: fotoValida,
         foto_url: fotoUrl,
+        descripcion_imagen: session.datos_temporales.descripcion_imagen || null,
         es_audio: session.datos_temporales.es_audio || false,
       });
 
+      const pautas = getPautasSeguridad(puntajeTotal);
       await adapter.sendMessage(
-        `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
+        `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
       );
 
       session.state = "IDLE";
@@ -675,7 +685,7 @@ export async function processMessage(
         );
         const lluvia = weather ? weather.precip_mm : 0;
         await adapter.sendMessage(
-          `📊 Estado de tu zona (Radio 2km):\n\n🌧️ Lluvia acumulada 24h: ${lluvia}mm\n🚨 Hay ${nearbyCount} reporte(s) cerca de ti.\n\nMantente a salvo.`
+          `📊 Estado actual en un radio de 2 kilómetros:\n\n🌧️ Lluvia acumulada en las últimas 24h: ${lluvia}mm\n🚨 Hay ${nearbyCount} reporte(s) cerca de ti.\n\nMantente a salvo.`
         );
 
         session.state = "IDLE";
@@ -692,7 +702,7 @@ export async function processMessage(
           );
         } else {
           await adapter.sendMessage(
-            "Para darte el clima necesito tu ubicación. Por favor, adjuntala."
+            `Para darte el clima necesito tu ubicación.\nPor favor, compártela ${attachLocationHint}.`
           );
         }
       }

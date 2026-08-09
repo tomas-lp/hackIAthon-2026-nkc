@@ -228,10 +228,14 @@ Texto del usuario: "${cleanText}"
 
 TAREA: Determina si el texto reporta un problema climático (lluvia, inundación, calle anegada, árbol caído). Incluso si el tono es casual, es una emergencia válida (true).
 
-Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta:
+REGLAS ESTRICTAS:
+- Para el campo "tipo", DEBES elegir exactamente uno de estos 4 valores: INUNDACION_URBANA, LLUVIAS_FUERTES, GRANIZO, ANEGAMIENTO_VIVIENDA.
+- Para el campo "nivel", elige uno de: AGUA_CALLE, NO_CIRCULAR, AGUA_CASAS, EVACUADOS.
+
+Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta de ejemplo:
 {
   "es_emergencia": true,
-  "tipo": "INUNDACION_URBANA",
+  "tipo": "LLUVIAS_FUERTES",
   "nivel": "AGUA_CALLE"
 }`;
 
@@ -247,11 +251,19 @@ Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta:
       "EVACUADOS",
     ];
 
+    const tipo = String(res.tipo || "INUNDACION_URBANA").toUpperCase();
+    const tiposValidos = [
+      "INUNDACION_URBANA",
+      "LLUVIAS_FUERTES",
+      "GRANIZO",
+      "ANEGAMIENTO_VIVIENDA",
+    ];
+
     return {
       es_emergencia:
         res.es_emergencia === true ||
         String(res.es_emergencia).toLowerCase() === "true",
-      tipo: res.tipo || "INUNDACION_URBANA",
+      tipo: tiposValidos.includes(tipo) ? tipo : "INUNDACION_URBANA",
       nivel_descripcion: nivelesValidos.includes(nivel) ? nivel : "AGUA_CALLE",
     };
   } catch {
@@ -333,7 +345,7 @@ export async function analyzePhoto(
             foto_valida: {
               type: "BOOLEAN",
               description:
-                "true si muestra inundación, calle anegada, daño climático o árbol caído. false en caso contrario.",
+                "true si la foto muestra explícitamente inundaciones urbanas, calles anegadas, lluvias fuertes, granizo, o agua ingresando/inundando el interior de una vivienda (pisos mojados, escaleras inundadas, etc). false en cualquier otro caso.",
             },
             nivel_agua: {
               type: "STRING",
