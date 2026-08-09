@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, MutableRefObject } from "react";
+import { useEffect, useRef, MutableRefObject } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { Report } from "@/types/report";
@@ -17,6 +17,40 @@ function isValidLatLng(lat: number, lng: number): boolean {
   return Number.isFinite(lat) && Number.isFinite(lng);
 }
 
+const FLY_DURATION = 0.5;
+const POPUP_DELAY_MS = 550;
+const CLUSTER_THRESHOLD_METERS = 300;
+
+function buildCluster(selected: Report, allReports: Report[]): Report[] {
+  const cluster = [selected];
+  let unassigned = allReports.filter(
+    (r) => r.id !== selected.id && isValidLatLng(r.latitud, r.longitud)
+  );
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const next: Report[] = [];
+    for (const r of unassigned) {
+      const belongs = cluster.some(
+        (c) =>
+          L.latLng(r.latitud, r.longitud).distanceTo(
+            L.latLng(c.latitud, c.longitud)
+          ) <= CLUSTER_THRESHOLD_METERS
+      );
+      if (belongs) {
+        cluster.push(r);
+        changed = true;
+      } else {
+        next.push(r);
+      }
+    }
+    unassigned = next;
+  }
+
+  return cluster;
+}
+
 export function MapController({
   selectedReport,
   reports,
@@ -24,85 +58,76 @@ export function MapController({
   selectedSafeZone,
 }: MapControllerProps) {
   const map = useMap();
+  const popupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reportsRef = useRef(reports);
 
   useEffect(() => {
-    if (
-      selectedReport &&
-      isValidLatLng(selectedReport.latitud, selectedReport.longitud)
-    ) {
-      const thresholdMeters = 300;
+    reportsRef.current = reports;
+  });
 
-      const cluster = [selectedReport];
-      let unassigned = reports.filter(
-        (r) =>
-          r.id !== selectedReport.id && isValidLatLng(r.latitud, r.longitud)
-      );
-
-      let changed = true;
-      while (changed) {
-        changed = false;
-        const newUnassigned = [];
-        for (const r of unassigned) {
-          let belongsToCluster = false;
-          for (const c of cluster) {
-            const dist = L.latLng(r.latitud, r.longitud).distanceTo(
-              L.latLng(c.latitud, c.longitud)
-            );
-            if (dist <= thresholdMeters) {
-              belongsToCluster = true;
-              break;
-            }
-          }
-          if (belongsToCluster) {
-            cluster.push(r);
-            changed = true;
-          } else {
-            newUnassigned.push(r);
-          }
-        }
-        unassigned = newUnassigned;
-      }
-
-      const bounds = L.latLngBounds(
-        cluster.map((r) => [r.latitud, r.longitud])
-      );
-
-      if (bounds.isValid()) {
-        const currentZoom = map.getZoom();
-        const targetMaxZoom = Math.max(currentZoom, 16);
-
-        // Usamos fitBounds en lugar de flyToBounds para que sea una transición directa y rápida,
-        // evitando el "zoom out" pronunciado que desincroniza el mapa de calor y rompe la UI.
-        map.fitBounds(bounds, {
-          padding: [50, 50],
-          duration: 0.5,
-          animate: true,
-          maxZoom: targetMaxZoom,
-        });
-
-        // Retrasamos la apertura del popup para que la animación termine limpia sin interrupciones de UI.
-        setTimeout(() => {
-          const marker = markerRefs.current[selectedReport.id];
-          if (marker) {
-            marker.openPopup();
-          }
-        }, 550);
-      }
-    } else if (
-      selectedSafeZone &&
-      isValidLatLng(selectedSafeZone.latitud, selectedSafeZone.longitud)
-    ) {
-      const currentZoom = map.getZoom();
-      const targetZoom = Math.max(currentZoom, 16);
-      map.flyTo(
-        [selectedSafeZone.latitud, selectedSafeZone.longitud],
-        targetZoom,
-        {
-          duration: 0.5,
-        }
-      );
+  // Focus on selected report: cluster, fitBounds, open popup
+  useEffect(() => {
+    if (popupTimeoutRef.current) {
+      clearTimeout(popupTimeoutRef.current);
+      popupTimeoutRef.current = null;
     }
-  }, [map, selectedReport, reports, markerRefs, selectedSafeZone]);
+
+    if (
+      !selectedReport ||
+      !isValidLatLng(selectedReport.latitud, selectedReport.longitud)
+    ) {
+      return;
+    }
+
+    const cluster = buildCluster(selectedReport, reportsRef.current);
+    const bounds = L.latLngBounds(cluster.map((r) => [r.latitud, r.longitud]));
+    if (!bounds.isValid()) return;
+
+    const targetMaxZoom = Math.max(map.getZoom(), 16);
+    map.fitBounds(bounds, {
+      padding: [50, 50],
+      duration: FLY_DURATION,
+      animate: true,
+      maxZoom: targetMaxZoom,
+    });
+
+    popupTimeoutRef.current = setTimeout(() => {
+      popupTimeoutRef.current = null;
+      const marker = markerRefs.current[selectedReport.id];
+      if (marker) marker.openPopup();
+    }, POPUP_DELAY_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedReport?.id]);
+
+  // Focus on selected safe zone
+  useEffect(() => {
+    if (
+      !selectedSafeZone ||
+      !isValidLatLng(selectedSafeZone.latitud, selectedSafeZone.longitud)
+    ) {
+      return;
+    }
+
+    const bounds = L.latLngBounds([
+      [selectedSafeZone.latitud, selectedSafeZone.longitud],
+    ]);
+
+    const targetMaxZoom = Math.max(map.getZoom(), 16);
+    map.fitBounds(bounds, {
+      padding: [50, 50],
+      duration: FLY_DURATION,
+      animate: true,
+      maxZoom: targetMaxZoom,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedSafeZone?.id]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+    };
+  }, []);
 
   return null;
 }

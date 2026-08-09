@@ -5,10 +5,11 @@ import { Report } from "@/types/report";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
 import { ageMultiplier } from "@/lib/zones";
-import { X, MapPin, ImageOff, Loader2, AlignLeft, Mic } from "lucide-react";
+import { X, MapPin, Loader2, AlignLeft, Mic } from "lucide-react";
 
 interface ReportDetailSidebarProps {
-  report: Report;
+  report: Report | null;
+  isOpen: boolean;
   onClose: () => void;
   isAdmin?: boolean;
 }
@@ -45,52 +46,82 @@ function ReportPhoto({ fotoUrl }: { fotoUrl?: string | null }) {
 
 export function ReportDetailSidebar({
   report,
+  isOpen,
   onClose,
   isAdmin,
 }: ReportDetailSidebarProps) {
   const [address, setAddress] = useState<string | null>(null);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
+  const [isClosing, setIsClosing] = useState(!isOpen);
+  const [activeReport, setActiveReport] = useState<Report | null>(report);
+
+  useEffect(() => {
+    if (report) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveReport(report);
+      setIsClosing(false);
+    } else {
+      setIsClosing(true);
+    }
+  }, [report, isOpen]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 250);
+  };
 
   useEffect(() => {
     let isCancelled = false;
 
-    resolveAddress(report.latitud, report.longitud)
-      .then((resolved) => {
-        if (!isCancelled) setAddress(resolved);
-      })
-      .catch(() => {
-        if (!isCancelled) setAddress("Ubicación no disponible");
-      });
+    if (activeReport?.latitud && activeReport?.longitud) {
+      resolveAddress(activeReport.latitud, activeReport.longitud)
+        .then((resolved) => {
+          if (!isCancelled) setAddress(resolved);
+        })
+        .catch(() => {
+          if (!isCancelled) setAddress("Ubicación no disponible");
+        });
+    }
 
     return () => {
       isCancelled = true;
     };
-  }, [report.latitud, report.longitud]);
+  }, [activeReport?.latitud, activeReport?.longitud]);
 
-  const typeCfg = TYPE_CONFIG[report.tipo];
+  if (!activeReport) return null;
+
+  const typeCfg = TYPE_CONFIG[activeReport.tipo];
 
   return (
-    <aside className="absolute right-4 top-20 z-[1000] w-80 max-w-80 rounded-2xl border border-white/40 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-2.5 backdrop-blur-md">
+    <aside
+      className={`absolute right-4 top-28 z-[1000] w-80 max-w-80 rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-xs p-2.5 transition-all duration-300 ease-in-out ${
+        isClosing || !isOpen
+          ? "translate-x-[120%] opacity-0 pointer-events-none"
+          : "translate-x-0 opacity-100"
+      }`}
+    >
       <div className="flex items-center justify-between mb-2 px-1.5 pt-1">
         <span className="text-sm font-semibold text-zinc-800 tracking-tight">
           Detalle de Alerta
         </span>
         <button
-          onClick={onClose}
-          className="rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200/50 hover:text-zinc-800"
+          onClick={handleClose}
+          className="rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200/50 hover:text-zinc-800 cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="flex flex-col rounded-[14px] border border-zinc-100 bg-white p-3.5 gap-4 shadow-sm">
+      <div className="flex flex-col rounded-[14px] border border-gray-200 bg-white p-3.5 gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
             <span className="text-[15px] font-bold text-zinc-900 leading-snug">
               {typeCfg.label}
             </span>
             <span className="text-xs font-medium text-zinc-400">
-              {formatDate(report.fecha)}
+              {formatDate(activeReport.fecha)}
             </span>
           </div>
           {isAdmin && (
@@ -99,7 +130,7 @@ export function ReportDetailSidebar({
               className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-600 w-fit text-nowrap ring-1 ring-blue-500/20 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               title="Ver desglose del puntaje"
             >
-              {report.puntajeBase} pts
+              {activeReport.puntajeBase} pts
             </button>
           )}
         </div>
@@ -110,12 +141,13 @@ export function ReportDetailSidebar({
               Detalle del puntaje:
             </span>
             <span className="text-blue-700 leading-relaxed font-medium">
-              Puntaje actual: {report.puntajeClima} (Clima) +{" "}
-              {report.puntajeDescripcion} (Descripción) + {report.puntajeFoto}{" "}
-              (Foto válida) *{" "}
+              Puntaje actual: {activeReport.puntajeClima} (Clima) +{" "}
+              {activeReport.puntajeDescripcion} (Descripción) +{" "}
+              {activeReport.puntajeFoto} (Foto válida) *{" "}
               {(() => {
                 const horas =
-                  (new Date().getTime() - new Date(report.fecha).getTime()) /
+                  (new Date().getTime() -
+                    new Date(activeReport.fecha).getTime()) /
                   3600000;
                 return ageMultiplier(horas) ?? 0;
               })()}{" "}
@@ -128,25 +160,28 @@ export function ReportDetailSidebar({
           <MapPin className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
           <span className="font-medium text-zinc-600 leading-relaxed">
             {address ??
-              report.localidad ??
-              `Lat ${report.latitud.toFixed(4)}, Lng ${report.longitud.toFixed(4)}`}
+              activeReport.localidad ??
+              `Lat ${activeReport.latitud.toFixed(4)}, Lng ${activeReport.longitud.toFixed(4)}`}
           </span>
         </div>
 
-        {report.descripcion && (
+        {activeReport.descripcion && (
           <div className="flex items-start gap-2.5 text-xs px-1">
-            {report.es_audio ? (
+            {activeReport.es_audio ? (
               <Mic className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
             ) : (
               <AlignLeft className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
             )}
             <span className="font-medium text-zinc-600 leading-relaxed italic">
-              &quot;{report.descripcion}&quot;
+              &quot;{activeReport.descripcion}&quot;
             </span>
           </div>
         )}
 
-        <ReportPhoto key={report.fotoUrl} fotoUrl={report.fotoUrl} />
+        <ReportPhoto
+          key={activeReport.fotoUrl}
+          fotoUrl={activeReport.fotoUrl}
+        />
       </div>
     </aside>
   );

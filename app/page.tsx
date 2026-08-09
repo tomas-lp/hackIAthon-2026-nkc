@@ -1,6 +1,5 @@
 import { reportService } from "@/services/reportService";
 import { CrisisDashboard } from "@/features/dashboard/CrisisDashboard";
-import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
@@ -18,8 +17,6 @@ export default async function CrisisGraphPage() {
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
       <CrisisDashboard initialReports={reports} user={user} />
-
-      <BotQRWidget />
     </main>
   );
 }

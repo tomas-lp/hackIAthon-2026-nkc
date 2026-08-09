@@ -51,22 +51,18 @@ function patchSimpleheat(): void {
 export function HeatLayer({ points }: HeatLayerProps) {
   const map = useMap();
   const layerRef = useRef<L.HeatLayer | null>(null);
+  const importPromiseRef = useRef<Promise<void> | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
+  // First render: import leaflet.heat once and create the layer
   useEffect(() => {
     let cancelled = false;
-    let cleanup: (() => void) | null = null;
 
     ensureGlobalLeaflet();
-    void import("leaflet.heat").then(() => {
-      if (cancelled) return;
+    importPromiseRef.current = import("leaflet.heat").then(() => {
+      if (cancelled || layerRef.current) return;
 
       patchSimpleheat();
-
-      const existing = layerRef.current;
-      if (existing) {
-        existing.setLatLngs(points);
-        return;
-      }
 
       const { maxZoom, minOpacity, gradient } = HEATMAP_CONFIG;
       const initial = heatmapRadiusAt(map.getZoom(), map.getCenter().lat);
@@ -81,7 +77,6 @@ export function HeatLayer({ points }: HeatLayerProps) {
       layerRef.current = layer;
       layer.addTo(map);
 
-      // Adjust the opacity of the canvas element directly to make colors slightly more transparent
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = (layer as any)._canvas as HTMLCanvasElement | undefined;
       if (canvas) {
@@ -94,20 +89,38 @@ export function HeatLayer({ points }: HeatLayerProps) {
       };
       map.on("zoomend", onZoomEnd);
 
-      cleanup = () => {
+      cleanupRef.current = () => {
         map.off("zoomend", onZoomEnd);
       };
     });
 
     return () => {
       cancelled = true;
-      if (cleanup) cleanup();
+      if (cleanupRef.current) cleanupRef.current();
       if (layerRef.current) {
         map.removeLayer(layerRef.current);
         layerRef.current = null;
       }
     };
-  }, [map, points]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
+  // Subsequent updates: just push new points into the existing layer
+  useEffect(() => {
+    if (layerRef.current) {
+      layerRef.current.setLatLngs(points);
+      return;
+    }
+
+    // Layer not created yet (import still in-flight) — update points once it resolves
+    if (importPromiseRef.current) {
+      importPromiseRef.current.then(() => {
+        if (layerRef.current) {
+          layerRef.current.setLatLngs(points);
+        }
+      });
+    }
+  }, [points]);
 
   return null;
 }
