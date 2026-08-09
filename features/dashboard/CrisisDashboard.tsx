@@ -16,12 +16,18 @@ import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
 import { ChevronRight } from "lucide-react";
 
+import { User } from "@supabase/supabase-js";
+
 interface CrisisDashboardProps {
   initialReports: Report[];
+  user?: User | null;
 }
 
-export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
-  const [isAdmin, setIsAdmin] = useState(false);
+export function CrisisDashboard({
+  initialReports,
+  user,
+}: CrisisDashboardProps) {
+  const isAdmin = !!user;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -189,7 +195,11 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       <AuthWidget
         isAdmin={isAdmin}
         onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={() => setIsAdmin(false)}
+        onLogoutClick={async () => {
+          const { logoutFromSession } = await import("@/app/auth/actions");
+          await logoutFromSession();
+          window.location.reload();
+        }}
         isHidden={hideMainUI}
       />
 
@@ -197,7 +207,6 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLogin={() => {
-          setIsAdmin(true);
           setShowLoginModal(false);
         }}
       />

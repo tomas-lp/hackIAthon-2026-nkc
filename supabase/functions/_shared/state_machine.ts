@@ -57,6 +57,11 @@ export async function processMessage(
     return;
   }
 
+  const attachLocationHint =
+    adapter.platform === "whatsapp"
+      ? "usando el clip 📎 de WhatsApp (Ubicación)"
+      : "usando el botón de adjuntar 📎 (Ubicación) de Telegram";
+
   switch (session.state) {
     case "IDLE": {
       if (
@@ -79,8 +84,15 @@ export async function processMessage(
         break;
       }
 
-      if (text) {
-        const intent = await classifyIntent(text);
+      if (text || message.photo) {
+        let intent = "CONSULTA";
+
+        if (message.photo) {
+          intent = "REPORTE";
+        } else if (text) {
+          intent = await classifyIntent(text);
+        }
+
         if (intent === "REPORTE") {
           // Evitar fast-track si el usuario tocó el botón (payload directo)
           if (text === "🚨 Enviar Reporte" || text === "REPORTE") {
@@ -91,17 +103,55 @@ export async function processMessage(
             session.datos_temporales = { tipo_reporte: "emergencia" };
           } else {
             // Intentar Fast-Track
-            const val = await validateDescription(text);
-            if (val.es_emergencia) {
+            let esEmergencia = false;
+            let val = null;
+            let analisis = null;
+            let finalDesc = text;
+
+            if (message.photo) {
+              await adapter.sendMessage("⏳ Analizando la imagen...");
+              analisis = await analyzePhoto(
+                message.photo.base64,
+                message.photo.mimeType
+              );
+              if (analisis.foto_valida) {
+                session.datos_temporales = {
+                  tiene_foto: true,
+                  foto_ya_procesada: true,
+                  foto_base64: message.photo.base64,
+                  foto_mime: message.photo.mimeType,
+                  nivel_agua: analisis.nivel_agua || "NULO",
+                };
+                esEmergencia = true;
+                finalDesc = text
+                  ? text
+                  : analisis.descripcion_breve || "Reporte desde imagen";
+                val = await validateDescription(finalDesc);
+                esEmergencia = esEmergencia || val.es_emergencia;
+              } else {
+                await adapter.sendMessage(
+                  "La imagen no parece mostrar una inundación o problema relacionado. Por favor, describe el problema en texto o envía otra foto."
+                );
+                session.state = "ESPERANDO_DESCRIPCION_REPORTE";
+                session.datos_temporales = { tipo_reporte: "emergencia" };
+                break;
+              }
+            } else {
+              val = await validateDescription(text);
+              esEmergencia = val.es_emergencia;
+            }
+
+            if (esEmergencia && val) {
               session.datos_temporales = {
+                ...session.datos_temporales,
                 tipo_reporte: "emergencia",
-                descripcion: text,
+                descripcion: finalDesc,
                 tipo: val.tipo,
                 nivel_descripcion: val.nivel_descripcion,
                 es_audio: message.esAudio || false,
               };
               await adapter.sendMessage(
-                "¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** usando el clip 📎 de WhatsApp (Ubicación)."
+                `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
               );
               session.state = "ESPERANDO_UBICACION_REPORTE";
             } else {
@@ -115,7 +165,7 @@ export async function processMessage(
           }
         } else if (intent === "CONSULTA") {
           await adapter.sendMessage(
-            "📍 Para decirte cómo está tu zona, envíame tu ubicación usando el clip 📎 de WhatsApp (Ubicación)."
+            `📍 Para decirte cómo está tu zona, envíame tu ubicación ${attachLocationHint}.`
           );
           session.state = "ESPERANDO_UBICACION_CONSULTA";
         } else {
@@ -193,7 +243,7 @@ export async function processMessage(
       }
 
       await adapter.sendMessage(
-        "¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** usando el clip 📎 de WhatsApp (Ubicación)."
+        `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
       );
       session.state = "ESPERANDO_UBICACION_REPORTE";
       break;
@@ -258,14 +308,14 @@ export async function processMessage(
           });
 
           await adapter.sendMessage(
-            `✅ ¡Reporte guardado con éxito!\nPuntaje de evidencia: **${puntajeTotal} pts**. Ha sido sumado al mapa. Mantente a salvo.`
+            `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
           );
           session.state = "IDLE";
           session.datos_temporales = {};
           session.intentos_fallidos = 0;
         } else {
           await adapter.sendMessage(
-            `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Puntaje de evidencia hasta ahora: ${session.datos_temporales.puntaje_parcial} pts.\n\n📷 (Último paso) Envía una **foto del problema** (+5 pts si es válida), o escribe "omitir" para finalizar el reporte.`
+            `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
           );
           session.state = "ESPERANDO_FOTO_REPORTE";
         }
@@ -349,7 +399,7 @@ export async function processMessage(
       });
 
       await adapter.sendMessage(
-        `✅ ¡Reporte guardado con éxito!\nPuntaje de evidencia: **${puntajeTotal} pts**. Ha sido sumado al mapa. Mantente a salvo.`
+        `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
       );
 
       session.state = "IDLE";
