@@ -669,6 +669,52 @@ export async function processMessage(
         session.state = "IDLE";
         session.datos_temporales = {};
         session.intentos_fallidos = 0;
+      } else if (text) {
+        await adapter.sendMessage(`⏳ Buscando las coordenadas de ${text}...`);
+
+        let direccionFinal = text;
+        const match = findBestStreetMatch(text, adapter.phoneNumber);
+        if (match) {
+          direccionFinal = match.fullAddress;
+        }
+
+        const coords = await geocodeAddress(direccionFinal);
+
+        if (coords) {
+          const weather = await fetchCurrentWeather(coords.lat, coords.lon);
+          const nearbyCount = await countNearbyReports(
+            coords.lat,
+            coords.lon,
+            2
+          );
+          const lluvia = weather ? weather.precip_mm : 0;
+
+          let msj = `📊 Estado actual en un radio de 2 kilómetros`;
+          if (match) msj += ` (aprox. desde ${direccionFinal}):`;
+          else msj += `:`;
+
+          await adapter.sendMessage(
+            `${msj}\n\n🌧️ Lluvia acumulada en las últimas 24h: ${lluvia}mm\n🚨 Hay ${nearbyCount} reporte(s) cerca de ti.\n\nMantente a salvo.`
+          );
+
+          session.state = "IDLE";
+          session.datos_temporales = {};
+          session.intentos_fallidos = 0;
+        } else {
+          session.intentos_fallidos++;
+          if (session.intentos_fallidos >= 3) {
+            session.state = "IDLE";
+            session.datos_temporales = {};
+            session.intentos_fallidos = 0;
+            await adapter.sendMessage(
+              "Superaste el límite de intentos. Consulta cancelada."
+            );
+          } else {
+            await adapter.sendMessage(
+              `❌ No fue posible verificar esa dirección.\nPor favor, comparte tu ubicación ${attachLocationHint}.\n\nIntento ${session.intentos_fallidos} de 3.`
+            );
+          }
+        }
       } else {
         session.intentos_fallidos++;
         if (session.intentos_fallidos >= 3) {
