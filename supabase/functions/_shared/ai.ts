@@ -223,13 +223,17 @@ export async function validateDescription(text: string): Promise<{
   nivel_descripcion: string;
 }> {
   const cleanText = text.substring(0, 500);
-  const prompt = `Analiza este texto de un ciudadano reportando un problema. Considera como emergencia válida (es_emergencia: true) cualquier reporte relacionado con lluvia, inundación, granizo, árboles caídos, anegamientos o problemas climáticos, incluso si el tono es casual o no parece muy grave. Responde SÓLO con JSON:
+  const prompt = `Actúas como clasificador de emergencias climáticas para Corrientes/Resistencia.
+Texto del usuario: "${cleanText}"
+
+TAREA: Determina si el texto reporta un problema climático (lluvia, inundación, calle anegada, árbol caído). Incluso si el tono es casual, es una emergencia válida (true).
+
+Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta:
 {
-  "es_emergencia": true/false,
-  "tipo": "INUNDACION_URBANA" | "LLUVIAS_FUERTES" | "GRANIZO" | "ANEGAMIENTO_VIVIENDA",
-  "nivel": "AGUA_CALLE" | "NO_CIRCULAR" | "AGUA_CASAS" | "EVACUADOS"
-}
-Texto: "${cleanText}"`;
+  "es_emergencia": true,
+  "tipo": "INUNDACION_URBANA",
+  "nivel": "AGUA_CALLE"
+}`;
 
   try {
     const res = await runTextAIFallback("validation", prompt, true);
@@ -244,7 +248,9 @@ Texto: "${cleanText}"`;
     ];
 
     return {
-      es_emergencia: !!res.es_emergencia,
+      es_emergencia:
+        res.es_emergencia === true ||
+        String(res.es_emergencia).toLowerCase() === "true",
       tipo: res.tipo || "INUNDACION_URBANA",
       nivel_descripcion: nivelesValidos.includes(nivel) ? nivel : "AGUA_CALLE",
     };
@@ -254,6 +260,42 @@ Texto: "${cleanText}"`;
       tipo: "INUNDACION_URBANA",
       nivel_descripcion: "AGUA_CALLE",
     };
+  }
+}
+
+export async function extractAddress(text: string): Promise<string | null> {
+  const cleanText = text.substring(0, 500);
+  const prompt = `Extrae la dirección exacta de esta transcripción de audio.
+Texto: "${cleanText}"
+
+REGLAS:
+1. Extrae ÚNICAMENTE el nombre de la calle y su altura (número) tal cual lo haya pronunciado o escrito el usuario. Ej: "Madre cerquera 350", "Yacare aguirre al 1500".
+2. NO corrijas errores ortográficos. Extrae exactamente lo que se dice.
+3. IGNORA referencias a locales, negocios o lugares (Chango Más, Hospital, etc).
+4. IGNORA entrecalles ("entre X y Z"). Solo extrae la calle principal con su altura.
+5. Si no hay calle clara, devuelve null.
+
+Responde ÚNICAMENTE con JSON válido:
+{
+  "direccion_detectada": "string o null"
+}`;
+
+  try {
+    // Usar la clave 2 (dedicada a modelos pesados/fallback en nuestro setup) para asegurar mayor razonamiento
+    const res = await callGroqWithDiscovery(
+      GROQ_API_KEY_2,
+      "validation",
+      prompt,
+      true
+    );
+    if (res.direccion_detectada && res.direccion_detectada.trim().length > 0) {
+      if (res.direccion_detectada.toLowerCase() === "null") return null;
+      return res.direccion_detectada.trim();
+    }
+    return null;
+  } catch (error) {
+    console.error("Fallo extracción de dirección:", error);
+    return null;
   }
 }
 

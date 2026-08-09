@@ -35,8 +35,8 @@ export async function getDBSession(chatId: number): Promise<BotSession> {
     return newSession;
   }
 
-  // Reset de sesión si lleva más de 10 minutos inactiva
-  if (now.getTime() - new Date(data.ultima_interaccion).getTime() > 600000) {
+  // Reset de sesión si lleva más de 1 hora inactiva (3600000 ms)
+  if (now.getTime() - new Date(data.ultima_interaccion).getTime() > 3600000) {
     const resetSession: BotSession = {
       chat_id: chatId,
       state: "IDLE",

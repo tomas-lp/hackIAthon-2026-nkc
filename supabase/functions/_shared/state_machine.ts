@@ -1,5 +1,12 @@
-import { classifyIntent, validateDescription, analyzePhoto } from "./ai.ts";
+import {
+  classifyIntent,
+  validateDescription,
+  analyzePhoto,
+  extractAddress,
+} from "./ai.ts";
 import { fetchCurrentWeather } from "./weather.ts";
+import { geocodeAddress } from "./geocode.ts";
+import { findBestStreetMatch } from "./fuzzy_match.ts";
 import { descripcionPuntos, climaPuntos } from "./scoring.ts";
 import {
   getDBSession,
@@ -13,6 +20,7 @@ import {
 export interface IMessengerAdapter {
   platform: "telegram" | "whatsapp";
   chatId: number;
+  phoneNumber?: string;
   sendMessage(text: string): Promise<void>;
   sendMenu?(
     text: string,
@@ -142,6 +150,19 @@ export async function processMessage(
             }
 
             if (esEmergencia && val) {
+              const direccionExtraida = await extractAddress(finalDesc);
+              let direccionFinal = null;
+
+              if (direccionExtraida) {
+                const match = findBestStreetMatch(
+                  direccionExtraida,
+                  adapter.phoneNumber
+                );
+                if (match) {
+                  direccionFinal = match.fullAddress;
+                }
+              }
+
               session.datos_temporales = {
                 ...session.datos_temporales,
                 tipo_reporte: "emergencia",
@@ -149,11 +170,28 @@ export async function processMessage(
                 tipo: val.tipo,
                 nivel_descripcion: val.nivel_descripcion,
                 es_audio: message.esAudio || false,
+                direccion_detectada: direccionFinal,
               };
-              await adapter.sendMessage(
-                `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
-              );
-              session.state = "ESPERANDO_UBICACION_REPORTE";
+
+              if (direccionFinal) {
+                const msgConfirm = `He registrado que la emergencia se ubica en *${direccionFinal}*. ¿Es correcta esta ubicación para ingresarla al mapa?`;
+                if (adapter.sendMenu) {
+                  await adapter.sendMenu(msgConfirm, [
+                    { id: "CONFIRMAR_DIR_SI", title: "✅ Sí, es correcta" },
+                    { id: "CONFIRMAR_DIR_NO", title: "❌ No, usaré el GPS" },
+                  ]);
+                } else {
+                  await adapter.sendMessage(
+                    msgConfirm + "\n\nResponde 'Sí' o 'No'."
+                  );
+                }
+                session.state = "CONFIRMANDO_DIRECCION";
+              } else {
+                await adapter.sendMessage(
+                  `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
+                );
+                session.state = "ESPERANDO_UBICACION_REPORTE";
+              }
             } else {
               // No parece emergencia válida según IA, pero quiere reportar
               await adapter.sendMessage(
@@ -220,11 +258,22 @@ export async function processMessage(
         }
       }
 
+      let direccionDetectadaAI = null;
+
       if (descripcionAI) {
         const val = await validateDescription(descripcionAI);
         esEmergencia = esEmergencia || val.es_emergencia;
         tipoAI = val.tipo;
         nivelDescAI = val.nivel_descripcion;
+        if (esEmergencia) {
+          const extracted = await extractAddress(descripcionAI);
+          if (extracted) {
+            const match = findBestStreetMatch(extracted, adapter.phoneNumber);
+            if (match) {
+              direccionDetectadaAI = match.fullAddress;
+            }
+          }
+        }
       }
 
       if (!esEmergencia) {
@@ -238,14 +287,133 @@ export async function processMessage(
       session.datos_temporales.tipo = tipoAI;
       session.datos_temporales.nivel_descripcion = nivelDescAI;
       session.datos_temporales.es_audio = message.esAudio || false;
+      session.datos_temporales.direccion_detectada = direccionDetectadaAI;
       if (session.datos_temporales.tiene_foto) {
         session.datos_temporales.nivel_agua = nivelAguaAI;
       }
 
-      await adapter.sendMessage(
-        `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
-      );
-      session.state = "ESPERANDO_UBICACION_REPORTE";
+      if (direccionDetectadaAI) {
+        const msgConfirm = `He registrado que la emergencia se ubica en *${direccionDetectadaAI}*. ¿Es correcta esta ubicación para ingresarla al mapa?`;
+        if (adapter.sendMenu) {
+          await adapter.sendMenu(msgConfirm, [
+            { id: "CONFIRMAR_DIR_SI", title: "✅ Sí, es correcta" },
+            { id: "CONFIRMAR_DIR_NO", title: "❌ No, usaré el GPS" },
+          ]);
+        } else {
+          await adapter.sendMessage(msgConfirm + "\n\nResponde 'Sí' o 'No'.");
+        }
+        session.state = "CONFIRMANDO_DIRECCION";
+      } else {
+        await adapter.sendMessage(
+          `¡Entendido!\n\n📍 Ahora, por favor **envía tu ubicación actual** ${attachLocationHint}.`
+        );
+        session.state = "ESPERANDO_UBICACION_REPORTE";
+      }
+      break;
+    }
+
+    case "CONFIRMANDO_DIRECCION": {
+      if (
+        cleanText === "confirmar_dir_si" ||
+        cleanText === "sí" ||
+        cleanText === "si" ||
+        cleanText === "✅ sí, es correcta"
+      ) {
+        await adapter.sendMessage(
+          `⏳ Buscando las coordenadas de ${session.datos_temporales.direccion_detectada}...`
+        );
+        const coords = await geocodeAddress(
+          session.datos_temporales.direccion_detectada as string
+        );
+
+        if (coords) {
+          // Simulamos un message.location para reutilizar la lógica
+          message.location = { latitude: coords.lat, longitude: coords.lon };
+          // Pasamos el estado para que se procese en la lógica de ESPERANDO_UBICACION_REPORTE
+          session.state = "ESPERANDO_UBICACION_REPORTE";
+          // Llevamos a cabo el procesamiento manualmente llamando a la función recursiva o simplemente
+          // insertando el código, pero como estamos en un switch, avanzamos y dejamos que lo llame o lo duplicamos.
+          // Para no hacer trampa con recursión, lo redirigimos y hacemos await processMessage pero rompe session,
+          // así que mejor copio la inicialización de coordenadas aquí:
+
+          await adapter.sendMessage(
+            "⏳ Analizando el clima histórico y actual en esa ubicación..."
+          );
+          session.datos_temporales.lat = coords.lat;
+          session.datos_temporales.lon = coords.lon;
+
+          const weather = await fetchCurrentWeather(coords.lat, coords.lon);
+          const precipMm = weather ? weather.precip_mm : 0;
+          const climaFuente = weather ? "WeatherAPI" : "Desconocida";
+          session.datos_temporales.lluvia_mm = precipMm;
+          session.datos_temporales.clima_fuente = climaFuente;
+
+          const nivelDescripcion = String(
+            session.datos_temporales.nivel_descripcion || "AGUA_CALLE"
+          );
+          const puntajeDescripcion = descripcionPuntos(nivelDescripcion);
+          const puntajeClima = climaPuntos(precipMm);
+
+          session.datos_temporales.puntaje_parcial =
+            puntajeDescripcion + puntajeClima;
+
+          if (session.datos_temporales.foto_ya_procesada) {
+            let fotoUrl = null;
+            if (
+              session.datos_temporales.foto_base64 &&
+              session.datos_temporales.foto_mime
+            ) {
+              fotoUrl = await uploadPhoto(
+                chatId,
+                session.datos_temporales.foto_base64 as string,
+                session.datos_temporales.foto_mime as string
+              );
+            }
+            const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
+
+            await saveReport({
+              chat_id: chatId,
+              descripcion: session.datos_temporales.descripcion as string,
+              lat: coords.lat,
+              lon: coords.lon,
+              location: `POINT(${coords.lon} ${coords.lat})`,
+              lluvia_mm: precipMm,
+              clima_fuente: climaFuente,
+              tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
+              puntaje_base: puntajeTotal,
+              puntaje_descripcion: puntajeDescripcion,
+              puntaje_foto: 5,
+              puntaje_clima: puntajeClima,
+              foto_valida: true,
+              foto_url: fotoUrl,
+              es_audio: session.datos_temporales.es_audio || false,
+            });
+
+            await adapter.sendMessage(
+              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
+            );
+            session.state = "IDLE";
+            session.datos_temporales = {};
+            session.intentos_fallidos = 0;
+          } else {
+            await adapter.sendMessage(
+              `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
+            );
+            session.state = "ESPERANDO_FOTO_REPORTE";
+          }
+        } else {
+          await adapter.sendMessage(
+            "❌ No fue posible verificar esa dirección exacta en la zona metropolitana. Por favor, comparta su ubicación exacta usando el botón del clip 📎 en WhatsApp y seleccione 'Ubicación'."
+          );
+          session.state = "ESPERANDO_UBICACION_REPORTE";
+        }
+      } else {
+        // Asumimos "No" u otra cosa
+        await adapter.sendMessage(
+          "Entendido. Por favor, comparta su ubicación exacta usando el botón del clip 📎 en WhatsApp y seleccione 'Ubicación'."
+        );
+        session.state = "ESPERANDO_UBICACION_REPORTE";
+      }
       break;
     }
 
@@ -318,6 +486,92 @@ export async function processMessage(
             `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
           );
           session.state = "ESPERANDO_FOTO_REPORTE";
+        }
+      } else if (text) {
+        // Fallback: Si escriben una dirección en lugar de mandar el pin
+        await adapter.sendMessage(`⏳ Buscando las coordenadas de ${text}...`);
+        const coords = await geocodeAddress(text);
+        if (coords) {
+          // Duplicamos lógica de ubicación
+          await adapter.sendMessage(
+            "⏳ Analizando el clima histórico y actual en esa ubicación..."
+          );
+          session.datos_temporales.lat = coords.lat;
+          session.datos_temporales.lon = coords.lon;
+
+          const weather = await fetchCurrentWeather(coords.lat, coords.lon);
+          const precipMm = weather ? weather.precip_mm : 0;
+          const climaFuente = weather ? "WeatherAPI" : "Desconocida";
+          session.datos_temporales.lluvia_mm = precipMm;
+          session.datos_temporales.clima_fuente = climaFuente;
+
+          const nivelDescripcion = String(
+            session.datos_temporales.nivel_descripcion || "AGUA_CALLE"
+          );
+          const puntajeDescripcion = descripcionPuntos(nivelDescripcion);
+          const puntajeClima = climaPuntos(precipMm);
+
+          session.datos_temporales.puntaje_parcial =
+            puntajeDescripcion + puntajeClima;
+
+          if (session.datos_temporales.foto_ya_procesada) {
+            let fotoUrl = null;
+            if (
+              session.datos_temporales.foto_base64 &&
+              session.datos_temporales.foto_mime
+            ) {
+              fotoUrl = await uploadPhoto(
+                chatId,
+                session.datos_temporales.foto_base64 as string,
+                session.datos_temporales.foto_mime as string
+              );
+            }
+            const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
+
+            await saveReport({
+              chat_id: chatId,
+              descripcion: session.datos_temporales.descripcion as string,
+              lat: coords.lat,
+              lon: coords.lon,
+              location: `POINT(${coords.lon} ${coords.lat})`,
+              lluvia_mm: precipMm,
+              clima_fuente: climaFuente,
+              tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
+              puntaje_base: puntajeTotal,
+              puntaje_descripcion: puntajeDescripcion,
+              puntaje_foto: 5,
+              puntaje_clima: puntajeClima,
+              foto_valida: true,
+              foto_url: fotoUrl,
+              es_audio: session.datos_temporales.es_audio || false,
+            });
+
+            await adapter.sendMessage(
+              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\nNuestros sistemas han estimado la gravedad de la situación. Mantente a salvo.`
+            );
+            session.state = "IDLE";
+            session.datos_temporales = {};
+            session.intentos_fallidos = 0;
+          } else {
+            await adapter.sendMessage(
+              `¡Ubicación registrada!\n🌧️ Lluvia acumulada (24h): ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 (Último paso) Envía una **foto del problema** para validar la emergencia, o escribe "omitir" para finalizar el reporte.`
+            );
+            session.state = "ESPERANDO_FOTO_REPORTE";
+          }
+        } else {
+          session.intentos_fallidos++;
+          if (session.intentos_fallidos >= 3) {
+            session.state = "IDLE";
+            session.datos_temporales = {};
+            session.intentos_fallidos = 0;
+            await adapter.sendMessage(
+              "Superaste el límite de intentos. Reporte cancelado."
+            );
+          } else {
+            await adapter.sendMessage(
+              `❌ No fue posible verificar esa dirección. Por favor, comparta su ubicación exacta usando el botón del clip 📎 en WhatsApp y seleccione 'Ubicación'. (Intento ${session.intentos_fallidos}/3)`
+            );
+          }
         }
       } else {
         session.intentos_fallidos++;

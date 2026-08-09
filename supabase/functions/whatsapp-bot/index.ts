@@ -72,6 +72,7 @@ serve(async (req) => {
     const adapter: IMessengerAdapter = {
       platform: "whatsapp",
       chatId,
+      phoneNumber: sender,
       sendMessage: async (text: string) => {
         await sendWhatsAppMessage(sender, text);
       },

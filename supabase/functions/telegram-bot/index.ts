@@ -46,6 +46,7 @@ serve(async (req) => {
     const adapter: IMessengerAdapter = {
       platform: "telegram",
       chatId,
+      phoneNumber: undefined,
       sendMessage: async (text: string) => {
         await sendTelegramMessage(chatId, text);
       },
