@@ -195,3 +195,35 @@ Cuando se obtiene una ubicación (por GPS o dirección confirmada):
 Cada interacción se guarda en la base de datos `user_sessions`.
 
 - **Timeouts:** Si un usuario deja la conversación inactiva por más de **1 hora** (3.600.000 milisegundos), la sesión se resetea a `IDLE` automáticamente. Esto evita que los usuarios queden atrapados en flujos a medias días después.
+
+---
+
+## 6. Arquitectura Crítica de Imágenes y Sesiones (Eager Upload)
+
+**¡CRÍTICO! NO MODIFICAR ESTA LÓGICA DE SUBIDA DE IMÁGENES:**
+Durante el desarrollo se experimentó un bug severo donde el bot pedía la foto dos veces y no guardaba ni la URL ni la descripción de la imagen en la base de datos final. Esto ocurrió por una combinación de factores técnicos limitantes entre Deno y Supabase.
+
+### A. Eager Upload y Límites de Payload en Supabase
+
+- ❌ **El problema:** Inicialmente, cuando el usuario mandaba una foto (Fast-Track), el bot intentaba guardar el string Base64 completo en `session.datos_temporales.foto_base64`. Una foto de WhatsApp en Base64 puede pesar más de 5MB. La API de Supabase (PostgREST) tiene un límite de payload de 1MB. Por lo tanto, `saveDBSession(session)` **fallaba silenciosamente**, perdiendo toda la memoria de la sesión (incluyendo la `descripcion_imagen` analizada por la IA).
+- ✅ **La solución (Eager Upload):** Ahora, si la IA dictamina que la foto es válida, **se sube inmediatamente a Supabase Storage** in-situ. En `datos_temporales` solo se guarda la URL final (un string muy corto: `session.datos_temporales.fotoUrl`). De esta forma, la sesión JSON sigue siendo microscópica y no falla. Si el usuario cancela a mitad de camino, la foto queda "huérfana" en el bucket, un trade-off aceptable para solucionar el bug de sesión.
+
+### B. Decodificación Base64 Óptima (Deno Edge Functions)
+
+- ❌ **El problema 1 (CPU Timeout):** Convertir el Base64 a `Uint8Array` usando Javascript vainilla (un loop `atob` + `charCodeAt`) consumía demasiados ciclos de CPU, sobrepasando el límite de cómputo de Deno en Supabase Functions ("CPU limit exceeded") causando el crasheo de la API.
+- ❌ **El problema 2 (Fallo de Blobs por Fetch):** Convertir el Base64 generando un Blob rápido usando `fetch("data:image/jpeg;base64,...")` provocaba incompatibilidades silenciosas con el SDK de Supabase Storage en Deno, generando que la subida falle (devolviendo `null`).
+- ✅ **La solución:** Utilizar el decodificador nativo provisto por la librería estándar de Deno. Genera el `Uint8Array` necesario sin tocar los límites de CPU y es 100% compatible con Supabase Storage:
+  ```typescript
+  import { decode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
+  const bytes = decode(base64);
+  // supabase.storage.upload(fileName, bytes, ...)
+  ```
+
+### C. Fallbacks de Visión Estrictos (Modelos Gemini)
+
+La elección de los modelos de IA para analizar fotos está estrictamente ordenada en `constants.ts` por una razón:
+
+- **`gemini-3.5-flash`** DEBE ser el modelo principal de visión.
+- ❌ **No usar `gemini-3.5-flash-lite` como primera opción:** Al ser "lite", es deficiente en el razonamiento visual profundo en escenarios confusos (por ejemplo: identificar pisos marrones inundados por agua marrón). Esto causaba falsos negativos constantes y rechazaba emergencias reales.
+- ❌ **No usar `gemini-2.5-flash`:** Google lo discontinuó para usuarios nuevos (devuelve `HTTP 404`).
+- ❌ **No usar `gemini-3.1-flash-image`:** Consume un tier de límite distinto que rápidamente arroja `HTTP 429 Quota Exceeded`.

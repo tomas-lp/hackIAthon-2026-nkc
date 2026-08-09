@@ -24,6 +24,17 @@ export function levenshteinDistance(a: string, b: string): number {
   return matrix[b.length][a.length];
 }
 
+function cleanStreetPrefixes(text: string): string {
+  let cleaned = text
+    .replace(/^(calle|avenida|av|pasaje|pje)\.?\s+/i, "")
+    .trim();
+  const alMatch = cleaned.match(/\s+al\s+$/i);
+  if (alMatch) {
+    cleaned = cleaned.replace(/\s+al\s+$/i, "").trim();
+  }
+  return cleaned;
+}
+
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
@@ -41,20 +52,41 @@ interface MatchResult {
 function findBestMatchInList(
   normalizedTarget: string,
   streets: string[],
-  city: string
+  city: string,
+  rawTarget: string
 ): MatchResult | null {
   if (streets.length === 0) return null;
 
   let bestMatch = streets[0];
   let minDistance = Infinity;
+  let minOriginalDistance = Infinity;
+
+  const normalizedRawTarget = normalizeText(rawTarget);
 
   for (const street of streets) {
-    // Normalizamos también la calle de la BD
-    const normalizedStreet = normalizeText(street);
+    // Limpiamos los prefijos ("Avenida", "Pasaje") y normalizamos la calle de la BD
+    const cleanedStreet = cleanStreetPrefixes(street);
+    const normalizedStreet = normalizeText(cleanedStreet);
+
     const distance = levenshteinDistance(normalizedTarget, normalizedStreet);
+
     if (distance < minDistance) {
       minDistance = distance;
+      minOriginalDistance = levenshteinDistance(
+        normalizedRawTarget,
+        normalizeText(street)
+      );
       bestMatch = street;
+    } else if (distance === minDistance) {
+      // Desempate: comparar el string original que escribió el usuario contra el string original de la BD
+      const originalDistance = levenshteinDistance(
+        normalizedRawTarget,
+        normalizeText(street)
+      );
+      if (originalDistance < minOriginalDistance) {
+        minOriginalDistance = originalDistance;
+        bestMatch = street;
+      }
     }
   }
 
@@ -83,15 +115,7 @@ export function findBestStreetMatch(
   }
 
   // Removemos palabras genéricas que a veces extrae la IA (ej: "calle", "avenida") para mejorar el matching
-  let cleanStreetName = streetName
-    .replace(/^(calle|avenida|av|pasaje|pje)\.?\s+/i, "")
-    .trim();
-
-  // Caso borde: a veces dice "al X"
-  const alMatch = cleanStreetName.match(/\s+al\s+$/i);
-  if (alMatch) {
-    cleanStreetName = cleanStreetName.replace(/\s+al\s+$/i, "").trim();
-  }
+  const cleanStreetName = cleanStreetPrefixes(streetName);
 
   const normalizedInput = normalizeText(cleanStreetName);
 
@@ -112,25 +136,29 @@ export function findBestStreetMatch(
     bestGlobalMatch = findBestMatchInList(
       normalizedInput,
       callesResistencia,
-      "Resistencia, Chaco"
+      "Resistencia, Chaco",
+      streetName
     );
   } else if (targetCity === "Corrientes") {
     bestGlobalMatch = findBestMatchInList(
       normalizedInput,
       callesCorrientes,
-      "Corrientes"
+      "Corrientes",
+      streetName
     );
   } else {
     // Si no hay ciudad detectada (Telegram) o es desconocida, buscamos en ambas y elegimos la mejor
     const matchRes = findBestMatchInList(
       normalizedInput,
       callesResistencia,
-      "Resistencia, Chaco"
+      "Resistencia, Chaco",
+      streetName
     );
     const matchCor = findBestMatchInList(
       normalizedInput,
       callesCorrientes,
-      "Corrientes"
+      "Corrientes",
+      streetName
     );
 
     if (matchRes && matchCor) {
