@@ -38,34 +38,50 @@ async function nominatimSearch(
 export async function geocodeAddress(
   address: string
 ): Promise<{ lat: number; lon: number } | null> {
-  if (address.toLowerCase().includes("argentina")) {
-    const exact = await nominatimSearch(address, true);
-    if (exact) return exact;
-    const loose = await nominatimSearch(address, false);
-    if (loose) return loose;
-  }
+  const tryGeocode = async (addr: string) => {
+    if (addr.toLowerCase().includes("argentina")) {
+      const exact = await nominatimSearch(addr, true);
+      if (exact) return exact;
+      const loose = await nominatimSearch(addr, false);
+      if (loose) return loose;
+    }
 
-  // Estrategia 1: Buscar con cada ciudad, bounded=1 (estricto)
-  for (const city of CITIES) {
-    const result = await nominatimSearch(
-      `${address}, ${city}, Argentina`,
-      true
-    );
-    if (result) return result;
-  }
+    // Estrategia 1: Buscar con cada ciudad, bounded=1 (estricto)
+    for (const city of CITIES) {
+      const result = await nominatimSearch(`${addr}, ${city}, Argentina`, true);
+      if (result) return result;
+    }
 
-  // Estrategia 2: Buscar con cada ciudad, bounded=0 (biased pero no restringido)
-  for (const city of CITIES) {
-    const result = await nominatimSearch(
-      `${address}, ${city}, Corrientes, Argentina`,
-      false
-    );
-    if (result) return result;
-  }
+    // Estrategia 2: Buscar con cada ciudad, bounded=0 (biased pero no restringido)
+    for (const city of CITIES) {
+      const result = await nominatimSearch(
+        `${addr}, ${city}, Corrientes, Argentina`,
+        false
+      );
+      if (result) return result;
+    }
 
-  // Estrategia 3: Buscar solo con "Argentina" como fallback general
-  const fallback = await nominatimSearch(`${address}, Argentina`, false);
-  if (fallback) return fallback;
+    // Estrategia 3: Buscar solo con "Argentina" como fallback general
+    const fallback = await nominatimSearch(`${addr}, Argentina`, false);
+    if (fallback) return fallback;
+
+    return null;
+  };
+
+  let coords = await tryGeocode(address);
+  if (coords) return coords;
+
+  // FALLBACK SEGURO: Si falló la búsqueda con la altura exacta (ej: "Salta 211"),
+  // lo reintentamos quitando el número para al menos encontrar la cuadra/calle (ej: "Salta")
+  // Esto NO rompe las calles que sí tienen altura válida en la base (ej: "San Bernardo 223").
+  const addrWithoutNumber = address
+    .replace(/\b\d+\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (addrWithoutNumber !== address && addrWithoutNumber.length > 3) {
+    coords = await tryGeocode(addrWithoutNumber);
+    if (coords) return coords;
+  }
 
   console.warn(`Geocode: No se encontró "${address}" en ninguna estrategia.`);
   return null;

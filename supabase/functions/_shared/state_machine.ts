@@ -483,8 +483,17 @@ export async function processMessage(
         }
       } else if (text) {
         // Fallback: Si escriben una dirección en lugar de mandar el pin
-        await adapter.sendMessage(`⏳ Buscando las coordenadas de ${text}...`);
-        const coords = await geocodeAddress(text);
+        await adapter.sendMessage(
+          `⏳ Buscando y corrigiendo las coordenadas de ${text}...`
+        );
+
+        let direccionFinal = text;
+        const match = findBestStreetMatch(text, adapter.phoneNumber);
+        if (match) {
+          direccionFinal = match.fullAddress;
+        }
+
+        const coords = await geocodeAddress(direccionFinal);
         if (coords) {
           // Duplicamos lógica de ubicación
           await adapter.sendMessage(
@@ -670,7 +679,9 @@ export async function processMessage(
         session.datos_temporales = {};
         session.intentos_fallidos = 0;
       } else if (text) {
-        await adapter.sendMessage(`⏳ Buscando las coordenadas de ${text}...`);
+        await adapter.sendMessage(
+          `⏳ Buscando y corrigiendo las coordenadas de ${text}...`
+        );
 
         let direccionFinal = text;
         const match = findBestStreetMatch(text, adapter.phoneNumber);
