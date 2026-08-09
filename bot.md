@@ -184,10 +184,21 @@ Cuando se obtiene una ubicación (por GPS o dirección confirmada):
 
 ### 🗺️ Geocodificación y Cercanía (`geocode.ts` y `sessions.ts`)
 
-- **Geocodificación (Nominatim):** Si el bot deduce una calle pero el usuario no manda GPS, busca las coordenadas en Nominatim usando 3 estrategias en cascada.
-  1. Ya incluye "Argentina": Busca exacto.
-  2. Bounding Box estricto: Búsqueda restringida al cuadro lat/lon de Resistencia y Corrientes.
-  3. Fallback nacional.
+**¡CRÍTICO! NO MODIFICAR EL FALLBACK DE BÚSQUEDA DE ALTURAS:**
+Nominatim (la API de OpenStreetMap) suele tener fallas en nuestra región y a veces **no tiene registrados los números exactos de puerta** (alturas) para ciertas calles, aunque sí tenga otras (ej: tiene "San Bernardo 223" pero falla con "Salta 211").
+
+Para solucionar esto sin romper los casos de éxito, `geocode.ts` funciona así:
+
+1. **Búsqueda Exacta:** Intenta buscar la dirección **tal cual** fue provista (con número). Esto permite usar las direcciones completas que sí existen.
+2. **Estrategias en Cascada:**
+   - Si tiene "Argentina": Búsqueda exacta.
+   - Si no: Búsqueda estricta en el Bounding Box de Resistencia/Corrientes.
+   - Fallback nacional final.
+3. **Fallback Inteligente de Altura:** Si todas las búsquedas exactas devuelven `null` (lo cual significa que falló por culpa del número o por calle inexistente), el código **extrae el número de la calle** mediante Regex, y vuelve a intentar la búsqueda con **solo el nombre de la calle**. De esta forma, devuelve las coordenadas de la cuadra general y evita decirle al usuario que la localización es inválida.
+
+**Fuzzy Match Integral:**
+Toda entrada manual del usuario, ya sea en el flujo de `ESPERANDO_UBICACION_REPORTE` o `ESPERANDO_UBICACION_CONSULTA`, **pasa primero obligatoriamente por `findBestStreetMatch`**. Esto asegura que errores de tipeo como "santa 223" siempre se corrijan a "Salta 223" antes de enviarse a Nominatim.
+
 - **Reportes Cercanos (Haversine):** Cuando un usuario consulta el estado de su zona, el bot utiliza la fórmula de Haversine matemática pura (en `sessions.ts`) para contar cuántos reportes existen a un radio de **2 kilómetros** en las últimas 24 horas.
 
 ### ⏳ Manejo de Sesiones (`sessions.ts`)
