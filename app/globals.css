@@ -4,11 +4,22 @@
 @theme {
   --color-inu: #303870;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #8fcdff;
+  --color-border: #e5e7eb;
+  --radius-default: 1rem;
 }
 
 :root {
   --background: #ffffff;
   --foreground: #09090b;
+}
+
+.dark {
+  /* Dark colors to be implemented  */
+  --color-primary: #3276ae;
+  --color-border: #333333;
+  --radius-default: 1rem;
 }
 
 html,
