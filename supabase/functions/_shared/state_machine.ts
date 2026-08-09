@@ -138,11 +138,15 @@ export async function processMessage(
                 message.photo.mimeType
               );
               if (analisis.foto_valida) {
+                const fotoUrl = await uploadPhoto(
+                  chatId,
+                  message.photo.base64,
+                  message.photo.mimeType
+                );
                 session.datos_temporales = {
                   tiene_foto: true,
                   foto_ya_procesada: true,
-                  foto_base64: message.photo.base64,
-                  foto_mime: message.photo.mimeType,
+                  fotoUrl: fotoUrl,
                   nivel_agua: analisis.nivel_agua || "NULO",
                   descripcion_imagen: analisis.descripcion_breve,
                 };
@@ -247,10 +251,14 @@ export async function processMessage(
         );
 
         if (analisis.foto_valida) {
+          const fotoUrl = await uploadPhoto(
+            chatId,
+            message.photo.base64,
+            message.photo.mimeType
+          );
           session.datos_temporales.tiene_foto = true;
           session.datos_temporales.foto_ya_procesada = true;
-          session.datos_temporales.foto_base64 = message.photo.base64;
-          session.datos_temporales.foto_mime = message.photo.mimeType;
+          session.datos_temporales.fotoUrl = fotoUrl;
           session.datos_temporales.descripcion_imagen =
             analisis.descripcion_breve;
           descripcionAI = text ? text : analisis.descripcion_breve;
@@ -358,17 +366,7 @@ export async function processMessage(
             puntajeDescripcion + puntajeClima;
 
           if (session.datos_temporales.foto_ya_procesada) {
-            let fotoUrl = null;
-            if (
-              session.datos_temporales.foto_base64 &&
-              session.datos_temporales.foto_mime
-            ) {
-              fotoUrl = await uploadPhoto(
-                chatId,
-                session.datos_temporales.foto_base64 as string,
-                session.datos_temporales.foto_mime as string
-              );
-            }
+            const fotoUrl = session.datos_temporales.fotoUrl || null;
             const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
 
             await saveReport({
@@ -447,17 +445,7 @@ export async function processMessage(
           puntajeDescripcion + puntajeClima;
 
         if (session.datos_temporales.foto_ya_procesada) {
-          let fotoUrl = null;
-          if (
-            session.datos_temporales.foto_base64 &&
-            session.datos_temporales.foto_mime
-          ) {
-            fotoUrl = await uploadPhoto(
-              chatId,
-              session.datos_temporales.foto_base64 as string,
-              session.datos_temporales.foto_mime as string
-            );
-          }
+          const fotoUrl = session.datos_temporales.fotoUrl || null;
           const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
 
           await saveReport({
@@ -521,17 +509,7 @@ export async function processMessage(
             puntajeDescripcion + puntajeClima;
 
           if (session.datos_temporales.foto_ya_procesada) {
-            let fotoUrl = null;
-            if (
-              session.datos_temporales.foto_base64 &&
-              session.datos_temporales.foto_mime
-            ) {
-              fotoUrl = await uploadPhoto(
-                chatId,
-                session.datos_temporales.foto_base64 as string,
-                session.datos_temporales.foto_mime as string
-              );
-            }
+            const fotoUrl = session.datos_temporales.fotoUrl || null;
             const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
 
             await saveReport({

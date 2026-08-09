@@ -23,12 +23,12 @@ export const GROQ_MODELS = {
 };
 
 export const GEMINI_MODELS = {
-  text: ["gemini-3.5-flash-lite", "gemini-3.6-flash"],
+  text: ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"],
   vision: [
+    "gemini-3.5-flash",
+    "gemini-1.5-flash",
     "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-image",
-    "gemini-3.6-flash",
-    "gemini-2.5-flash",
+    "gemini-1.5-pro",
   ],
 };
 

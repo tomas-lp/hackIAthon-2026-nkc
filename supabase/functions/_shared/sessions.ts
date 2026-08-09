@@ -113,15 +113,14 @@ export async function uploadPhoto(
   mimeType: string
 ): Promise<string | null> {
   try {
-    // Usamos fetch con data URI para decodificar base64 rápido sin usar CPU en Deno
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
+    const { decode } =
+      await import("https://deno.land/std@0.177.0/encoding/base64.ts");
+    const bytes = decode(base64);
 
     const fileName = `${chatId}_${Date.now()}.jpg`;
     const { error } = await supabase.storage
       .from("reports-photos")
-      .upload(fileName, blob, {
+      .upload(fileName, bytes, {
         contentType: mimeType,
         upsert: true,
       });
