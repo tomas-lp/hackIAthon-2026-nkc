@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { useSafeZones } from "@/hooks/useSafeZones";
+import { useUrlSelection } from "@/hooks/useUrlSelection";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
@@ -24,6 +25,8 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
+
   // Zonas Seguras state
   const { safeZones, refresh: refreshSafeZones } = useSafeZones();
   const [isCreatingSafeZone, setIsCreatingSafeZone] = useState(false);
@@ -32,9 +35,21 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     lat: number;
     lng: number;
   } | null>(null);
-  const [selectedSafeZone, setSelectedSafeZone] = useState<SafeZone | null>(
+  const [selectedSafeZoneId, setSelectedSafeZoneId] = useState<string | null>(
     null
   );
+  const selectedSafeZone = useMemo(
+    () => safeZones.find((z) => z.id === selectedSafeZoneId) ?? null,
+    [safeZones, selectedSafeZoneId]
+  );
+  const setSelectedSafeZone = useCallback((zone: SafeZone | null) => {
+    setSelectedSafeZoneId(zone?.id ?? null);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (initialSafeZoneId) setSelectedSafeZoneId(initialSafeZoneId);
+  }, [initialSafeZoneId]);
   const [isEditingSingleSafeZone, setIsEditingSingleSafeZone] = useState(false);
   const [showSafeZoneModal, setShowSafeZoneModal] = useState(false);
 
@@ -47,9 +62,13 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     setSelectedReport,
     updateFilter,
     resetFilters,
-  } = useReports(initialReports);
+  } = useReports(initialReports, initialReportId);
 
   const hideMainUI = isCreatingSafeZone || isEditingSafeZones;
+
+  useEffect(() => {
+    syncUrl(selectedReport?.id ?? null, selectedSafeZone?.id ?? null);
+  }, [selectedReport?.id, selectedSafeZone?.id, syncUrl]);
 
   const handleMapClick = (lat: number, lng: number) => {
     if (isCreatingSafeZone) {

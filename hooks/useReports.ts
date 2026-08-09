@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { createClient } from "@/utils/supabase/client";
 
@@ -15,11 +15,28 @@ function buildQueryParams(
   return params;
 }
 
-export function useReports(initialReports: Report[] = []) {
+export function useReports(
+  initialReports: Report[] = [],
+  initialReportId?: string | null
+) {
   const [reports, setReports] = useState<Report[]>(initialReports);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+  const selectedReport = useMemo(
+    () => reports.find((r) => r.id === selectedReportId) ?? null,
+    [reports, selectedReportId]
+  );
+
+  const setSelectedReport = useCallback((report: Report | null) => {
+    setSelectedReportId(report?.id ?? null);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (initialReportId) setSelectedReportId(initialReportId);
+  }, [initialReportId]);
 
   const [filters, setFilters] = useState<ReportFilters>({
     tipo: "TODOS",
