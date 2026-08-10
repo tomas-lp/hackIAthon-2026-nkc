@@ -19,7 +19,7 @@ interface ReportMapInternalProps {
   onSelectReport: (report: Report | null) => void;
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone) => void;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
@@ -157,27 +157,21 @@ export default function ReportMapInternal({
   // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
   useEffect(() => {
     Object.values(markerRefs.current).forEach((marker) => {
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+      marker?.getElement()?.classList.remove("is-selected");
     });
     if (selectedReport?.id) {
       const selectedMarker = markerRefs.current[selectedReport.id];
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (selectedMarker && selectedMarker._icon)
-        selectedMarker._icon.classList.add("is-selected");
+      selectedMarker?.getElement()?.classList.add("is-selected");
     }
   }, [selectedReport]);
 
   useEffect(() => {
     Object.values(szMarkerRefs.current).forEach((marker) => {
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+      marker?.getElement()?.classList.remove("is-selected");
     });
     if (selectedSafeZone?.id) {
       const selectedMarker = szMarkerRefs.current[selectedSafeZone.id];
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (selectedMarker && selectedMarker._icon)
-        selectedMarker._icon.classList.add("is-selected");
+      selectedMarker?.getElement()?.classList.add("is-selected");
     }
   }, [selectedSafeZone]);
 
