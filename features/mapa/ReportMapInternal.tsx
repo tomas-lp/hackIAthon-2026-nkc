@@ -136,19 +136,28 @@ interface ReportMapInternalProps {
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
-  customPin?: { lat: number; lng: number } | null;
-  isClosingCustomPin?: boolean;
+  draftCustomPin?: { lat: number; lng: number } | null;
+  activeRouteCustomPin?: { lat: number; lng: number } | null;
+  closingCustomPin?: { lat: number; lng: number } | null;
   activeRoute?: RouteResult | null;
   isClosingRoute?: boolean;
 }
 
-function createCustomPinIcon(zoom: number, isClosing: boolean = false) {
+function createCustomPinIcon(
+  zoom: number,
+  animMode: "spawn" | "exit" | "idle" = "spawn"
+) {
   const minSize = 24;
   const maxSize = 42;
   let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
   size = Math.max(minSize, Math.min(maxSize, size));
 
-  const animClass = isClosing ? "custom-pin-exit" : "custom-pin-spawn";
+  const animClass =
+    animMode === "exit"
+      ? "custom-pin-exit"
+      : animMode === "spawn"
+        ? "custom-pin-spawn"
+        : "";
 
   return L.divIcon({
     className: `custom-pin-marker-wrapper`,
@@ -184,8 +193,9 @@ export default function ReportMapInternal({
   onMapClick,
   isCreatingSafeZone,
   draftLocation,
-  customPin,
-  isClosingCustomPin,
+  draftCustomPin,
+  activeRouteCustomPin,
+  closingCustomPin,
   activeRoute,
   isClosingRoute,
 }: ReportMapInternalProps) {
@@ -238,9 +248,17 @@ export default function ReportMapInternal({
     () => createSafeZoneIcon(currentZoom, true),
     [currentZoom]
   );
-  const customPinIcon = useMemo(
-    () => createCustomPinIcon(currentZoom, isClosingCustomPin),
-    [currentZoom, isClosingCustomPin]
+  const draftCustomPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, "spawn"),
+    [currentZoom]
+  );
+  const activeRouteCustomPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, "idle"),
+    [currentZoom]
+  );
+  const closingCustomPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, "exit"),
+    [currentZoom]
   );
 
   // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
@@ -369,11 +387,27 @@ export default function ReportMapInternal({
           />
         )}
 
-        {customPin && (
+        {activeRouteCustomPin && (
           <Marker
-            position={[customPin.lat, customPin.lng]}
-            icon={customPinIcon}
+            position={[activeRouteCustomPin.lat, activeRouteCustomPin.lng]}
+            icon={activeRouteCustomPinIcon}
             zIndexOffset={1002}
+          />
+        )}
+
+        {draftCustomPin && (
+          <Marker
+            position={[draftCustomPin.lat, draftCustomPin.lng]}
+            icon={draftCustomPinIcon}
+            zIndexOffset={1003}
+          />
+        )}
+
+        {closingCustomPin && (
+          <Marker
+            position={[closingCustomPin.lat, closingCustomPin.lng]}
+            icon={closingCustomPinIcon}
+            zIndexOffset={1001}
           />
         )}
 

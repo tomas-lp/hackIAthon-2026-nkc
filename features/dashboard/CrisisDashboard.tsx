@@ -94,29 +94,43 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
 
   const handleCancelRoute = () => {
     setIsClosingRoute(true);
-    if (customPin) {
-      handleCloseCustomPin();
+    if (activeRouteCustomPin) {
+      setClosingCustomPin(activeRouteCustomPin);
+      setActiveRouteCustomPin(null);
     }
     setTimeout(() => {
       clearRoute();
       setDisplayRoute(null);
       setIsClosingRoute(false);
       setIsEnteringBanner(false);
+      setClosingCustomPin(null);
     }, 300);
   };
 
-  // Custom destination pin state
-  const [customPin, setCustomPin] = useState<{
+  // Custom destination pin states
+  const [draftCustomPin, setDraftCustomPin] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const [isClosingCustomPin, setIsClosingCustomPin] = useState(false);
+  const [activeRouteCustomPin, setActiveRouteCustomPin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [closingCustomPin, setClosingCustomPin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [isClosingDraftCustomPin, setIsClosingDraftCustomPin] = useState(false);
 
-  const handleCloseCustomPin = () => {
-    setIsClosingCustomPin(true);
+  const handleCloseDraftCustomPin = () => {
+    setIsClosingDraftCustomPin(true);
+    if (draftCustomPin) {
+      setClosingCustomPin(draftCustomPin);
+    }
     setTimeout(() => {
-      setCustomPin(null);
-      setIsClosingCustomPin(false);
+      setDraftCustomPin(null);
+      setIsClosingDraftCustomPin(false);
+      setClosingCustomPin(null);
     }, 300);
   };
 
@@ -125,6 +139,18 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     lng: number;
     address: string;
   }) => {
+    if (displayRoute) {
+      setIsClosingRoute(true);
+    }
+    if (activeRouteCustomPin) {
+      setClosingCustomPin(activeRouteCustomPin);
+      setTimeout(() => {
+        setClosingCustomPin((curr) =>
+          curr === activeRouteCustomPin ? null : curr
+        );
+      }, 300);
+    }
+
     const customZone: SafeZone = {
       id: "custom-point",
       nombre: point.address || "Ubicación seleccionada",
@@ -133,6 +159,10 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       longitud: point.lng,
       created_at: new Date().toISOString(),
     };
+
+    setActiveRouteCustomPin({ lat: point.lat, lng: point.lng });
+    setDraftCustomPin(null);
+    setIsClosingDraftCustomPin(false);
     setNavigatingTargetId("custom-point");
     startRouting(customZone);
   };
@@ -143,8 +173,8 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     if (isCreatingSafeZone) {
       setDraftLocation({ lat, lng });
     } else {
-      setCustomPin({ lat, lng });
-      setIsClosingCustomPin(false);
+      setDraftCustomPin({ lat, lng });
+      setIsClosingDraftCustomPin(false);
       setSelectedReport(null);
       setSelectedSafeZone(null);
     }
@@ -255,20 +285,21 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
           onSelectReport={(report) => {
             setSelectedReport(report);
             setSelectedSafeZone(null);
-            if (customPin) handleCloseCustomPin();
+            if (draftCustomPin) handleCloseDraftCustomPin();
           }}
           safeZones={safeZones}
           selectedSafeZone={selectedSafeZone}
           onSelectSafeZone={(zone) => {
             setSelectedSafeZone(zone);
             setSelectedReport(null);
-            if (customPin) handleCloseCustomPin();
+            if (draftCustomPin) handleCloseDraftCustomPin();
           }}
           onMapClick={handleMapClick}
           isCreatingSafeZone={isCreatingSafeZone}
           draftLocation={draftLocation}
-          customPin={customPin}
-          isClosingCustomPin={isClosingCustomPin}
+          draftCustomPin={draftCustomPin}
+          activeRouteCustomPin={activeRouteCustomPin}
+          closingCustomPin={closingCustomPin}
           activeRoute={!isAdmin ? displayRoute : null}
           isClosingRoute={isClosingRoute}
         />
@@ -355,9 +386,9 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       />
 
       <CustomPointDetailSidebar
-        customPoint={customPin}
-        isOpen={!!customPin && !isClosingCustomPin && !hideMainUI}
-        onClose={handleCloseCustomPin}
+        customPoint={draftCustomPin}
+        isOpen={!!draftCustomPin && !isClosingDraftCustomPin && !hideMainUI}
+        onClose={handleCloseDraftCustomPin}
         onNavigate={handleNavigateToCustomPoint}
         isNavigating={
           routingState.status === "loading" &&
