@@ -35,8 +35,8 @@ export async function getDBSession(chatId: number): Promise<BotSession> {
     return newSession;
   }
 
-  // Reset de sesión si lleva más de 10 minutos inactiva
-  if (now.getTime() - new Date(data.ultima_interaccion).getTime() > 600000) {
+  // Reset de sesión si lleva más de 1 hora inactiva (3600000 ms)
+  if (now.getTime() - new Date(data.ultima_interaccion).getTime() > 3600000) {
     const resetSession: BotSession = {
       chat_id: chatId,
       state: "IDLE",
@@ -57,13 +57,21 @@ export async function saveDBSession(session: BotSession) {
   if (error) console.error("Error saving session:", error);
 }
 
-export async function saveReport(reportData: Record<string, unknown>) {
-  const { error } = await supabase.from("reports").insert(reportData);
+export async function saveReport(
+  reportData: Record<string, unknown>
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("reports")
+    .insert(reportData)
+    .select("id")
+    .single();
 
   if (error) {
     console.error("Error saving report:", error);
     throw error;
   }
+
+  return data.id;
 }
 
 function haversineDistance(
@@ -113,11 +121,10 @@ export async function uploadPhoto(
   mimeType: string
 ): Promise<string | null> {
   try {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    const { decode } =
+      await import("https://deno.land/std@0.177.0/encoding/base64.ts");
+    const bytes = decode(base64);
+
     const fileName = `${chatId}_${Date.now()}.jpg`;
     const { error } = await supabase.storage
       .from("reports-photos")

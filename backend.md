@@ -11,8 +11,8 @@ El ecosistema de **Inú** funciona bajo una arquitectura orientada a eventos y p
 1. **Supabase Edge Functions (Deno Runtime)**: Hospeda los webhooks de Telegram y WhatsApp, así como toda la máquina de estados conversacional, validaciones de seguridad y lógica de negocio (IA, Scoring).
 2. **Supabase Postgres Database**: Almacenamiento central con capacidad geoespacial (PostGIS). Contiene las sesiones temporales de los bots y los reportes públicos de emergencias.
 3. **Servicios Externos Integrados**:
-   - **Groq LPU**: Procesamiento LLM de ultra baja latencia (Llama 3/Gemma) y transcripción de audios con Whisper-large-v3.
-   - **Google Gemini**: Procesamiento multimodal (Gemini 2.5 Flash) para validación de imágenes con `thinkingBudget: 0`.
+   - **Groq LPU**: Procesamiento LLM de baja latencia para clasificación y transcripción (Whisper), además de funcionar como _fallback_ multimodal visual (`llama-3.2-90b-vision-preview`).
+   - **Google Gemini**: Procesamiento multimodal primario (`gemini-3.5-flash` y `gemini-3.5-flash-lite`) para validación de imágenes de desastres.
    - **WeatherAPI**: Consulta meteorológica en tiempo real según la coordenada GPS enviada por el usuario.
 4. **Frontend (Next.js)**: Dashboard de administración y Mapa interactivo construido con React Leaflet que consume datos en tiempo real de Supabase.
 
@@ -72,8 +72,8 @@ Las funciones Serverless de Supabase actúan como webhooks expuestos a internet,
   - **Transcripción de Audio**: Envía los ArrayBuffer (WhatsApp/Telegram .ogg) crudos al modelo `whisper-large-v3-turbo` en Groq para pasarlos a texto en milisegundos.
   - **Identificación de Intención (`classifyIntent`)**: Deriva de manera inteligente entre Reporte vs Consulta usando Groq.
   - **Validación de Texto (`validateDescription`)**: Extrae el tipo de incidente y nivel descriptivo.
-  - **Análisis Visual (`analyzePhoto`)**: Invocación multimodal a `gemini-2.5-flash` forzando respuesta JSON para dictaminar si una foto pertenece a una emergencia climática real.
-  - _Resiliencia Automática_: Rotación de 2 Keys de Groq; fallback a Gemini Text ante códigos 429/401; auto-descubrimiento de modelos Groq `/v1/models` (ej: caída temporal de `llama3-8b-8192`).
+  - **Análisis Visual (`analyzePhoto`)**: Invocación multimodal priorizando `gemini-3.5-flash`. Si Gemini se queda sin cuota o falla, el sistema aplica un _fallback_ directo hacia los modelos Llama de visión hospedados en Groq.
+  - _Resiliencia Automática_: Rotación de 2 Keys de Groq, limpieza de modelos obsoletos de Gemini que causan errores 404, y corrección de atributos _thinking_ para evitar errores de API 400.
 - **`sessions.ts`**: Repositorio de acceso a BD (`supabase-js` con `service_role`).
 - **`weather.ts`**: Fetch de precipitaciones a WeatherAPI mediante lat/lon con protección de timeout (5s).
 - **`scoring.ts`**: Ecuaciones de confiabilidad. Desgaste del puntaje por tiempo (decay temporal: menos puntos a mayor `edadHoras` del reporte) y base de criticidad.
