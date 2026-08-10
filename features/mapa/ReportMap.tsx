@@ -12,7 +12,7 @@ interface ReportMapProps {
   onSelectReport: (report: Report | null) => void;
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone) => void;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
