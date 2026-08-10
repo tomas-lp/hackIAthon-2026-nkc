@@ -390,6 +390,10 @@ export async function processMessage(
               es_audio: session.datos_temporales.es_audio || false,
             });
 
+            await adapter.sendMessage(
+              `¡Ubicación registrada!\n🌧️ Lluvia acumulada en las últimas 24h: ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.`
+            );
+
             const pautas = getPautasSeguridad(puntajeTotal);
             await adapter.sendMessage(
               `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
@@ -483,7 +487,7 @@ export async function processMessage(
           session.state = "ESPERANDO_FOTO_REPORTE";
         }
       } else if (text) {
-        // Fallback: Si escriben una dirección en lugar de mandar el pin
+        // Fallback: Si escriben una dirección en lugar de mandar el pin, pedir confirmación
         await adapter.sendMessage(
           `⏳ Buscando y corrigiendo las coordenadas de ${text}...`
         );
@@ -494,83 +498,18 @@ export async function processMessage(
           direccionFinal = match.fullAddress;
         }
 
-        const coords = await geocodeAddress(direccionFinal);
-        if (coords) {
-          // Duplicamos lógica de ubicación
-          await adapter.sendMessage(
-            "⏳ Analizando el clima histórico y actual en esa ubicación..."
-          );
-          session.datos_temporales.lat = coords.lat;
-          session.datos_temporales.lon = coords.lon;
+        session.datos_temporales.direccion_detectada = direccionFinal;
 
-          const weather = await fetchCurrentWeather(coords.lat, coords.lon);
-          const precipMm = weather ? weather.precip_mm : 0;
-          const climaFuente = weather ? "WeatherAPI" : "Desconocida";
-          session.datos_temporales.lluvia_mm = precipMm;
-          session.datos_temporales.clima_fuente = climaFuente;
-
-          const nivelDescripcion = String(
-            session.datos_temporales.nivel_descripcion || "AGUA_CALLE"
-          );
-          const puntajeDescripcion = descripcionPuntos(nivelDescripcion);
-          const puntajeClima = climaPuntos(precipMm);
-
-          session.datos_temporales.puntaje_parcial =
-            puntajeDescripcion + puntajeClima;
-
-          if (session.datos_temporales.foto_ya_procesada) {
-            const fotoUrl = session.datos_temporales.fotoUrl || null;
-            const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
-
-            await saveReport({
-              chat_id: chatId,
-              descripcion: session.datos_temporales.descripcion as string,
-              lat: coords.lat,
-              lon: coords.lon,
-              location: `POINT(${coords.lon} ${coords.lat})`,
-              lluvia_mm: precipMm,
-              clima_fuente: climaFuente,
-              tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
-              puntaje_base: puntajeTotal,
-              puntaje_descripcion: puntajeDescripcion,
-              puntaje_foto: 5,
-              puntaje_clima: puntajeClima,
-              foto_valida: true,
-              foto_url: fotoUrl,
-              adjunto_foto: true,
-              descripcion_imagen:
-                session.datos_temporales.descripcion_imagen || null,
-              es_audio: session.datos_temporales.es_audio || false,
-            });
-
-            const pautas = getPautasSeguridad(puntajeTotal);
-            await adapter.sendMessage(
-              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
-            );
-            session.state = "IDLE";
-            session.datos_temporales = {};
-            session.intentos_fallidos = 0;
-          } else {
-            await adapter.sendMessage(
-              `¡Ubicación registrada!\n🌧️ Lluvia acumulada en las últimas 24h: ${precipMm}mm.\n📝 Hemos clasificado la gravedad inicial del incidente.\n\n📷 Como paso final opcional, puedes enviarme una foto del problema o escribir *omitir* para finalizar el reporte.`
-            );
-            session.state = "ESPERANDO_FOTO_REPORTE";
-          }
+        const msgConfirm = `He registrado que la emergencia se ubica en *${direccionFinal}*. ¿Es correcta esta ubicación para ingresarla al mapa?`;
+        if (adapter.sendMenu) {
+          await adapter.sendMenu(msgConfirm, [
+            { id: "CONFIRMAR_DIR_SI", title: "✅ Sí, es correcta" },
+            { id: "CONFIRMAR_DIR_NO", title: "❌ No, usaré el GPS" },
+          ]);
         } else {
-          session.intentos_fallidos++;
-          if (session.intentos_fallidos >= 3) {
-            session.state = "IDLE";
-            session.datos_temporales = {};
-            session.intentos_fallidos = 0;
-            await adapter.sendMessage(
-              "Superaste el límite de intentos. Reporte cancelado."
-            );
-          } else {
-            await adapter.sendMessage(
-              `❌ No fue posible verificar esa dirección.\nPor favor, comparte tu ubicación ${attachLocationHint}.\n\nIntento ${session.intentos_fallidos} de 3.`
-            );
-          }
+          await adapter.sendMessage(msgConfirm + "\n\nResponde 'Sí' o 'No'.");
         }
+        session.state = "CONFIRMANDO_DIRECCION";
       } else {
         session.intentos_fallidos++;
         if (session.intentos_fallidos >= 3) {
@@ -609,12 +548,18 @@ export async function processMessage(
         if (analisis.foto_valida) {
           puntajeFoto = 5;
           fotoUrl = await uploadPhoto(
-            chatId,
+            String(chatId),
             message.photo.base64,
             message.photo.mimeType
           );
+          fotoValida = true;
+          await adapter.sendMessage(
+            "✅ La imagen fue procesada y validada correctamente por la IA."
+          );
         } else {
-          // Eliminamos el mensaje de advertencia visual para que sea un fallback silencioso
+          await adapter.sendMessage(
+            "⚠️ La imagen no parece mostrar una inundación o problema relacionado. Se guardará el reporte de todas formas sin la validación visual."
+          );
         }
       } else if (text && text.toLowerCase().includes("omitir")) {
         // Usuario omite foto
