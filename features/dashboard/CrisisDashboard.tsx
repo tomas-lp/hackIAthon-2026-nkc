@@ -11,6 +11,7 @@ import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
 import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
 import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
+import { CustomPointDetailSidebar } from "@/features/mapa/CustomPointDetailSidebar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
@@ -61,6 +62,18 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     heatPoints
   );
 
+  const [navigatingTargetId, setNavigatingTargetId] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (routingState.status !== "loading") {
+      queueMicrotask(() => {
+        setNavigatingTargetId(null);
+      });
+    }
+  }, [routingState.status]);
+
   const [displayRoute, setDisplayRoute] = useState<RouteResult | null>(null);
   const [isClosingRoute, setIsClosingRoute] = useState(false);
   const [isEnteringBanner, setIsEnteringBanner] = useState(false);
@@ -81,6 +94,9 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
 
   const handleCancelRoute = () => {
     setIsClosingRoute(true);
+    if (customPin) {
+      handleCloseCustomPin();
+    }
     setTimeout(() => {
       clearRoute();
       setDisplayRoute(null);
@@ -89,11 +105,48 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     }, 300);
   };
 
+  // Custom destination pin state
+  const [customPin, setCustomPin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [isClosingCustomPin, setIsClosingCustomPin] = useState(false);
+
+  const handleCloseCustomPin = () => {
+    setIsClosingCustomPin(true);
+    setTimeout(() => {
+      setCustomPin(null);
+      setIsClosingCustomPin(false);
+    }, 300);
+  };
+
+  const handleNavigateToCustomPoint = (point: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
+    const customZone: SafeZone = {
+      id: "custom-point",
+      nombre: point.address || "Ubicación seleccionada",
+      descripcion: "",
+      latitud: point.lat,
+      longitud: point.lng,
+      created_at: new Date().toISOString(),
+    };
+    setNavigatingTargetId("custom-point");
+    startRouting(customZone);
+  };
+
   const hideMainUI = isCreatingSafeZone || isEditingSafeZones;
 
   const handleMapClick = (lat: number, lng: number) => {
     if (isCreatingSafeZone) {
       setDraftLocation({ lat, lng });
+    } else {
+      setCustomPin({ lat, lng });
+      setIsClosingCustomPin(false);
+      setSelectedReport(null);
+      setSelectedSafeZone(null);
     }
   };
 
@@ -165,9 +218,14 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
           }}
           onCollapse={() => setSidebarCollapsed(true)}
           // Props de navegación (sólo usadas en modo usuario)
-          onNavigateToNearest={() => startRouting(null)}
-          onNavigateToZone={(zone) => startRouting(zone)}
-          isNavigating={routingState.status === "loading"}
+          onNavigateToNearest={() => {
+            setNavigatingTargetId("nearest");
+            startRouting(null);
+          }}
+          isNavigatingNearest={
+            routingState.status === "loading" &&
+            navigatingTargetId === "nearest"
+          }
         />
       </div>
       {/* Tongue tab — always rendered, slides in/out smoothly */}
@@ -197,16 +255,20 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
           onSelectReport={(report) => {
             setSelectedReport(report);
             setSelectedSafeZone(null);
+            if (customPin) handleCloseCustomPin();
           }}
           safeZones={safeZones}
           selectedSafeZone={selectedSafeZone}
           onSelectSafeZone={(zone) => {
             setSelectedSafeZone(zone);
             setSelectedReport(null);
+            if (customPin) handleCloseCustomPin();
           }}
           onMapClick={handleMapClick}
           isCreatingSafeZone={isCreatingSafeZone}
           draftLocation={draftLocation}
+          customPin={customPin}
+          isClosingCustomPin={isClosingCustomPin}
           activeRoute={!isAdmin ? displayRoute : null}
           isClosingRoute={isClosingRoute}
         />
@@ -292,6 +354,17 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         isAdmin={isAdmin}
       />
 
+      <CustomPointDetailSidebar
+        customPoint={customPin}
+        isOpen={!!customPin && !isClosingCustomPin && !hideMainUI}
+        onClose={handleCloseCustomPin}
+        onNavigate={handleNavigateToCustomPoint}
+        isNavigating={
+          routingState.status === "loading" &&
+          navigatingTargetId === "custom-point"
+        }
+      />
+
       {hideMainUI && !showSafeZoneModal && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
           <button
@@ -349,9 +422,16 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         onNavigate={
           !isAdmin
             ? () => {
-                if (selectedSafeZone) startRouting(selectedSafeZone);
+                if (selectedSafeZone) {
+                  setNavigatingTargetId(selectedSafeZone.id);
+                  startRouting(selectedSafeZone);
+                }
               }
             : undefined
+        }
+        isNavigating={
+          routingState.status === "loading" &&
+          navigatingTargetId === selectedSafeZone?.id
         }
       />
     </>

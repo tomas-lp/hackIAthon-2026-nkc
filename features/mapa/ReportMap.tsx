@@ -16,7 +16,8 @@ interface ReportMapProps {
   onSelectSafeZone?: (zone: SafeZone) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
-  draftLocation?: { lat: number; lng: number } | null;
+  customPin?: { lat: number; lng: number } | null;
+  isClosingCustomPin?: boolean;
   activeRoute?: RouteResult | null;
   isClosingRoute?: boolean;
 }

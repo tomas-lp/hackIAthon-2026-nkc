@@ -126,6 +126,54 @@ function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
   });
 }
 
+interface ReportMapInternalProps {
+  reports: Report[];
+  selectedReport: Report | null;
+  onSelectReport: (report: Report | null) => void;
+  safeZones?: SafeZone[];
+  selectedSafeZone?: SafeZone | null;
+  onSelectSafeZone?: (zone: SafeZone) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  isCreatingSafeZone?: boolean;
+  draftLocation?: { lat: number; lng: number } | null;
+  customPin?: { lat: number; lng: number } | null;
+  isClosingCustomPin?: boolean;
+  activeRoute?: RouteResult | null;
+  isClosingRoute?: boolean;
+}
+
+function createCustomPinIcon(zoom: number, isClosing: boolean = false) {
+  const minSize = 24;
+  const maxSize = 42;
+  let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
+  size = Math.max(minSize, Math.min(maxSize, size));
+
+  const animClass = isClosing ? "custom-pin-exit" : "custom-pin-spawn";
+
+  return L.divIcon({
+    className: `custom-pin-marker-wrapper`,
+    html: `
+      <div class="${animClass}" style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: ${size}px;
+        height: ${size * 1.15}px;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+        transform-origin: bottom center;
+      ">
+        <svg width="100%" height="100%" viewBox="0 0 24 28" fill="#3b82f6" stroke="#ffffff" stroke-width="1.2">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 6.5 10 14 10 14s10-7.5 10-14c0-5.52-4.48-10-10-10z" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="12" cy="11" r="3.8" fill="#ffffff" stroke="none"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [size, size * 1.15],
+    iconAnchor: [size / 2, size * 1.15],
+    popupAnchor: [0, -size * 1.15],
+  });
+}
+
 export default function ReportMapInternal({
   reports,
   selectedReport,
@@ -136,12 +184,42 @@ export default function ReportMapInternal({
   onMapClick,
   isCreatingSafeZone,
   draftLocation,
+  customPin,
+  isClosingCustomPin,
   activeRoute,
   isClosingRoute,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
+
+  useEffect(() => {
+    const STYLE_ID = "custom-pin-animations";
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+      @keyframes custom-pin-spawn-anim {
+        0%   { transform: scale(0) translateY(-25px); opacity: 0; }
+        60%  { transform: scale(1.25) translateY(4px); opacity: 1; }
+        80%  { transform: scale(0.9) translateY(-2px); opacity: 1; }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+      }
+      @keyframes custom-pin-exit-anim {
+        0%   { transform: scale(1) translateY(0); opacity: 1; }
+        35%  { transform: scale(1.2) translateY(-10px); opacity: 1; }
+        100% { transform: scale(0) translateY(12px); opacity: 0; }
+      }
+      .custom-pin-spawn {
+        animation: custom-pin-spawn-anim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+      .custom-pin-exit {
+        animation: custom-pin-exit-anim 0.3s ease-in-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   const defaultIcon = useMemo(
     () => createNeutralIcon(currentZoom),
@@ -159,6 +237,10 @@ export default function ReportMapInternal({
   const draftSzIcon = useMemo(
     () => createSafeZoneIcon(currentZoom, true),
     [currentZoom]
+  );
+  const customPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, isClosingCustomPin),
+    [currentZoom, isClosingCustomPin]
   );
 
   // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
@@ -284,6 +366,14 @@ export default function ReportMapInternal({
             position={[draftLocation.lat, draftLocation.lng]}
             icon={draftSzIcon}
             zIndexOffset={1001}
+          />
+        )}
+
+        {customPin && (
+          <Marker
+            position={[customPin.lat, customPin.lng]}
+            icon={customPinIcon}
+            zIndexOffset={1002}
           />
         )}
 

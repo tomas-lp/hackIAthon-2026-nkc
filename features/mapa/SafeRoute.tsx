@@ -24,8 +24,11 @@ interface SafeRouteProps {
 
 export function SafeRoute({ route, isClosing }: SafeRouteProps) {
   const map = useMap();
-  const { polyline } = route;
+  const { polyline, zone } = route;
   const [fadeOpacity, setFadeOpacity] = useState(0);
+
+  const isCustomTarget = zone?.id === "custom-point";
+  const mainColor = isCustomTarget ? "#3b82f6" : "#10b981";
 
   // ── Animación de aparición (fade in) y desvanecimiento (fade out) ────────────
   useEffect(() => {
@@ -97,7 +100,7 @@ export function SafeRoute({ route, isClosing }: SafeRouteProps) {
       <Polyline
         positions={polyline}
         pathOptions={{
-          color: "#10b981",
+          color: mainColor,
           weight: 8,
           opacity: 0.25 * fadeOpacity,
           lineCap: "round",
@@ -105,11 +108,11 @@ export function SafeRoute({ route, isClosing }: SafeRouteProps) {
         }}
       />
 
-      {/* Línea principal: sólida verde */}
+      {/* Línea principal: sólida */}
       <Polyline
         positions={polyline}
         pathOptions={{
-          color: "#10b981",
+          color: mainColor,
           weight: 4,
           opacity: 0.9 * fadeOpacity,
           lineCap: "round",

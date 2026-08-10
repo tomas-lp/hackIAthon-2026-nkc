@@ -1,7 +1,15 @@
 "use client";
 
 import { SafeZone } from "@/types/safeZone";
-import { X, MapPin, AlignLeft, Edit, Trash2, Navigation } from "lucide-react";
+import {
+  X,
+  MapPin,
+  AlignLeft,
+  Edit,
+  Trash2,
+  Navigation,
+  Loader2,
+} from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/utils";
@@ -14,6 +22,8 @@ interface SafeZoneDetailSidebarProps {
   onDelete?: () => void;
   /** Si se provee (modo usuario), muestra el botón "Cómo llegar" en vez de Editar/Eliminar */
   onNavigate?: () => void;
+  /** true mientras se está calculando una ruta hacia este centro */
+  isNavigating?: boolean;
 }
 
 export function SafeZoneDetailSidebar({
@@ -23,6 +33,7 @@ export function SafeZoneDetailSidebar({
   onEdit,
   onDelete,
   onNavigate,
+  isNavigating = false,
 }: SafeZoneDetailSidebarProps) {
   const [address, setAddress] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(!isOpen);
@@ -139,10 +150,15 @@ export function SafeZoneDetailSidebar({
           {onNavigate && (
             <button
               onClick={onNavigate}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 cursor-pointer"
+              disabled={isNavigating}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm"
             >
-              <Navigation className="h-4 w-4" />
-              Cómo llegar
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Navigation className="h-4 w-4" />
+              )}
+              {isNavigating ? "Calculando…" : "Cómo llegar"}
             </button>
           )}
         </div>

@@ -115,8 +115,8 @@ interface SidebarProps {
   onCollapse?: () => void;
   /** Usuario: navegar a la zona segura con menor costo de ruta */
   onNavigateToNearest?: () => void;
-  /** true mientras se está calculando una ruta */
-  isNavigating?: boolean;
+  /** true mientras se está calculando la ruta al centro más cercano */
+  isNavigatingNearest?: boolean;
 }
 
 function SafeZoneCard({
@@ -265,7 +265,7 @@ export function Sidebar({
   onSelectSafeZone,
   onCollapse,
   onNavigateToNearest,
-  isNavigating = false,
+  isNavigatingNearest = false,
 }: SidebarProps) {
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
@@ -327,15 +327,15 @@ export function Sidebar({
               ) : (
                 <button
                   onClick={onNavigateToNearest}
-                  disabled={isNavigating}
+                  disabled={isNavigatingNearest}
                   className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {isNavigating ? (
+                  {isNavigatingNearest ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Navigation className="h-4 w-4" />
                   )}
-                  {isNavigating ? "Calculando…" : "Ir al más cercano"}
+                  {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
               )}
             </div>
