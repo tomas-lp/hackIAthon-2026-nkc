@@ -25,30 +25,36 @@ interface SafeRouteProps {
 export function SafeRoute({ route, isClosing }: SafeRouteProps) {
   const map = useMap();
   const { polyline } = route;
-  const [fadeOpacity, setFadeOpacity] = useState(1);
+  const [fadeOpacity, setFadeOpacity] = useState(0);
 
-  // ── Animación de desvanecimiento (fade out) al cerrar ──────────────────────
+  // ── Animación de aparición (fade in) y desvanecimiento (fade out) ────────────
   useEffect(() => {
-    if (isClosing) {
-      let start: number | null = null;
-      const duration = 300; // ms
+    let animationFrameId: number;
+    let start: number | null = null;
+    const duration = 400; // ms
 
-      const step = (timestamp: number) => {
-        if (!start) start = timestamp;
-        const progress = Math.min((timestamp - start) / duration, 1);
-        setFadeOpacity(1 - progress);
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        }
-      };
+    const initialOpacity = isClosing ? 1 : 0;
+    const targetOpacity = isClosing ? 0 : 1;
 
-      requestAnimationFrame(step);
-    } else {
-      queueMicrotask(() => {
-        setFadeOpacity(1);
-      });
-    }
-  }, [isClosing]);
+    const step = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const current =
+        initialOpacity + (targetOpacity - initialOpacity) * progress;
+
+      setFadeOpacity(current);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [isClosing, polyline]);
 
   // ── Centrar el mapa en la ruta ──────────────────────────────────────────────
   useEffect(() => {

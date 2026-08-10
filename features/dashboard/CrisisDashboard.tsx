@@ -63,13 +63,19 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
 
   const [displayRoute, setDisplayRoute] = useState<RouteResult | null>(null);
   const [isClosingRoute, setIsClosingRoute] = useState(false);
+  const [isEnteringBanner, setIsEnteringBanner] = useState(false);
 
   useEffect(() => {
     if (routingState.activeRoute) {
       queueMicrotask(() => {
         setDisplayRoute(routingState.activeRoute);
         setIsClosingRoute(false);
+        setIsEnteringBanner(false);
       });
+      const timer = setTimeout(() => {
+        setIsEnteringBanner(true);
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [routingState.activeRoute]);
 
@@ -79,6 +85,7 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       clearRoute();
       setDisplayRoute(null);
       setIsClosingRoute(false);
+      setIsEnteringBanner(false);
     }, 300);
   };
 
@@ -208,8 +215,8 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       {/* Banner de ruta activa — solo para usuarios */}
       {!isAdmin && displayRoute && (
         <div
-          className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center justify-between gap-4 rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-4 py-2 shadow-lg transition-all duration-300 ease-in-out ${
-            isClosingRoute
+          className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center justify-between gap-4 rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-4 py-2 shadow-lg transition-all duration-500 ease-out ${
+            !isEnteringBanner || isClosingRoute
               ? "-translate-y-28 opacity-0 pointer-events-none"
               : "translate-y-0 opacity-100"
           }`}
