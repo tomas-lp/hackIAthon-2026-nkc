@@ -238,3 +238,13 @@ La elección de los modelos de IA para analizar fotos está estrictamente ordena
 - ❌ **No usar `gemini-3.5-flash-lite` como primera opción:** Al ser "lite", es deficiente en el razonamiento visual profundo en escenarios confusos (por ejemplo: identificar pisos marrones inundados por agua marrón). Esto causaba falsos negativos constantes y rechazaba emergencias reales.
 - ❌ **No usar `gemini-2.5-flash`:** Google lo discontinuó para usuarios nuevos (devuelve `HTTP 404`).
 - ❌ **No usar `gemini-3.1-flash-image`:** Consume un tier de límite distinto que rápidamente arroja `HTTP 429 Quota Exceeded`.
+
+### D. Auditoría de Imágenes (`adjunto_foto` y `descripcion_imagen`)
+
+Para analizar falsos negativos de la IA o entender por qué se rechazó una imagen, el sistema aplica la siguiente política **estricta** de auditoría en la tabla `reports`:
+
+1. **El usuario mandó una imagen (Válida):** `adjunto_foto = true`, `foto_valida = true`, `descripcion_imagen = "Descripción de la IA"`, `foto_url = "https://..."`.
+2. **El usuario mandó una imagen (Inválida, en ESPERANDO_FOTO_REPORTE):** `adjunto_foto = true`, `foto_valida = false`, `descripcion_imagen = "Descripción del por qué falló (ej: pared blanca)"`, `foto_url = null`. De esta forma preservamos la evaluación del modelo aunque haya rechazado el reporte. _(Nota: En Fast-Track, las imágenes inválidas detienen la creación del reporte, por lo que no se llega a grabar en DB)._
+3. **El usuario oprime "Omitir" o no envía foto:** `adjunto_foto = false`, `foto_valida = false/null`, `descripcion_imagen = null`, `foto_url = null`.
+
+_Nota de infraestructura:_ El webhook de mensajería (WhatsApp/Telegram) reintentará automáticamente el mensaje entrando en loop si la columna `adjunto_foto` no existe en la base de datos de Supabase, porque `saveReport` fallará silenciosamente retornando un 500 al proveedor. Es indispensable aplicar la migración SQL `20260809203000_add_adjunto_foto.sql`.
