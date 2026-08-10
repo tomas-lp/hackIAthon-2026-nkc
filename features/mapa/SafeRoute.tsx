@@ -56,15 +56,15 @@ export function SafeRoute({ route, isClosing }: SafeRouteProps) {
     };
   }, [isClosing, polyline]);
 
-  // ── Centrar el mapa en la ruta ──────────────────────────────────────────────
+  // ── Centrar el mapa desplazándose suavemente hacia la ruta ─────────────────
   useEffect(() => {
     if (!polyline || polyline.length < 2) return;
     const bounds = L.latLngBounds(polyline);
     if (bounds.isValid()) {
-      map.fitBounds(bounds, {
+      map.flyToBounds(bounds, {
         padding: [60, 60],
-        duration: 0.8,
-        animate: true,
+        duration: 1.2,
+        easeLinearity: 0.25,
       });
     }
   }, [map, polyline]);
