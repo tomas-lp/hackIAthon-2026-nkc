@@ -19,9 +19,15 @@ import { Crosshair } from "lucide-react";
  *   - error  (red, 2 sec)  → permission denied or GPS failed
  */
 
+import { RouteResult } from "@/lib/routing";
+
 type LocateState = "idle" | "loading" | "active" | "error";
 
-export function LocateButton() {
+interface LocateButtonProps {
+  activeRoute?: RouteResult | null;
+}
+
+export function LocateButton({ activeRoute }: LocateButtonProps) {
   const map = useMap();
   const [state, setState] = useState<LocateState>("idle");
 
@@ -68,6 +74,72 @@ export function LocateButton() {
       iconAnchor: [10, 10],
     });
   }, []);
+
+  // ── Auto-activate location when route mode is active ────────────────
+  useEffect(() => {
+    if (!activeRoute) return;
+
+    if (!navigator.geolocation) {
+      queueMicrotask(() => {
+        setState("error");
+      });
+      return;
+    }
+
+    queueMicrotask(() => {
+      setState("loading");
+    });
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const latlng: [number, number] = [
+          pos.coords.latitude,
+          pos.coords.longitude,
+        ];
+        positionRef.current = latlng;
+
+        if (markerRef.current) {
+          markerRef.current.setLatLng(latlng);
+        } else {
+          markerRef.current = L.marker(latlng, {
+            icon: createUserIcon(),
+            zIndexOffset: 2000,
+          }).addTo(map);
+
+          markerRef.current.bindTooltip("Tu ubicación", {
+            direction: "top",
+            offset: [0, -14],
+            className: "user-location-tooltip",
+          });
+        }
+        setState("active");
+      },
+      () => {
+        if (activeRoute.polyline && activeRoute.polyline.length > 0) {
+          const origin = activeRoute.polyline[0];
+          positionRef.current = origin;
+          if (markerRef.current) {
+            markerRef.current.setLatLng(origin);
+          } else {
+            markerRef.current = L.marker(origin, {
+              icon: createUserIcon(),
+              zIndexOffset: 2000,
+            }).addTo(map);
+
+            markerRef.current.bindTooltip("Tu ubicación", {
+              direction: "top",
+              offset: [0, -14],
+              className: "user-location-tooltip",
+            });
+          }
+          setState("active");
+        } else {
+          setState("error");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, [activeRoute, map, createUserIcon]);
 
   // ── Main click handler ───────────────────────────────────────────────
   const handleClick = useCallback(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { SafeZone } from "@/types/safeZone";
-import { X, MapPin, AlignLeft, Edit, Trash2 } from "lucide-react";
+import { X, MapPin, AlignLeft, Edit, Trash2, Navigation } from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/utils";
@@ -12,6 +12,8 @@ interface SafeZoneDetailSidebarProps {
   onClose: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Si se provee (modo usuario), muestra el botón "Cómo llegar" en vez de Editar/Eliminar */
+  onNavigate?: () => void;
 }
 
 export function SafeZoneDetailSidebar({
@@ -20,6 +22,7 @@ export function SafeZoneDetailSidebar({
   onClose,
   onEdit,
   onDelete,
+  onNavigate,
 }: SafeZoneDetailSidebarProps) {
   const [address, setAddress] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(!isOpen);
@@ -112,6 +115,7 @@ export function SafeZoneDetailSidebar({
         )}
 
         <div className="mt-2 flex gap-2">
+          {/* Modo admin: botones Editar / Eliminar */}
           {onEdit && (
             <button
               onClick={onEdit}
@@ -128,6 +132,17 @@ export function SafeZoneDetailSidebar({
             >
               <Trash2 className="h-3.5 w-3.5" />
               Eliminar
+            </button>
+          )}
+
+          {/* Modo usuario: botón Cómo llegar */}
+          {onNavigate && (
+            <button
+              onClick={onNavigate}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 cursor-pointer"
+            >
+              <Navigation className="h-4 w-4" />
+              Cómo llegar
             </button>
           )}
         </div>

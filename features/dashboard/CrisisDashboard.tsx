@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { useSafeZones } from "@/hooks/useSafeZones";
+import { useRouting } from "@/hooks/useRouting";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
@@ -13,7 +14,9 @@ import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
-import { ChevronRight } from "lucide-react";
+import { buildHeatPoints } from "@/lib/heatmap";
+import { RouteResult } from "@/lib/routing";
+import { ChevronRight, X, AlertTriangle } from "lucide-react";
 
 interface CrisisDashboardProps {
   initialReports: Report[];
@@ -48,6 +51,36 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     updateFilter,
     resetFilters,
   } = useReports(initialReports);
+
+  // Mapa de calor: reutilizamos la misma lógica que ReportMapInternal
+  const heatPoints = useMemo(() => buildHeatPoints(reports), [reports]);
+
+  // Hook de rutas seguras
+  const { routingState, startRouting, clearRoute } = useRouting(
+    safeZones,
+    heatPoints
+  );
+
+  const [displayRoute, setDisplayRoute] = useState<RouteResult | null>(null);
+  const [isClosingRoute, setIsClosingRoute] = useState(false);
+
+  useEffect(() => {
+    if (routingState.activeRoute) {
+      queueMicrotask(() => {
+        setDisplayRoute(routingState.activeRoute);
+        setIsClosingRoute(false);
+      });
+    }
+  }, [routingState.activeRoute]);
+
+  const handleCancelRoute = () => {
+    setIsClosingRoute(true);
+    setTimeout(() => {
+      clearRoute();
+      setDisplayRoute(null);
+      setIsClosingRoute(false);
+    }, 300);
+  };
 
   const hideMainUI = isCreatingSafeZone || isEditingSafeZones;
 
@@ -124,6 +157,10 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
             setIsCreatingSafeZone(true);
           }}
           onCollapse={() => setSidebarCollapsed(true)}
+          // Props de navegación (sólo usadas en modo usuario)
+          onNavigateToNearest={() => startRouting(null)}
+          onNavigateToZone={(zone) => startRouting(zone)}
+          isNavigating={routingState.status === "loading"}
         />
       </div>
       {/* Tongue tab — always rendered, slides in/out smoothly */}
@@ -163,8 +200,64 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
           onMapClick={handleMapClick}
           isCreatingSafeZone={isCreatingSafeZone}
           draftLocation={draftLocation}
+          activeRoute={!isAdmin ? displayRoute : null}
+          isClosingRoute={isClosingRoute}
         />
       </section>
+
+      {/* Banner de ruta activa — solo para usuarios */}
+      {!isAdmin && displayRoute && (
+        <div
+          className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center justify-between gap-4 rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-4 py-2 shadow-lg transition-all duration-300 ease-in-out ${
+            isClosingRoute
+              ? "-translate-y-28 opacity-0 pointer-events-none"
+              : "translate-y-0 opacity-100"
+          }`}
+          style={{ maxWidth: "calc(100vw - 2rem)" }}
+        >
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-zinc-800 text-nowrap">
+              Ruta a {displayRoute.zone.nombre}
+            </span>
+            <span className="text-[11px] text-zinc-500 text-nowrap">
+              Distancia: {(displayRoute.distanceM / 1000).toFixed(1)} km ·
+              Riesgo:{" "}
+              {displayRoute.riskScore < 1
+                ? "bajo"
+                : displayRoute.riskScore < 3
+                  ? "medio"
+                  : "alto"}
+            </span>
+          </div>
+          <button
+            onClick={handleCancelRoute}
+            title="Cancelar ruta"
+            className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-200/50 hover:text-zinc-700 cursor-pointer shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Banner de error de routing */}
+      {!isAdmin && routingState.status === "error" && routingState.error && (
+        <div
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-3 rounded-2xl border border-red-200 bg-white/90 backdrop-blur-md px-4 py-2.5 shadow-xl"
+          style={{ maxWidth: "calc(100vw - 2rem)" }}
+        >
+          <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+          <span className="text-xs font-medium text-red-700">
+            {routingState.error}
+          </span>
+          <button
+            onClick={clearRoute}
+            title="Cerrar"
+            className="ml-1 rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Auth widget - conditionally rendered is fine since it's top right, but sliding out is better */}
       <AuthWidget
@@ -246,6 +339,13 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         onClose={() => setSelectedSafeZone(null)}
         onEdit={isAdmin ? () => setIsEditingSingleSafeZone(true) : undefined}
         onDelete={isAdmin ? handleDeleteSafeZone : undefined}
+        onNavigate={
+          !isAdmin
+            ? () => {
+                if (selectedSafeZone) startRouting(selectedSafeZone);
+              }
+            : undefined
+        }
       />
     </>
   );

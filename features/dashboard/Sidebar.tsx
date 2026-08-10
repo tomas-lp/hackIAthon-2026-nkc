@@ -5,7 +5,15 @@ import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
-import { Plus, ChevronLeft, ChevronDown, Check, Filter } from "lucide-react";
+import {
+  Plus,
+  ChevronLeft,
+  ChevronDown,
+  Check,
+  Filter,
+  Navigation,
+  Loader2,
+} from "lucide-react";
 
 function FilterDropdown({
   value,
@@ -105,6 +113,10 @@ interface SidebarProps {
   selectedSafeZone?: SafeZone | null;
   onSelectSafeZone?: (zone: SafeZone) => void;
   onCollapse?: () => void;
+  /** Usuario: navegar a la zona segura con menor costo de ruta */
+  onNavigateToNearest?: () => void;
+  /** true mientras se está calculando una ruta */
+  isNavigating?: boolean;
 }
 
 function SafeZoneCard({
@@ -135,34 +147,38 @@ function SafeZoneCard({
   }, [safeZone.latitud, safeZone.longitud]);
 
   return (
-    <button
-      onClick={() => onSelect(safeZone)}
+    <div
       className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
         isSelected
           ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80 hover:border-zinc-300 hover:bg-zinc-100"
+          : "border-gray-200 bg-white/80"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col p-3">
-          <span className="text-sm font-medium text-black">
-            {safeZone.nombre}
-          </span>
-          <span
-            className="text-xs font-medium text-black/50"
-            suppressHydrationWarning
-          >
-            {formatDate(safeZone.created_at)}
-          </span>
-          <span
-            className="text-xs font-medium text-black/80"
-            title={address ?? safeZone.descripcion}
-          >
-            {address ?? "Direccion no disponible"}
-          </span>
+      <button
+        onClick={() => onSelect(safeZone)}
+        className="w-full text-left hover:bg-zinc-50 transition rounded-2xl"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col p-3">
+            <span className="text-sm font-medium text-black">
+              {safeZone.nombre}
+            </span>
+            <span
+              className="text-xs font-medium text-black/50"
+              suppressHydrationWarning
+            >
+              {formatDate(safeZone.created_at)}
+            </span>
+            <span
+              className="text-xs font-medium text-black/80"
+              title={address ?? safeZone.descripcion}
+            >
+              {address ?? "Dirección no disponible"}
+            </span>
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -248,6 +264,8 @@ export function Sidebar({
   selectedSafeZone,
   onSelectSafeZone,
   onCollapse,
+  onNavigateToNearest,
+  isNavigating = false,
 }: SidebarProps) {
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
@@ -266,11 +284,7 @@ export function Sidebar({
   }, [filters.tipo, reports]);
 
   return (
-    <aside
-      className={`flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs ${
-        isAdmin ? "max-h-[85vh]" : "max-h-[60vh]"
-      }`}
-    >
+    <aside className="flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs max-h-[85vh]">
       <div className="flex items-center justify-between gap-3">
         <div className="flex gap-2 bg-inu py-2 px-4 rounded-2xl">
           <div className="font-black text-4xl leading-8 logo flex justify-center items-center text-white rounded-2xl">
@@ -294,7 +308,55 @@ export function Sidebar({
         )}
       </div>
       <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
-        {isAdmin && (
+        {/* Sección Zonas Seguras — admin: con botón Crear / usuario: con botón Zona segura más cercana */}
+        {safeZones.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-md font-medium text-black text-nowrap">
+                Zonas seguras
+              </span>
+
+              {isAdmin ? (
+                <button
+                  onClick={onCreateSafeZone}
+                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" />
+                  Crear
+                </button>
+              ) : (
+                <button
+                  onClick={onNavigateToNearest}
+                  disabled={isNavigating}
+                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isNavigating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Navigation className="h-4 w-4" />
+                  )}
+                  {isNavigating ? "Calculando…" : "Zona segura más cercana"}
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
+              <div className="gap-2 flex flex-col overflow-auto pr-2">
+                {safeZones.map((sz) => (
+                  <SafeZoneCard
+                    key={sz.id}
+                    safeZone={sz}
+                    isSelected={selectedSafeZone?.id === sz.id}
+                    onSelect={onSelectSafeZone || (() => {})}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Botón Crear standalone para admin cuando no hay zonas todavía */}
+        {isAdmin && safeZones.length === 0 && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-md font-medium text-black text-nowrap">
@@ -302,27 +364,12 @@ export function Sidebar({
               </span>
               <button
                 onClick={onCreateSafeZone}
-                className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 Crear
               </button>
             </div>
-
-            {safeZones.length > 0 && (
-              <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
-                <div className="gap-2 flex flex-col overflow-auto pr-2">
-                  {safeZones.map((sz) => (
-                    <SafeZoneCard
-                      key={sz.id}
-                      safeZone={sz}
-                      isSelected={selectedSafeZone?.id === sz.id}
-                      onSelect={onSelectSafeZone || (() => {})}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

@@ -11,7 +11,9 @@ import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { LocateButton } from "./LocateButton";
+import { SafeRoute } from "./SafeRoute";
 import { Flame } from "lucide-react";
+import { RouteResult } from "@/lib/routing";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -23,6 +25,9 @@ interface ReportMapInternalProps {
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
+  /** Ruta activa a renderizar sobre el mapa (sólo en modo usuario) */
+  activeRoute?: RouteResult | null;
+  isClosingRoute?: boolean;
 }
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
@@ -131,6 +136,8 @@ export default function ReportMapInternal({
   onMapClick,
   isCreatingSafeZone,
   draftLocation,
+  activeRoute,
+  isClosingRoute,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
@@ -157,27 +164,27 @@ export default function ReportMapInternal({
   // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
   useEffect(() => {
     Object.values(markerRefs.current).forEach((marker) => {
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+      const icon = (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (icon) icon.classList.remove("is-selected");
     });
     if (selectedReport?.id) {
       const selectedMarker = markerRefs.current[selectedReport.id];
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (selectedMarker && selectedMarker._icon)
-        selectedMarker._icon.classList.add("is-selected");
+      const icon = (selectedMarker as unknown as { _icon?: HTMLElement })
+        ?._icon;
+      if (icon) icon.classList.add("is-selected");
     }
   }, [selectedReport]);
 
   useEffect(() => {
     Object.values(szMarkerRefs.current).forEach((marker) => {
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+      const icon = (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (icon) icon.classList.remove("is-selected");
     });
     if (selectedSafeZone?.id) {
       const selectedMarker = szMarkerRefs.current[selectedSafeZone.id];
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (selectedMarker && selectedMarker._icon)
-        selectedMarker._icon.classList.add("is-selected");
+      const icon = (selectedMarker as unknown as { _icon?: HTMLElement })
+        ?._icon;
+      if (icon) icon.classList.add("is-selected");
     }
   }, [selectedSafeZone]);
 
@@ -264,7 +271,7 @@ export default function ReportMapInternal({
               eventHandlers={{
                 click: () =>
                   isSelected
-                    ? onSelectSafeZone?.(null)
+                    ? onSelectSafeZone?.(sz) // toggle off handled by parent
                     : onSelectSafeZone?.(sz),
               }}
               zIndexOffset={1000} // Ensure safe zones render on top of reports
@@ -280,7 +287,12 @@ export default function ReportMapInternal({
           />
         )}
 
-        <LocateButton />
+        <LocateButton activeRoute={activeRoute} />
+
+        {/* Ruta segura activa — solo visible en modo usuario */}
+        {activeRoute && (
+          <SafeRoute route={activeRoute} isClosing={isClosingRoute} />
+        )}
       </MapContainer>
 
       {/* Legend */}

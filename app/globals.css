@@ -119,3 +119,48 @@ body {
   transform: scale(0.95);
   transition: all 0.1s ease-out;
 }
+
+/* ── Safe Route animations ───────────────────────────────────────────────── */
+
+/* "Marching ants" animation for the animated white dashes on the safe route */
+@keyframes safe-route-dash {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+.safe-route-animated {
+  animation: safe-route-dash 0.8s linear infinite;
+}
+
+/* Destination marker pulse ring */
+@keyframes safe-route-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Tooltip for safe zone destination */
+.safe-zone-tooltip {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+}
+
+.safe-zone-tooltip::before {
+  border-top-color: #10b981 !important;
+}
