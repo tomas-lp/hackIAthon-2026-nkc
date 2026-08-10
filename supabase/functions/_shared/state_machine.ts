@@ -684,6 +684,9 @@ export async function processMessage(
         );
 
         if (coords) {
+          await adapter.sendMessage(
+            "⏳ Analizando el clima histórico y actual en esa ubicación..."
+          );
           const weather = await fetchCurrentWeather(coords.lat, coords.lon);
           const nearbyCount = await countNearbyReports(
             coords.lat,
