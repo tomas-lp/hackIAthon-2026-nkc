@@ -86,7 +86,7 @@ A continuación se presenta el catálogo estructurado de **todos** los mensajes 
 | **El usuario envía una foto**                           | `⏳ Procesando tu imagen con IA...`                                                                                                                                                                                                                            |
 | **La foto enviada no es de emergencia**                 | `⚠️ La imagen no parece ser de una emergencia válida. Se guardará el reporte de todas formas sin puntos extra por foto.`                                                                                                                                       |
 | **Envía un texto que no es "omitir" ni foto**           | `📷 Por favor envía una foto del problema o escribe *omitir* para finalizar.`                                                                                                                                                                                  |
-| **Reporte Guardado Exitosamente** (vía Foto o "omitir") | `✅ ¡Reporte guardado con éxito y registrado en el mapa!<br><br>[Pautas de Seguridad según Criticidad Calculada]<br><br>Mantente a salvo.`                                                                                                                     |
+| **Reporte Guardado Exitosamente** (vía Foto o "omitir") | `✅ ¡Reporte guardado con éxito!`<br><br>`🗺️ Podés ver tu reporte y el estado de tu zona en el mapa interactivo acá:`<br>`[URL_AL_MAPA]`<br><br>`[Pautas de Seguridad]`<br><br>`Mantente a salvo.`                                                             |
 
 ---
 
@@ -230,14 +230,14 @@ Durante el desarrollo se experimentó un bug severo donde el bot pedía la foto 
   // supabase.storage.upload(fileName, bytes, ...)
   ```
 
-### C. Fallbacks de Visión Estrictos (Modelos Gemini)
+### C. Fallbacks de Visión Estrictos (Gemini + Groq)
 
-La elección de los modelos de IA para analizar fotos está estrictamente ordenada en `constants.ts` por una razón:
+El pipeline de análisis de imágenes de Inú cuenta con una red de seguridad anti-caídas:
 
-- **`gemini-3.5-flash`** DEBE ser el modelo principal de visión.
-- ❌ **No usar `gemini-3.5-flash-lite` como primera opción:** Al ser "lite", es deficiente en el razonamiento visual profundo en escenarios confusos (por ejemplo: identificar pisos marrones inundados por agua marrón). Esto causaba falsos negativos constantes y rechazaba emergencias reales.
-- ❌ **No usar `gemini-2.5-flash`:** Google lo discontinuó para usuarios nuevos (devuelve `HTTP 404`).
-- ❌ **No usar `gemini-3.1-flash-image`:** Consume un tier de límite distinto que rápidamente arroja `HTTP 429 Quota Exceeded`.
+- **1ra Opción: `gemini-3.5-flash`**. Es el modelo principal por balance entre velocidad y precisión.
+- **2da Opción: `gemini-3.5-flash-lite`**. Actúa como fallback si el modelo principal arroja error `429 Quota Exceeded`.
+- **3ra Opción: `llama-3.2-90b-vision-preview` (Groq)**. Si la red Gemini entera colapsa o banea la clave de API (fallback final asegurado).
+- ❌ **Modelos eliminados:** Se removieron referencias a `gemini-1.5-pro` y `gemini-1.5-flash` ya que fueron deprecados de la API v1beta de Google y causaban errores `404 Not Found`. Además se corrigió la validación de `thinkingBudget` en los modelos "lite".
 
 ### D. Auditoría de Imágenes (`adjunto_foto` y `descripcion_imagen`)
 
