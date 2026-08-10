@@ -330,7 +330,7 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       {isEditingSingleSafeZone && selectedSafeZone && (
         <SafeZoneModal
           isOpen={true}
-          title="Editar Zona Segura"
+          title="Editar Centro de Evacuación"
           initialData={{
             nombre: selectedSafeZone.nombre,
             descripcion: selectedSafeZone.descripcion,

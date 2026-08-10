@@ -77,7 +77,7 @@ export function SafeZoneDetailSidebar({
     >
       <div className="flex items-center justify-between mb-2 px-1.5 pt-1">
         <span className="text-sm font-semibold text-zinc-800 tracking-tight">
-          Zona Segura
+          Centro de evacuación
         </span>
         <button
           onClick={handleClose}

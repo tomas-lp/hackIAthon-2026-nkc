@@ -308,12 +308,12 @@ export function Sidebar({
         )}
       </div>
       <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
-        {/* Sección Zonas Seguras — admin: con botón Crear / usuario: con botón Zona segura más cercana */}
+        {/* Sección Zonas Seguras — admin: con botón Crear / usuario: con botón Ruta al centro más cercano */}
         {safeZones.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-md font-medium text-black text-nowrap">
-                Zonas seguras
+                Centros de evacuación
               </span>
 
               {isAdmin ? (
@@ -335,7 +335,7 @@ export function Sidebar({
                   ) : (
                     <Navigation className="h-4 w-4" />
                   )}
-                  {isNavigating ? "Calculando…" : "Zona segura más cercana"}
+                  {isNavigating ? "Calculando…" : "Ir al más cercano"}
                 </button>
               )}
             </div>
@@ -360,7 +360,7 @@ export function Sidebar({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-md font-medium text-black text-nowrap">
-                Zonas seguras
+                Centros de evacuación
               </span>
               <button
                 onClick={onCreateSafeZone}
