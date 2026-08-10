@@ -322,11 +322,7 @@ export async function analyzePhoto(
   const models = GEMINI_MODELS.vision;
 
   for (const model of models) {
-    const isThinkingModel =
-      model.includes("2.0") ||
-      model.includes("2.5") ||
-      model.includes("3.5") ||
-      model.includes("3.6");
+    const isThinkingModel = model.includes("thinking");
 
     const payload = {
       contents: [
@@ -392,11 +388,76 @@ export async function analyzePhoto(
         `Fallo análisis de foto con el modelo ${model}:`,
         error.message
       );
-      // Continuamos al siguiente modelo
     }
   }
 
-  console.error("Todos los modelos de visión de Gemini fallaron.");
+  console.error(
+    "Todos los modelos de visión de Gemini fallaron. Intentando Groq Vision..."
+  );
+
+  for (const groqModel of GROQ_MODELS.vision) {
+    try {
+      console.info(`Intentando análisis de foto con Groq modelo: ${groqModel}`);
+      const payload = {
+        model: groqModel,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analiza esta imagen de reporte ciudadano.\nResponde ÚNICAMENTE con un objeto JSON válido que contenga:\n- foto_valida (boolean): true si muestra inundaciones urbanas, calles anegadas, lluvias fuertes, granizo, o agua ingresando/inundando el interior de una vivienda. false en otro caso.\n- nivel_agua (string): ALTO, MEDIO, BAJO, o NULO.\n- descripcion_breve (string): Descripción muy corta (máximo 15 palabras).",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+      };
+
+      const res = await fetchWithTimeout(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${GROQ_API_KEY_2}`,
+          },
+          body: JSON.stringify(payload),
+        },
+        TIMEOUTS.photo_analysis
+      );
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Desconocido");
+        throw new Error(`HTTP ${res.status}: ${errText}`);
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (!rawText) throw new Error("Respuesta vacía de Groq");
+
+      const result = JSON.parse(rawText.replace(/```json|```/g, ""));
+      console.info(
+        `Análisis exitoso con Groq ${groqModel}:`,
+        JSON.stringify(result)
+      );
+      return result;
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error(
+        `Fallo análisis de foto con Groq ${groqModel}:`,
+        error.message
+      );
+    }
+  }
+
+  console.error("Todos los modelos de visión de Groq también fallaron.");
   return {
     foto_valida: false,
     descripcion_breve: "Fallo el análisis visual",

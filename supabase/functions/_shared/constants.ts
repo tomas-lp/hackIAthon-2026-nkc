@@ -16,20 +16,15 @@ export const SUPABASE_KEY =
 // CONFIGURACIÓN DE MODELOS E IAs
 // ==========================================
 
-// Modelos ordenados por preferencia: rápido → grande
 export const GROQ_MODELS = {
   intent: ["openai/gpt-oss-20b", "gemma2-9b-it"],
   validation: ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "mixtral-8x7b-32768"],
+  vision: ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"],
 };
 
 export const GEMINI_MODELS = {
   text: ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"],
-  vision: [
-    "gemini-3.5-flash",
-    "gemini-1.5-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-1.5-pro",
-  ],
+  vision: ["gemini-3.5-flash", "gemini-3.5-flash-lite"],
 };
 
 export const TIMEOUTS = {
