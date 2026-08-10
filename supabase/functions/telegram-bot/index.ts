@@ -46,6 +46,7 @@ serve(async (req) => {
     const adapter: IMessengerAdapter = {
       platform: "telegram",
       chatId,
+      phoneNumber: undefined,
       sendMessage: async (text: string) => {
         await sendTelegramMessage(chatId, text);
       },
@@ -92,11 +93,9 @@ serve(async (req) => {
       );
       const arrayBuffer = await imgRes.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      const { encode } =
+        await import("https://deno.land/std@0.177.0/encoding/base64.ts");
+      const base64 = encode(bytes);
 
       incoming.photo = {
         base64,
@@ -114,21 +113,16 @@ serve(async (req) => {
         `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`
       );
       const arrayBuffer = await audioRes.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
 
       const transcripcion = await transcribeAudio(
-        base64,
+        arrayBuffer,
         audioObj.mime_type || "audio/ogg",
         "ogg"
       );
 
       if (transcripcion) {
         incoming.text = transcripcion;
+        incoming.esAudio = true;
       } else {
         await sendTelegramMessage(
           chatId,

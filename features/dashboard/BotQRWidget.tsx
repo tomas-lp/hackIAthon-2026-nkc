@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 
 type BotType = "telegram" | "whatsapp" | null;
 
-export function BotQRWidget() {
+export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
   const [activeBot, setActiveBot] = useState<BotType>(null);
 
   // Temporalmente usamos el mismo QR hasta que esté listo el de WhatsApp
@@ -15,11 +15,14 @@ export function BotQRWidget() {
   return (
     <>
       {/* Floating Widget */}
-      <div className="absolute bottom-6 right-6 z-[1000] flex flex-col items-end gap-2">
-        <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-zinc-200/60">
-          QR a bot
-        </span>
-        <div className="flex items-center gap-4 bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-xl border border-zinc-200/80 transition-all hover:shadow-2xl hover:bg-white">
+      <div
+        className={`absolute bottom-6 right-6 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out ${
+          isHidden
+            ? "translate-y-28 opacity-0 pointer-events-none"
+            : "translate-y-0 opacity-100"
+        }`}
+      >
+        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-xs p-3 rounded-2xl border border-zinc-200/80 transition-all hover:bg-white">
           <button
             onClick={() => setActiveBot("whatsapp")}
             className="group relative flex w-12 h-12 items-center justify-center transition-transform hover:scale-110 active:scale-95 focus:outline-none"
@@ -32,12 +35,12 @@ export function BotQRWidget() {
               width={42}
               height={42}
               unoptimized
-              className="drop-shadow-sm relative z-10 transition-transform duration-300"
+              className="relative z-10 transition-transform duration-300"
             />
           </button>
-          
+
           <div className="w-px h-8 bg-zinc-200" />
-          
+
           <button
             onClick={() => setActiveBot("telegram")}
             className="group relative flex w-12 h-12 items-center justify-center transition-transform hover:scale-110 active:scale-95 focus:outline-none"
@@ -50,7 +53,7 @@ export function BotQRWidget() {
               width={42}
               height={42}
               unoptimized
-              className="drop-shadow-sm relative z-10 transition-transform duration-300"
+              className="relative z-10 transition-transform duration-300"
             />
           </button>
         </div>
@@ -58,12 +61,12 @@ export function BotQRWidget() {
 
       {/* Modal Popup con Glassmorphism */}
       {activeBot && (
-        <div 
+        <div
           className="fixed inset-0 z-[2000] flex items-center justify-center bg-zinc-900/30 backdrop-blur-sm transition-all duration-300"
           onClick={() => setActiveBot(null)}
         >
-          <div 
-            className="relative flex flex-col items-center bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/50 animate-in fade-in zoom-in-95 duration-200 ease-out max-w-sm w-full mx-4"
+          <div
+            className="relative flex flex-col items-center bg-white/70 backdrop-blur-xs p-8 rounded-[2rem] border border-white/50 animate-in fade-in zoom-in-95 duration-200 ease-out max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -72,10 +75,14 @@ export function BotQRWidget() {
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div className="mb-6 flex items-center gap-3">
               <Image
-                src={activeBot === "whatsapp" ? "/whatsapp-icon.png" : "/telegram-icon.png"}
+                src={
+                  activeBot === "whatsapp"
+                    ? "/whatsapp-icon.png"
+                    : "/telegram-icon.png"
+                }
                 alt={activeBot}
                 width={36}
                 height={36}
@@ -84,14 +91,18 @@ export function BotQRWidget() {
                 Bot de {activeBot === "whatsapp" ? "WhatsApp" : "Telegram"}
               </h3>
             </div>
-            
-            <div className="bg-white p-4 rounded-3xl border border-zinc-100 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-center">
+
+            <div className="bg-white p-4 rounded-3xl border border-zinc-100 flex items-center justify-center">
               {activeBot === "whatsapp" ? (
                 <div className="w-[220px] h-[220px] bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-center p-4 gap-2">
                   <span className="text-2xl mb-1 opacity-70">⏳</span>
-                  <span className="text-sm font-bold text-zinc-600">QR no disponible</span>
+                  <span className="text-sm font-bold text-zinc-600">
+                    QR no disponible
+                  </span>
                   <span className="text-xs text-zinc-400 font-medium leading-relaxed">
-                    Próximamente habilitaremos<br/>el bot de WhatsApp
+                    Próximamente habilitaremos
+                    <br />
+                    el bot de WhatsApp
                   </span>
                 </div>
               ) : (
@@ -104,9 +115,9 @@ export function BotQRWidget() {
                 />
               )}
             </div>
-            
+
             <p className="mt-6 text-sm text-zinc-500 font-medium max-w-[260px] text-center leading-relaxed">
-              {activeBot === "whatsapp" 
+              {activeBot === "whatsapp"
                 ? "Estamos trabajando en la integración oficial con WhatsApp. ¡Estará disponible pronto!"
                 : "Escanea este código QR para empezar a reportar incidentes directamente desde Telegram."}
             </p>

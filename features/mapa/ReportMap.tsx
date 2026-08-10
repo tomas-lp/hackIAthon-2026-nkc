@@ -4,10 +4,18 @@ import dynamic from "next/dynamic";
 import { Report } from "@/types/report";
 import { Loader2 } from "lucide-react";
 
+import { SafeZone } from "@/types/safeZone";
+
 interface ReportMapProps {
   reports: Report[];
   selectedReport: Report | null;
   onSelectReport: (report: Report | null) => void;
+  safeZones?: SafeZone[];
+  selectedSafeZone?: SafeZone | null;
+  onSelectSafeZone?: (zone: SafeZone) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  isCreatingSafeZone?: boolean;
+  draftLocation?: { lat: number; lng: number } | null;
 }
 
 const ReportMapInternal = dynamic(() => import("./ReportMapInternal"), {

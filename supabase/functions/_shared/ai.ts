@@ -223,13 +223,21 @@ export async function validateDescription(text: string): Promise<{
   nivel_descripcion: string;
 }> {
   const cleanText = text.substring(0, 500);
-  const prompt = `Analiza este texto de un ciudadano reportando un problema. Considera como emergencia válida (es_emergencia: true) cualquier reporte relacionado con lluvia, inundación, granizo, árboles caídos, anegamientos o problemas climáticos, incluso si el tono es casual o no parece muy grave. Responde SÓLO con JSON:
+  const prompt = `Actúas como clasificador de emergencias climáticas para Corrientes/Resistencia.
+Texto del usuario: "${cleanText}"
+
+TAREA: Determina si el texto reporta un problema climático (lluvia, inundación, calle anegada, árbol caído). Incluso si el tono es casual, es una emergencia válida (true).
+
+REGLAS ESTRICTAS:
+- Para el campo "tipo", DEBES elegir exactamente uno de estos 4 valores: INUNDACION_URBANA, LLUVIAS_FUERTES, GRANIZO, ANEGAMIENTO_VIVIENDA.
+- Para el campo "nivel", elige uno de: AGUA_CALLE, NO_CIRCULAR, AGUA_CASAS, EVACUADOS.
+
+Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta de ejemplo:
 {
-  "es_emergencia": true/false,
-  "tipo": "INUNDACION_URBANA" | "LLUVIAS_FUERTES" | "GRANIZO" | "ANEGAMIENTO_VIVIENDA",
-  "nivel": "AGUA_CALLE" | "NO_CIRCULAR" | "AGUA_CASAS" | "EVACUADOS"
-}
-Texto: "${cleanText}"`;
+  "es_emergencia": true,
+  "tipo": "LLUVIAS_FUERTES",
+  "nivel": "AGUA_CALLE"
+}`;
 
   try {
     const res = await runTextAIFallback("validation", prompt, true);
@@ -243,9 +251,19 @@ Texto: "${cleanText}"`;
       "EVACUADOS",
     ];
 
+    const tipo = String(res.tipo || "INUNDACION_URBANA").toUpperCase();
+    const tiposValidos = [
+      "INUNDACION_URBANA",
+      "LLUVIAS_FUERTES",
+      "GRANIZO",
+      "ANEGAMIENTO_VIVIENDA",
+    ];
+
     return {
-      es_emergencia: !!res.es_emergencia,
-      tipo: res.tipo || "INUNDACION_URBANA",
+      es_emergencia:
+        res.es_emergencia === true ||
+        String(res.es_emergencia).toLowerCase() === "true",
+      tipo: tiposValidos.includes(tipo) ? tipo : "INUNDACION_URBANA",
       nivel_descripcion: nivelesValidos.includes(nivel) ? nivel : "AGUA_CALLE",
     };
   } catch {
@@ -254,6 +272,42 @@ Texto: "${cleanText}"`;
       tipo: "INUNDACION_URBANA",
       nivel_descripcion: "AGUA_CALLE",
     };
+  }
+}
+
+export async function extractAddress(text: string): Promise<string | null> {
+  const cleanText = text.substring(0, 500);
+  const prompt = `Extrae la dirección exacta de esta transcripción de audio.
+Texto: "${cleanText}"
+
+REGLAS:
+1. Extrae ÚNICAMENTE el nombre de la calle y su altura (número) tal cual lo haya pronunciado o escrito el usuario. Ej: "Madre cerquera 350", "Yacare aguirre al 1500".
+2. NO corrijas errores ortográficos. Extrae exactamente lo que se dice.
+3. IGNORA referencias a locales, negocios o lugares (Chango Más, Hospital, etc).
+4. IGNORA entrecalles ("entre X y Z"). Solo extrae la calle principal con su altura.
+5. Si no hay calle clara, devuelve null.
+
+Responde ÚNICAMENTE con JSON válido:
+{
+  "direccion_detectada": "string o null"
+}`;
+
+  try {
+    // Usar la clave 2 (dedicada a modelos pesados/fallback en nuestro setup) para asegurar mayor razonamiento
+    const res = await callGroqWithDiscovery(
+      GROQ_API_KEY_2,
+      "validation",
+      prompt,
+      true
+    );
+    if (res.direccion_detectada && res.direccion_detectada.trim().length > 0) {
+      if (res.direccion_detectada.toLowerCase() === "null") return null;
+      return res.direccion_detectada.trim();
+    }
+    return null;
+  } catch (error) {
+    console.error("Fallo extracción de dirección:", error);
+    return null;
   }
 }
 
@@ -268,11 +322,7 @@ export async function analyzePhoto(
   const models = GEMINI_MODELS.vision;
 
   for (const model of models) {
-    const isThinkingModel =
-      model.includes("2.0") ||
-      model.includes("2.5") ||
-      model.includes("3.5") ||
-      model.includes("3.6");
+    const isThinkingModel = model.includes("thinking");
 
     const payload = {
       contents: [
@@ -291,7 +341,7 @@ export async function analyzePhoto(
             foto_valida: {
               type: "BOOLEAN",
               description:
-                "true si muestra inundación, calle anegada, daño climático o árbol caído. false en caso contrario.",
+                "true si la foto muestra explícitamente inundaciones urbanas, calles anegadas, lluvias fuertes, granizo, o agua ingresando/inundando el interior de una vivienda (pisos mojados, escaleras inundadas, etc). false en cualquier otro caso.",
             },
             nivel_agua: {
               type: "STRING",
@@ -338,11 +388,76 @@ export async function analyzePhoto(
         `Fallo análisis de foto con el modelo ${model}:`,
         error.message
       );
-      // Continuamos al siguiente modelo
     }
   }
 
-  console.error("Todos los modelos de visión de Gemini fallaron.");
+  console.error(
+    "Todos los modelos de visión de Gemini fallaron. Intentando Groq Vision..."
+  );
+
+  for (const groqModel of GROQ_MODELS.vision) {
+    try {
+      console.info(`Intentando análisis de foto con Groq modelo: ${groqModel}`);
+      const payload = {
+        model: groqModel,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analiza esta imagen de reporte ciudadano.\nResponde ÚNICAMENTE con un objeto JSON válido que contenga:\n- foto_valida (boolean): true si muestra inundaciones urbanas, calles anegadas, lluvias fuertes, granizo, o agua ingresando/inundando el interior de una vivienda. false en otro caso.\n- nivel_agua (string): ALTO, MEDIO, BAJO, o NULO.\n- descripcion_breve (string): Descripción muy corta (máximo 15 palabras).",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+      };
+
+      const res = await fetchWithTimeout(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${GROQ_API_KEY_2}`,
+          },
+          body: JSON.stringify(payload),
+        },
+        TIMEOUTS.photo_analysis
+      );
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Desconocido");
+        throw new Error(`HTTP ${res.status}: ${errText}`);
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (!rawText) throw new Error("Respuesta vacía de Groq");
+
+      const result = JSON.parse(rawText.replace(/```json|```/g, ""));
+      console.info(
+        `Análisis exitoso con Groq ${groqModel}:`,
+        JSON.stringify(result)
+      );
+      return result;
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error(
+        `Fallo análisis de foto con Groq ${groqModel}:`,
+        error.message
+      );
+    }
+  }
+
+  console.error("Todos los modelos de visión de Groq también fallaron.");
   return {
     foto_valida: false,
     descripcion_breve: "Fallo el análisis visual",
@@ -350,18 +465,13 @@ export async function analyzePhoto(
 }
 
 export async function transcribeAudio(
-  base64Audio: string,
+  arrayBuffer: ArrayBuffer,
   mimeType: string,
   extension: string = "ogg"
 ): Promise<string | null> {
-  const binaryString = atob(base64Audio);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-
-  const blob = new Blob([bytes], { type: mimeType });
-  const file = new File([blob], `audio.${extension}`, { type: mimeType });
+  const file = new File([arrayBuffer], `audio.${extension}`, {
+    type: mimeType,
+  });
 
   const formData = new FormData();
   formData.append("file", file);

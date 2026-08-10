@@ -12,30 +12,28 @@ export const SUPABASE_KEY =
   Deno.env.get("SUPABASE_ANON_KEY") ??
   "";
 
+export const MAP_BASE_URL =
+  Deno.env.get("MAP_BASE_URL") ?? "http://localhost:3000/?report=";
+
 // ==========================================
 // CONFIGURACIÓN DE MODELOS E IAs
 // ==========================================
 
-// Modelos ordenados por preferencia: rápido → grande
 export const GROQ_MODELS = {
   intent: ["openai/gpt-oss-20b", "gemma2-9b-it"],
   validation: ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "mixtral-8x7b-32768"],
+  vision: ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"],
 };
 
 export const GEMINI_MODELS = {
-  text: ["gemini-3.5-flash-lite", "gemini-3.6-flash"],
-  vision: [
-    "gemini-2.5-flash",
-    "gemini-3.5-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-  ],
+  text: ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"],
+  vision: ["gemini-3.5-flash", "gemini-3.5-flash-lite"],
 };
 
 export const TIMEOUTS = {
   ai_call: 8000, // 8s máximo por llamada IA
   weather: 5000, // 5s para clima
-  photo_analysis: 10000, // 10s para análisis de foto
+  photo_analysis: 20000, // 20s para análisis de foto
 };
 
 // ==========================================

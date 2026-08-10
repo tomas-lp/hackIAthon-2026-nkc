@@ -72,6 +72,7 @@ serve(async (req) => {
     const adapter: IMessengerAdapter = {
       platform: "whatsapp",
       chatId,
+      phoneNumber: sender,
       sendMessage: async (text: string) => {
         await sendWhatsAppMessage(sender, text);
       },
@@ -138,11 +139,9 @@ serve(async (req) => {
       });
       const arrayBuffer = await resMedia.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      const { encode } =
+        await import("https://deno.land/std@0.177.0/encoding/base64.ts");
+      const base64 = encode(bytes);
 
       incoming.photo = {
         base64,
@@ -170,21 +169,16 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
       });
       const arrayBuffer = await resMedia.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
 
       const transcripcion = await transcribeAudio(
-        base64,
+        arrayBuffer,
         audioObj.mime_type || "audio/ogg",
         "ogg"
       );
 
       if (transcripcion) {
         incoming.text = transcripcion;
+        incoming.esAudio = true;
       } else {
         await sendWhatsAppMessage(
           sender,

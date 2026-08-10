@@ -4,11 +4,22 @@
 @theme {
   --color-inu: #303870;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #8fcdff;
+  --color-border: #e5e7eb;
+  --radius-default: 1rem;
 }
 
 :root {
   --background: #ffffff;
   --foreground: #09090b;
+}
+
+.dark {
+  /* Dark colors to be implemented  */
+  --color-primary: #3276ae;
+  --color-border: #333333;
+  --radius-default: 1rem;
 }
 
 html,
@@ -43,4 +54,79 @@ body {
   font-family: inherit !important;
   width: 100%;
   height: 100%;
+}
+
+/* Pulsing animation for the "My Location" blue dot */
+@keyframes locate-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Custom modern rounded scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9; /* Espacio/fondo propio para que no se superponga */
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* When selected: scale up, thicker border, strong shadow, and strong bounce */
+.custom-report-marker.is-selected .marker-inner {
+  transform: scale(1.5);
+  border-width: 2px !important;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-safe-zone-marker.is-selected .marker-inner {
+  transform: scale(1.33);
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.8)) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-safe-zone-marker.is-selected .marker-inner svg {
+  stroke-width: 1.25 !important;
+}
+
+/* Base state (used when shrinking/deselecting) */
+.marker-inner {
+  /* Negative start bezier creates a "pop up" anticipation. 
+     When shrinking from 1.5 to 1.0, it pops to ~1.65 first.
+     When growing from 1.0 to 1.15 (hover), it has a tiny 5% imperceptible anticipation shrink. */
+  transition: all 0.25s cubic-bezier(0.4, -0.8, 0.7, 1);
+  width: 100%;
+  height: 100%;
+}
+
+/* Hover for UNSELECTED markers only */
+.custom-report-marker:not(.is-selected):hover .marker-inner,
+.custom-safe-zone-marker:not(.is-selected):hover .marker-inner {
+  transform: scale(1.15);
+}
+
+/* Active for UNSELECTED markers only */
+.custom-report-marker:not(.is-selected):active .marker-inner,
+.custom-safe-zone-marker:not(.is-selected):active .marker-inner {
+  transform: scale(0.95);
+  transition: all 0.1s ease-out;
 }

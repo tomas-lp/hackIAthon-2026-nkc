@@ -1,16 +1,64 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useReports } from "@/hooks/useReports";
+import { useSafeZones } from "@/hooks/useSafeZones";
+import { useUrlSelection } from "@/hooks/useUrlSelection";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
+import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
+import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
+import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
+import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { Report } from "@/types/report";
+import { SafeZone } from "@/types/safeZone";
+import { safeZoneService } from "@/services/safeZoneService";
+import { ChevronRight } from "lucide-react";
+
+import { User } from "@supabase/supabase-js";
 
 interface CrisisDashboardProps {
   initialReports: Report[];
+  user?: User | null;
 }
 
-export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
+export function CrisisDashboard({
+  initialReports,
+  user,
+}: CrisisDashboardProps) {
+  const isAdmin = !!user;
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
+
+  // Zonas Seguras state
+  const { safeZones, refresh: refreshSafeZones } = useSafeZones();
+  const [isCreatingSafeZone, setIsCreatingSafeZone] = useState(false);
+  const [isEditingSafeZones, setIsEditingSafeZones] = useState(false);
+  const [draftLocation, setDraftLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [selectedSafeZoneId, setSelectedSafeZoneId] = useState<string | null>(
+    null
+  );
+  const selectedSafeZone = useMemo(
+    () => safeZones.find((z) => z.id === selectedSafeZoneId) ?? null,
+    [safeZones, selectedSafeZoneId]
+  );
+  const setSelectedSafeZone = useCallback((zone: SafeZone | null) => {
+    setSelectedSafeZoneId(zone?.id ?? null);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (initialSafeZoneId) setSelectedSafeZoneId(initialSafeZoneId);
+  }, [initialSafeZoneId]);
+  const [isEditingSingleSafeZone, setIsEditingSingleSafeZone] = useState(false);
+  const [showSafeZoneModal, setShowSafeZoneModal] = useState(false);
+
   const {
     reports,
     loading,
@@ -20,35 +68,213 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     setSelectedReport,
     updateFilter,
     resetFilters,
-  } = useReports(initialReports);
+  } = useReports(initialReports, initialReportId);
+
+  const hideMainUI = isCreatingSafeZone || isEditingSafeZones;
+
+  useEffect(() => {
+    syncUrl(selectedReport?.id ?? null, selectedSafeZone?.id ?? null);
+  }, [selectedReport?.id, selectedSafeZone?.id, syncUrl]);
+
+  const handleMapClick = (lat: number, lng: number) => {
+    if (isCreatingSafeZone) {
+      setDraftLocation({ lat, lng });
+    }
+  };
+
+  const handleSaveSafeZone = async (dto: {
+    nombre: string;
+    descripcion: string;
+  }) => {
+    if (isEditingSingleSafeZone && selectedSafeZone) {
+      await safeZoneService.updateSafeZone(selectedSafeZone.id, dto);
+      setIsEditingSingleSafeZone(false);
+    } else if (draftLocation) {
+      await safeZoneService.createSafeZone({
+        ...dto,
+        latitud: draftLocation.lat,
+        longitud: draftLocation.lng,
+      });
+      setDraftLocation(null);
+      setIsCreatingSafeZone(false);
+      setShowSafeZoneModal(false);
+      setSelectedReport(null);
+      setSelectedSafeZone(null);
+    }
+    refreshSafeZones();
+  };
+
+  const handleDeleteSafeZone = async () => {
+    if (!selectedSafeZone) return;
+    await safeZoneService.deleteSafeZone(selectedSafeZone.id);
+    setSelectedSafeZone(null);
+    refreshSafeZones();
+  };
 
   return (
     <>
-      <Sidebar
-        reports={reports}
-        filters={filters}
-        loading={loading}
-        error={error}
-        selectedReport={selectedReport}
-        onSelectReport={setSelectedReport}
-        onUpdateFilter={updateFilter}
-        onResetFilters={resetFilters}
-      />
+      {/* Main Sidebar - always mounted for transitions */}
+      <div
+        className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
+        style={{
+          transform:
+            sidebarCollapsed || hideMainUI
+              ? "translateX(-110%)"
+              : "translateX(0)",
+        }}
+      >
+        <Sidebar
+          reports={reports}
+          filters={filters}
+          loading={loading}
+          error={error}
+          selectedReport={selectedReport}
+          onSelectReport={(report) => {
+            setSelectedReport(report);
+            setSelectedSafeZone(null);
+          }}
+          onUpdateFilter={updateFilter}
+          onResetFilters={resetFilters}
+          isAdmin={isAdmin}
+          safeZones={safeZones}
+          selectedSafeZone={selectedSafeZone}
+          onSelectSafeZone={(zone) => {
+            setSelectedSafeZone(zone);
+            setSelectedReport(null);
+            setIsEditingSafeZones(false);
+            setIsCreatingSafeZone(false);
+            setDraftLocation(null);
+          }}
+          onCreateSafeZone={() => {
+            setIsCreatingSafeZone(true);
+          }}
+          onCollapse={() => setSidebarCollapsed(true)}
+        />
+      </div>
+      {/* Tongue tab — always rendered, slides in/out smoothly */}
+      <button
+        id="sidebar-expand-btn"
+        onClick={() => setSidebarCollapsed(false)}
+        title="Mostrar panel"
+        className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+        style={{
+          transform:
+            sidebarCollapsed && !hideMainUI
+              ? "translateX(0)"
+              : "translateX(-100%)",
+          transition:
+            sidebarCollapsed && !hideMainUI
+              ? "transform 200ms ease-out 350ms" /* slide in AFTER sidebar finishes hiding */
+              : "transform 200ms ease-in" /* slide out immediately when sidebar opens or UI hidden */,
+        }}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
 
       <section className="absolute inset-0 h-full w-full">
         <ReportMap
           reports={reports}
           selectedReport={selectedReport}
-          onSelectReport={setSelectedReport}
+          onSelectReport={(report) => {
+            setSelectedReport(report);
+            setSelectedSafeZone(null);
+          }}
+          safeZones={safeZones}
+          selectedSafeZone={selectedSafeZone}
+          onSelectSafeZone={(zone) => {
+            setSelectedSafeZone(zone);
+            setSelectedReport(null);
+          }}
+          onMapClick={handleMapClick}
+          isCreatingSafeZone={isCreatingSafeZone}
+          draftLocation={draftLocation}
         />
       </section>
 
-      {selectedReport && (
-        <ReportDetailSidebar
-          report={selectedReport}
-          onClose={() => setSelectedReport(null)}
+      {/* Auth widget - conditionally rendered is fine since it's top right, but sliding out is better */}
+      <AuthWidget
+        isAdmin={isAdmin}
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogoutClick={async () => {
+          const { logoutFromSession } = await import("@/app/auth/actions");
+          await logoutFromSession();
+          window.location.reload();
+        }}
+        isHidden={hideMainUI}
+      />
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={() => {
+          setShowLoginModal(false);
+        }}
+      />
+
+      <BotQRWidget isHidden={hideMainUI} />
+
+      <ReportDetailSidebar
+        report={selectedReport}
+        isOpen={!!selectedReport && !hideMainUI}
+        onClose={() => setSelectedReport(null)}
+        isAdmin={isAdmin}
+      />
+
+      {hideMainUI && !showSafeZoneModal && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
+          <button
+            onClick={() => {
+              setIsCreatingSafeZone(false);
+              setIsEditingSafeZones(false);
+              setDraftLocation(null);
+              setShowSafeZoneModal(false);
+            }}
+            className="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-6 py-3 text-sm font-bold text-red-600 shadow-xl transition-all duration-200 hover:bg-red-50 hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          {isCreatingSafeZone && (
+            <button
+              onClick={() => {
+                if (draftLocation) setShowSafeZoneModal(true);
+              }}
+              disabled={!draftLocation}
+              className="flex items-center justify-center gap-2 rounded-full border border-blue-200 bg-white px-6 py-3 text-sm font-bold text-blue-700 shadow-xl transition-all duration-200 hover:bg-blue-50 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed cursor-pointer"
+            >
+              Confirmar
+            </button>
+          )}
+        </div>
+      )}
+
+      {showSafeZoneModal && draftLocation && (
+        <SafeZoneModal
+          isOpen={true}
+          onClose={() => setShowSafeZoneModal(false)}
+          onSave={handleSaveSafeZone}
         />
       )}
+
+      {isEditingSingleSafeZone && selectedSafeZone && (
+        <SafeZoneModal
+          isOpen={true}
+          title="Editar Zona Segura"
+          initialData={{
+            nombre: selectedSafeZone.nombre,
+            descripcion: selectedSafeZone.descripcion,
+          }}
+          onClose={() => setIsEditingSingleSafeZone(false)}
+          onSave={handleSaveSafeZone}
+        />
+      )}
+
+      <SafeZoneDetailSidebar
+        safeZone={selectedSafeZone}
+        isOpen={!!selectedSafeZone && !hideMainUI && !isEditingSingleSafeZone}
+        onClose={() => setSelectedSafeZone(null)}
+        onEdit={isAdmin ? () => setIsEditingSingleSafeZone(true) : undefined}
+        onDelete={isAdmin ? handleDeleteSafeZone : undefined}
+      />
     </>
   );
 }

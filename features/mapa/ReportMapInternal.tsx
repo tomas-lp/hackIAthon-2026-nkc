@@ -6,15 +6,23 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { Report } from "@/types/report";
+import { SafeZone } from "@/types/safeZone";
 import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
+import { LocateButton } from "./LocateButton";
 import { Flame } from "lucide-react";
 
 interface ReportMapInternalProps {
   reports: Report[];
   selectedReport: Report | null;
   onSelectReport: (report: Report | null) => void;
+  safeZones?: SafeZone[];
+  selectedSafeZone?: SafeZone | null;
+  onSelectSafeZone?: (zone: SafeZone) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  isCreatingSafeZone?: boolean;
+  draftLocation?: { lat: number; lng: number } | null;
 }
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
@@ -28,38 +36,50 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (z: number) => void }) {
     },
     zoomend: () => {
       onZoomChange(map.getZoom());
-    }
+    },
   });
-  
+
   useEffect(() => {
     onZoomChange(map.getZoom());
   }, [map, onZoomChange]);
-  
+
   return null;
 }
 
-function createNeutralIcon(isSelected: boolean, zoom: number) {
-  // Ajuste lineal del tamaño del icono en función del nivel de zoom
-  // Si zoom es bajo (lejos), icono pequeño. Si zoom alto (cerca), icono normal.
-  const minSize = isSelected ? 12 : 8;
-  const maxSize = isSelected ? 30 : 20;
-  
+function MapEventsHandler({
+  onClick,
+}: {
+  onClick?: (lat: number, lng: number) => void;
+}) {
+  useMapEvents({
+    click: (e) => {
+      onClick?.(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
+function createNeutralIcon(zoom: number, isNew: boolean = false) {
+  // Siempre creamos el icono base con el tamaño normal para no romper el layout de Leaflet
+  const minSize = 8;
+  const maxSize = 20;
+
   // zoom asume rango típico de 8 a 18
   let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
   size = Math.max(minSize, Math.min(maxSize, size));
-  
+
   const letter = "!";
 
   return L.divIcon({
-    className: "custom-report-marker",
+    className: `custom-report-marker`,
     html: `
-      <div style="
+      <div class="marker-inner ${isNew ? "animate-spawn" : ""}" style="
         background-color: ${NEUTRAL_COLOR};
         width: ${size}px;
         height: ${size}px;
         border-radius: 50%;
-        border: ${isSelected ? 2 : 1.5}px solid #ffffff;
-        box-shadow: ${isSelected ? "0 0 0 4px rgba(59,130,246,0.4), 0 4px 12px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.25)"};
+        border: 1.5px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -77,16 +97,89 @@ function createNeutralIcon(isSelected: boolean, zoom: number) {
   });
 }
 
+function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
+  const minSize = 18;
+  const maxSize = 36;
+  let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
+  size = Math.max(minSize, Math.min(maxSize, size));
+
+  const bgColor = isDraft ? "#6ee7b7" : "#10b981"; // emerald-300 vs emerald-500
+
+  return L.divIcon({
+    className: `custom-safe-zone-marker`,
+    html: `
+      <div class="marker-inner" style="display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); width: ${size}px; height: ${size * 1.15}px;">
+        <svg width="100%" height="100%" viewBox="0 0 24 24" fill="${bgColor}" stroke="#ffffff" stroke-width="0.75">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M9 12.5l2.5 2.5 4.5-5.5" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [size, size * 1.15],
+    iconAnchor: [size / 2, (size * 1.15) / 2],
+    popupAnchor: [0, -(size * 1.15) / 2],
+  });
+}
+
 export default function ReportMapInternal({
   reports,
   selectedReport,
   onSelectReport,
+  safeZones = [],
+  selectedSafeZone,
+  onSelectSafeZone,
+  onMapClick,
+  isCreatingSafeZone,
+  draftLocation,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
+  const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
 
-  const defaultIcon = useMemo(() => createNeutralIcon(false, currentZoom), [currentZoom]);
-  const selectedIcon = useMemo(() => createNeutralIcon(true, currentZoom), [currentZoom]);
+  const defaultIcon = useMemo(
+    () => createNeutralIcon(currentZoom),
+    [currentZoom]
+  );
+  const newDefaultIcon = useMemo(
+    () => createNeutralIcon(currentZoom, true),
+    [currentZoom]
+  );
+
+  const defaultSzIcon = useMemo(
+    () => createSafeZoneIcon(currentZoom),
+    [currentZoom]
+  );
+  const draftSzIcon = useMemo(
+    () => createSafeZoneIcon(currentZoom, true),
+    [currentZoom]
+  );
+
+  // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
+  useEffect(() => {
+    Object.values(markerRefs.current).forEach((marker) => {
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+    });
+    if (selectedReport?.id) {
+      const selectedMarker = markerRefs.current[selectedReport.id];
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (selectedMarker && selectedMarker._icon)
+        selectedMarker._icon.classList.add("is-selected");
+    }
+  }, [selectedReport]);
+
+  useEffect(() => {
+    Object.values(szMarkerRefs.current).forEach((marker) => {
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+    });
+    if (selectedSafeZone?.id) {
+      const selectedMarker = szMarkerRefs.current[selectedSafeZone.id];
+      // @ts-expect-error Leaflet private API to get the DOM element
+      if (selectedMarker && selectedMarker._icon)
+        selectedMarker._icon.classList.add("is-selected");
+    }
+  }, [selectedSafeZone]);
 
   const validReports = useMemo(
     () =>
@@ -111,6 +204,9 @@ export default function ReportMapInternal({
     []
   );
 
+  // eslint-disable-next-line react-hooks/purity
+  const nowTimestamp = useMemo(() => Date.now(), []);
+
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
       <MapContainer
@@ -126,12 +222,19 @@ export default function ReportMapInternal({
         />
 
         <ZoomTracker onZoomChange={setCurrentZoom} />
-        <MapController selectedReport={selectedReport} reports={validReports} markerRefs={markerRefs} />
+        <MapEventsHandler onClick={onMapClick} />
+        <MapController
+          selectedReport={selectedReport}
+          reports={validReports}
+          markerRefs={markerRefs}
+          selectedSafeZone={selectedSafeZone}
+        />
 
         <HeatLayer points={heatPoints} />
 
         {validReports.map((report) => {
           const isSelected = selectedReport?.id === report.id;
+          const isNew = nowTimestamp - new Date(report.fecha).getTime() < 10000;
           return (
             <Marker
               key={report.id}
@@ -139,28 +242,59 @@ export default function ReportMapInternal({
                 markerRefs.current[report.id] = marker;
               }}
               position={[report.latitud, report.longitud]}
-              icon={isSelected ? selectedIcon : defaultIcon}
+              icon={isNew ? newDefaultIcon : defaultIcon}
               eventHandlers={{
-                click: () => onSelectReport(report),
+                click: () =>
+                  isSelected ? onSelectReport(null) : onSelectReport(report),
               }}
-            >
-            </Marker>
+            ></Marker>
           );
         })}
+
+        {safeZones.map((sz) => {
+          const isSelected = selectedSafeZone?.id === sz.id;
+          return (
+            <Marker
+              key={sz.id}
+              ref={(marker) => {
+                szMarkerRefs.current[sz.id] = marker;
+              }}
+              position={[sz.latitud, sz.longitud]}
+              icon={defaultSzIcon}
+              eventHandlers={{
+                click: () =>
+                  isSelected
+                    ? onSelectSafeZone?.(null)
+                    : onSelectSafeZone?.(sz),
+              }}
+              zIndexOffset={1000} // Ensure safe zones render on top of reports
+            />
+          );
+        })}
+
+        {isCreatingSafeZone && draftLocation && (
+          <Marker
+            position={[draftLocation.lat, draftLocation.lng]}
+            icon={draftSzIcon}
+            zIndexOffset={1001}
+          />
+        )}
+
+        <LocateButton />
       </MapContainer>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-1000 bg-white/90  backdrop-blur-md border border-zinc-200  rounded-lg px-3 py-2 text-[11px] flex flex-col gap-1">
-        <span className="font-medium text-zinc-500 flex items-center gap-1">
-          <Flame className="w-3 h-3 text-orange-500" /> Riesgo por intensidad:
+      <div className="absolute bottom-4 left-4 z-1000 bg-white/50 backdrop-blur-xs border border-gray-200 rounded-xl px-4 py-3 text-xs flex flex-col gap-1.5">
+        <span className="font-medium text-zinc-600 flex items-center gap-1.5">
+          <Flame className="w-4 h-4 text-orange-500" /> Riesgo por intensidad:
         </span>
         <div
-          className="h-2 w-40 rounded-full"
+          className="h-3 w-52 rounded-full mt-1"
           style={{
             background: `linear-gradient(to right, ${heatGradientCss})`,
           }}
         />
-        <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+        <div className="flex justify-between font-mono text-[11px] text-zinc-400">
           <span>Bajo</span>
           <span>Alto</span>
         </div>
