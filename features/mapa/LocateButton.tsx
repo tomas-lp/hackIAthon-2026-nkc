@@ -145,9 +145,11 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
   const handleClick = useCallback(() => {
     // If we already have a position, just re-center the map on it.
     if (state === "active" && positionRef.current) {
-      map.flyTo(positionRef.current, Math.max(map.getZoom(), 15), {
-        duration: 0.6,
-      });
+      const bounds = L.latLngBounds(
+        [positionRef.current[0] - 0.005, positionRef.current[1] - 0.005],
+        [positionRef.current[0] + 0.005, positionRef.current[1] + 0.005]
+      );
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, duration: 0.6 });
       return;
     }
 
@@ -186,7 +188,15 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
         }
 
         // Pan the map to center on the user's location.
-        map.flyTo(latlng, Math.max(map.getZoom(), 15), { duration: 0.6 });
+        const bounds = L.latLngBounds(
+          [latlng[0] - 0.005, latlng[1] - 0.005],
+          [latlng[0] + 0.005, latlng[1] + 0.005]
+        );
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 16,
+          duration: 0.6,
+        });
 
         setState("active");
       },

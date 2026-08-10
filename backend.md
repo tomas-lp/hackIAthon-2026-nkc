@@ -1,171 +1,107 @@
-# Backend & Arquitectura de Ingesta
+# Backend & Arquitectura del Sistema (Inú)
 
-> Documentación de la infraestructura técnica del backend, esquema de base de datos en Supabase y arquitectura de las Edge Functions para los bots de Telegram y WhatsApp.
+> Documentación exhaustiva de la infraestructura técnica del backend, esquema de base de datos en Supabase, arquitectura de las Edge Functions (Telegram/WhatsApp) y el consumo de datos desde el frontend (Mapa).
 
 ---
 
 ## 1. Visión General de la Arquitectura
 
-El backend de **Inú** combina dos componentes principales:
+El ecosistema de **Inú** funciona bajo una arquitectura orientada a eventos y procesamiento en el borde (Edge), conectando plataformas de mensajería con servicios de IA de inferencia ultra rápida y un mapa interactivo de Next.js.
 
-1. **Supabase Edge Functions (Deno Runtime)**: Hospeda la lógica de ingesta conversacional y procesamiento con IA mediante bots multicanal en Telegram y WhatsApp.
-2. **Supabase Postgres Database**: Persistencia en tiempo real de sesiones conversacionales, reportes climáticos/emergencias y datos espaciales (PostGIS).
-
-```text
-                                 ┌────────────────────────┐
-   [ Telegram Bot (BotFather) ] ─┤ Edge Function:         │
-                                 │ /telegram-bot          │
-                                 └───────────┬────────────┘
-                                             │
-                                             ▼
-                                 ┌────────────────────────┐     ┌────────────────────────┐
-                                 │ Módulo Compartido      │ ──► │ Modelos IA             │
-                                 │ (_shared)              │     │ - Groq (LLaMA/Gemma)   │
-                                 │ - state_machine.ts     │     │ - Gemini 2.5/3.5       │
-                                 │ - ai.ts (Fallback/Auto)│     │ - WeatherAPI           │
-                                 │ - sessions.ts          │     └────────────────────────┘
-                                 │ - weather.ts / scoring │
-                                 └───────────┬────────────┘
-                                             │
-                                             ▼
-                                 ┌────────────────────────┐
-   [ WhatsApp (Meta Cloud) ] ────┤ Edge Function:         │
-                                 │ /whatsapp-bot          │
-                                 └───────────┬────────────┘
-                                             │
-                                             ▼
-                                 ┌────────────────────────┐
-                                 │ Supabase Postgres BD   │
-                                 │ - user_sessions        │
-                                 │ - reports (PostGIS)    │
-                                 └────────────────────────┘
-```
+1. **Supabase Edge Functions (Deno Runtime)**: Hospeda los webhooks de Telegram y WhatsApp, así como toda la máquina de estados conversacional, validaciones de seguridad y lógica de negocio (IA, Scoring).
+2. **Supabase Postgres Database**: Almacenamiento central con capacidad geoespacial (PostGIS). Contiene las sesiones temporales de los bots y los reportes públicos de emergencias.
+3. **Servicios Externos Integrados**:
+   - **Groq LPU**: Procesamiento LLM de baja latencia para clasificación y transcripción (Whisper), además de funcionar como _fallback_ multimodal visual (`llama-3.2-90b-vision-preview`).
+   - **Google Gemini**: Procesamiento multimodal primario (`gemini-3.5-flash` y `gemini-3.5-flash-lite`) para validación de imágenes de desastres.
+   - **WeatherAPI**: Consulta meteorológica en tiempo real según la coordenada GPS enviada por el usuario.
+4. **Frontend (Next.js)**: Dashboard de administración y Mapa interactivo construido con React Leaflet que consume datos en tiempo real de Supabase.
 
 ---
 
-## 2. Base de Datos en Supabase (Esquema Real)
+## 2. Base de Datos en Supabase (Esquema Público)
 
-El esquema relacional vive en Supabase bajo el esquema `public` y cuenta con Row Level Security (RLS) habilitado.
+El esquema relacional vive en Supabase bajo el esquema `public` y cuenta con Row Level Security (RLS) habilitado (lectura pública para `reports`, escritura exclusiva para `service_role` desde las Edge Functions).
 
 ### 2.1 Tabla `user_sessions`
 
-Mantiene el estado de la máquina de conversacional para cada usuario/canal.
+Mantiene el estado de la máquina conversacional de cada usuario en su respectivo canal.
 
-- **`chat_id`** (`bigint`, Primary Key): Identificador único del chat (ID numérico en Telegram o hash numérico del teléfono en WhatsApp).
-- **`state`** (`text`, default `'IDLE'`): Estado actual del flujo. Valores posibles:
-  - `IDLE`: Esperando inicio o comandos.
-  - `ESPERANDO_DESCRIPCION`: Esperando texto o foto del reporte.
-  - `ESPERANDO_UBICACION_REPORTE`: Esperando ubicación GPS para confirmar el reporte.
-  - `ESPERANDO_UBICACION_CONSULTA`: Esperando ubicación GPS para dar el estado del clima de la zona.
-- **`intentos_fallidos`** (`integer`, default `0`): Contador para cancelar flujos atascados tras 3 intentos.
-- **`datos_temporales`** (`jsonb`, default `'{}'`): Contexto temporal recopilado en el flujo (ej: tipo de reporte, descripción, nivel de agua, si tiene foto, coordenadas).
-- **`ultima_interaccion`** (`timestamptz`, default `now()`): Marca temporal utilizada para expiración automática. Si pasan más de 10 minutos de inactividad, la sesión se reinicia a `IDLE`.
+- **`chat_id`** (`bigint`, PK): ID del chat (Telegram ID o teléfono en WhatsApp).
+- **`state`** (`text`, default `'IDLE'`):
+  - `IDLE`: Esperando inicio.
+  - `ESPERANDO_DESCRIPCION_REPORTE`: Esperando texto, audio o foto descriptiva.
+  - `ESPERANDO_UBICACION_REPORTE`: Esperando PIN GPS.
+  - `ESPERANDO_FOTO_REPORTE`: Esperando foto opcional final.
+  - `ESPERANDO_UBICACION_CONSULTA`: Esperando PIN GPS para dar reporte del clima local.
+- **`intentos_fallidos`** (`integer`, default `0`): Tolerancia a errores de input del usuario (máximo 3).
+- **`datos_temporales`** (`jsonb`): State context (tipo_reporte, puntaje_parcial, es_audio, tiene_foto, foto_base64).
+- **`ultima_interaccion`** (`timestamptz`): TTL de la sesión. Reseteado tras inactividad o comando de reinicio (`/cancelar`).
 
 ### 2.2 Tabla `reports`
 
-Almacena los reportes validados e ingestados por los bots.
+Registro histórico de emergencias ingresadas y procesadas por los Bots.
 
-- **`id`** (`uuid`, Primary Key, default `gen_random_uuid()`): UUID del reporte.
-- **`chat_id`** (`bigint`, NOT NULL): ID del chat emisor.
-- **`lat`** (`double precision`, NOT NULL): Latitud GPS.
-- **`lon`** (`double precision`, NOT NULL): Longitud GPS.
-- **`location`** (`geometry(Point, 4326)` / USER-DEFINED): Punto espacial en formato PostGIS (`POINT(lon lat)`).
-- **`descripcion`** (`text`): Texto del reporte o descripción generada automáticamente por IA en fotos.
-- **`puntaje_base`** (`integer` / `double precision`): Puntaje total calculado del reporte.
-- **`puntaje_descripcion`** (`integer`): Puntaje asignado según la gravedad descrita (ej: EVACUADOS da 35pts).
-- **`puntaje_foto`** (`integer`): Puntaje adicional si la foto fue validada por IA.
-- **`puntaje_clima`** (`integer`): Puntaje asignado según la severidad del clima actual en la zona.
-- **`tipo`** (`text`, CHECK Constraint):
-  - `'INUNDACION_URBANA'`
-  - `'LLUVIAS_FUERTES'`
-  - `'GRANIZO'`
-  - `'ANEGAMIENTO_VIVIENDA'`
-- **`riesgo`** (`text`, CHECK Constraint): `'BAJO'`, `'MEDIO'`, `'ALTO'`, `'CRITICO'`.
-- **`estado`** (`text`, CHECK Constraint): `'NUEVO'`, `'VALIDADO_CLIMA'`, `'PENDIENTE_VALIDACION'`, `'DESESTIMADO_SIN_ALERTA'`, `'DESESTIMADO_IRRELEVANTE'`.
-- **`lluvia_mm`** (`double precision`): Milímetros acumulados registrados.
-- **`clima_fuente`** (`text`): Proveedor del dato de clima (WeatherAPI / Open-Meteo).
-- **`foto_url`** (`text`, opcional): Enlace a la imagen en Supabase Storage (`reports-photos`).
-- **`foto_valida`** (`boolean`): `true` si la IA verificó que la foto corresponde a un daño o anegamiento real.
-- **`created_at`** (`timestamptz`, default `now()`): Fecha de creación del reporte.
+- **Datos Básicos e Identificación**:
+  - `id` (`uuid`, PK), `chat_id` (`bigint`, emisor), `created_at` (`timestamptz`).
+- **Geometría y Ubicación**:
+  - `lat`, `lon` (`double precision`).
+  - `location` (`geometry(Point, 4326)`): Punto espacial en PostGIS.
+- **Detalle del Incidente**:
+  - `descripcion` (`text`): Texto dictado por el usuario, transcrito de un audio, o generado por IA desde una imagen.
+  - `tipo` (`text`, enum): `'INUNDACION_URBANA'`, `'LLUVIAS_FUERTES'`, `'GRANIZO'`, `'ANEGAMIENTO_VIVIENDA'`.
+  - `es_audio` (`boolean`): Flag estadístico (`true` si el reporte se originó mediante mensaje de voz).
+- **Evidencia Gráfica**:
+  - `foto_url` (`text`): Link público de Supabase Storage.
+  - `foto_valida` (`boolean`): Confirmación visual de la IA.
+- **Scoring y Clima**:
+  - `puntaje_base` (`integer`): Suma del nivel de descripción, la lluvia acumulada y si hay foto validada.
+  - `puntaje_descripcion`, `puntaje_foto`, `puntaje_clima` (`integer`): Puntos parciales.
+  - `lluvia_mm` (`double precision`): Precipitaciones en las últimas 24h.
+  - `clima_fuente` (`text`): Ej: "WeatherAPI".
 
 ---
 
-## 3. Arquitectura de Edge Functions (`supabase/functions/`)
+## 3. Arquitectura de los Bots (Edge Functions)
 
-Las funciones se despliegan en el Deno Runtime de Supabase y consumen el código unificado de `_shared/`.
+Las funciones Serverless de Supabase actúan como webhooks expuestos a internet, manejando el protocolo de cada red social, y centralizando toda la lógica de validación en el directorio compartido `_shared`.
 
-### 3.1 Módulo Compartido (`_shared/`)
+### 3.1 Directorio `_shared` (Core del Negocio)
 
-- **`state_machine.ts`**: Lógica conversacional agnóstica a la plataforma (`IMessengerAdapter`). Maneja transiciones de estado, invocación de IA, llamadas de clima, puntuación y persistencia.
-- **`ai.ts`**: Integración resilience multi-proveedor:
-  - **Estrategia de Fallback de Texto**: Groq API Key 1 ➔ Groq API Key 2 ➔ Gemini Text (`gemini-3.5-flash-lite`, `gemini-3.6-flash`).
-  - **Autodescubrimiento Híbrido (Groq)**: Si el modelo configurado (ej: `gpt-oss-20b` / `gpt-oss-120b`) responde con error `404`/`400` (deprecado o fuera de servicio), consulta `/models` en vivo, detecta el mejor modelo disponible (Llama, Gemma, Qwen) y actualiza la caché dinámica.
-  - **Visión Optimizada**: Invocación a `gemini-2.5-flash` para imágenes con `thinkingBudget: 0` y JSON estricto (`responseSchema`) para minimizar consumo de tokens y maximizar velocidad.
-- **`sessions.ts`**: Manejo de consultas y guardado en `user_sessions` y `reports` mediante `@supabase/supabase-js`.
-- **`weather.ts`**: Consulta a WeatherAPI con control de timeout (5s).
-- **`scoring.ts`**: Cálculo del `calculateTrustScore` en base a evidencia aportada (foto + ubicación).
-- **`constants.ts`**: Configuración de llaves, modelos preferidos, timeouts y patrones Regex para clasificación veloz.
+- **`state_machine.ts`**: Motor central que implementa la interfaz `IMessengerAdapter` (agnóstico al canal). Evalúa el `state` del usuario y deriva el input (texto, audio, imagen, location) hacia el submódulo correspondiente.
+- **`ai.ts`**: Integración con LLMs:
+  - **Transcripción de Audio**: Envía los ArrayBuffer (WhatsApp/Telegram .ogg) crudos al modelo `whisper-large-v3-turbo` en Groq para pasarlos a texto en milisegundos.
+  - **Identificación de Intención (`classifyIntent`)**: Deriva de manera inteligente entre Reporte vs Consulta usando Groq.
+  - **Validación de Texto (`validateDescription`)**: Extrae el tipo de incidente y nivel descriptivo.
+  - **Análisis Visual (`analyzePhoto`)**: Invocación multimodal priorizando `gemini-3.5-flash`. Si Gemini se queda sin cuota o falla, el sistema aplica un _fallback_ directo hacia los modelos Llama de visión hospedados en Groq.
+  - _Resiliencia Automática_: Rotación de 2 Keys de Groq, limpieza de modelos obsoletos de Gemini que causan errores 404, y corrección de atributos _thinking_ para evitar errores de API 400.
+- **`sessions.ts`**: Repositorio de acceso a BD (`supabase-js` con `service_role`).
+- **`weather.ts`**: Fetch de precipitaciones a WeatherAPI mediante lat/lon con protección de timeout (5s).
+- **`scoring.ts`**: Ecuaciones de confiabilidad. Desgaste del puntaje por tiempo (decay temporal: menos puntos a mayor `edadHoras` del reporte) y base de criticidad.
 
-### 3.2 Edge Function `telegram-bot`
+### 3.2 Webhooks (Adaptadores)
 
-- **Ruta/Webhook**: `/functions/v1/telegram-bot`
-- **Secretos requeridos**: `BOT_TELEGRAM_TOKEN`, `GROQ_API_KEY_1`, `GROQ_API_KEY_2`, `GEMINI_API_KEY`, `WEATHER_API_KEY`.
-- **Funcionamiento**: Recibe el payload del webhook de Telegram BotFather, descarga la foto de mayor resolución si existe (convirtiéndola a base64), implementa `IMessengerAdapter` y delega la ejecución a `processMessage()`.
-
-### 3.3 Edge Function `whatsapp-bot`
-
-- **Ruta/Webhook**: `/functions/v1/whatsapp-bot`
-- **Secretos requeridos**: `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN`, `GROQ_API_KEY_1`, `GROQ_API_KEY_2`, `GEMINI_API_KEY`, `WEATHER_API_KEY`.
-- **Funcionamiento**:
-  - GET: Responde al challenge de verificación de Meta con `WHATSAPP_VERIFY_TOKEN`.
-  - POST: Procesa mensajes entrantes de Meta Cloud API (`v25.0`), normaliza el número argentino (`549...` ➔ `54...`), descarga archivos multimedia de Meta Graph API si los hay, y responde vía POST a Meta.
+1. **`/telegram-bot`**: Recibe payloads de Telegram, descarga fotos en máxima resolución mediante `getFile`, y transfiere `voice` records usando buffers sin transformaciones base64 costosas.
+2. **`/whatsapp-bot`**: Cumple con el Verification Challenge de Meta. Normaliza números de teléfono (remueve el 9 extra de Argentina `549`), maneja Media IDs llamando a la Graph API con Auth tokens.
 
 ---
 
-## 4. Flujo de Ejecución Conversacional
+## 4. Flujo y Consumo en el Mapa (Frontend)
 
-1. **Ingreso**: El mensaje (texto, imagen o GPS) llega a la Edge Function (`telegram-bot` o `whatsapp-bot`).
-2. **Carga de Sesión**: Se consulta `user_sessions` en Supabase por `chat_id`. Si pasaron >10 min, se resetea a `IDLE`.
-3. **Procesamiento de Estado**:
-   - `IDLE` ➔ Ejecuta clasificación rápida (Regex `REGEX_REPORTE`/`REGEX_CONSULTA`). Si falla Regex, consulta a Groq/Gemini (`classifyIntent`).
-   - `ESPERANDO_DESCRIPCION` ➔ Si el usuario envía foto, analiza la imagen con Gemini 2.5 Flash (`analyzePhoto`). Si envía texto, valida con Groq (`validateDescription`).
-   - `ESPERANDO_UBICACION_REPORTE` ➔ Al recibir las coordenadas GPS, calcula la criticidad, construye el punto PostGIS y persiste el registro en la tabla `reports`.
-   - `ESPERANDO_UBICACION_CONSULTA` ➔ Al recibir coordenadas, obtiene el clima en tiempo real vía WeatherAPI y le responde al usuario.
-4. **Respuesta & Guardado**: Se envía la respuesta al usuario mediante la API del canal correspondiente y se actualiza `user_sessions`.
+El Frontend interactúa con esta base de datos a través del esquema de lectura de Supabase, incorporando cálculos en memoria en el momento de la visualización.
 
----
+### 4.1 `services/reportService.ts`
 
-## 5. Variables de Entorno en Supabase
+Capa de abstracción (Repository) para el fetch de los reportes.
 
-Configuradas en Supabase Dashboard / Secretos:
+- Realiza consultas PostgREST apuntando a `reports`.
+- Descarta reportes de antigüedad superior a `MAX_EDAD_REPORTE_HORAS` (por default, 24h).
+- Traduce los resultados brutos SQL (`ReportDbRow`) a la interfaz limpia `Report` requerida por React.
+- Extrae el punto lat/lon dinámicamente tolerando varias notaciones (GeoJSON, WKT string, columnas estáticas).
+- **Scoring en tiempo real**: Calcula de manera dinámica el `puntajeReal` restándole importancia al reporte a medida que pasan las horas, invocando a `calcPuntajeReal()`.
 
-```env
-# Supabase
-SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=
+### 4.2 `features/mapa/MapController.tsx`
 
-# Telegram
-BOT_TELEGRAM_TOKEN=
+Orquestador de cámara en el mapa Leaflet (`useMap`).
 
-# WhatsApp (Meta Cloud API)
-WHATSAPP_TOKEN=
-WHATSAPP_PHONE_ID=
-WHATSAPP_VERIFY_TOKEN=
-
-# Modelos & APIs Externas
-GROQ_API_KEY_1=
-GROQ_API_KEY_2=
-GEMINI_API_KEY=
-WEATHER_API_KEY=
-```
-
----
-
-## 6. Comandos de Despliegue
-
-Para desplegar las Edge Functions hacia Supabase:
-
-```bash
-# Desplegar todas las funciones (incluye empaquetado automático de _shared)
-supabase functions deploy
-```
+- Responsable de animar la vista del usuario (`fitBounds`) hacia los incidentes críticos que se seleccionen en el Sidebar.
+- Implementa un algoritmo de clustering geoespacial en vivo: Si el usuario clickea un reporte (A), el controlador busca reportes cercanos a menos de `300 metros` (A ➔ B, B ➔ C) encadenándolos. Luego encuadra el mapa considerando toda esa zona afectada, y finalmente abre el Popup del reporte original de manera suavizada, evitando bugs visuales de Leaflet.

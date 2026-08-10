@@ -1,6 +1,9 @@
 "use client";
 
-import { User, LogOut, X } from "lucide-react";
+import { User, LogOut, X, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { loginWithCredentials } from "@/app/auth/actions";
 
 interface AuthWidgetProps {
   isAdmin: boolean;
@@ -50,7 +53,27 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
   if (!isOpen) return null;
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError("");
+    const result = await loginWithCredentials(email, password);
+    setLoading(false);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      onLogin();
+      router.refresh();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -71,6 +94,8 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
             <label className="text-sm font-medium text-zinc-700">Email</label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@ejemplo.com"
               className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
             />
@@ -82,15 +107,27 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
             </label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
 
+          {error && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+              {error}
+            </div>
+          )}
+
           <button
-            onClick={onLogin}
-            className="mt-2 w-full rounded-xl bg-white border border-blue-600 px-4 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 active:bg-blue-100"
+            onClick={handleLogin}
+            disabled={loading || !email || !password}
+            className="mt-2 w-full rounded-xl bg-white border border-blue-600 px-4 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 active:bg-blue-100 disabled:opacity-50"
           >
+            {loading && (
+              <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
+            )}
             Ingresar
           </button>
         </div>

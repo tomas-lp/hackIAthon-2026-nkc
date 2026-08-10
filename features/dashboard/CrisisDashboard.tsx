@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouting } from "@/hooks/useRouting";
 import { useReports } from "@/hooks/useReports";
 import { useSafeZones } from "@/hooks/useSafeZones";
-import { useRouting } from "@/hooks/useRouting";
+import { useUrlSelection } from "@/hooks/useUrlSelection";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
 import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
@@ -19,14 +20,22 @@ import { buildHeatPoints } from "@/lib/heatmap";
 import { RouteResult } from "@/lib/routing";
 import { ChevronRight, X, AlertTriangle } from "lucide-react";
 
+import { User } from "@supabase/supabase-js";
+
 interface CrisisDashboardProps {
   initialReports: Report[];
+  user?: User | null;
 }
 
-export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
-  const [isAdmin, setIsAdmin] = useState(false);
+export function CrisisDashboard({
+  initialReports,
+  user,
+}: CrisisDashboardProps) {
+  const isAdmin = !!user;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
 
   // Zonas Seguras state
   const { safeZones, refresh: refreshSafeZones } = useSafeZones();
@@ -36,9 +45,21 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     lat: number;
     lng: number;
   } | null>(null);
-  const [selectedSafeZone, setSelectedSafeZone] = useState<SafeZone | null>(
+  const [selectedSafeZoneId, setSelectedSafeZoneId] = useState<string | null>(
     null
   );
+  const selectedSafeZone = useMemo(
+    () => safeZones.find((z) => z.id === selectedSafeZoneId) ?? null,
+    [safeZones, selectedSafeZoneId]
+  );
+  const setSelectedSafeZone = useCallback((zone: SafeZone | null) => {
+    setSelectedSafeZoneId(zone?.id ?? null);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (initialSafeZoneId) setSelectedSafeZoneId(initialSafeZoneId);
+  }, [initialSafeZoneId]);
   const [isEditingSingleSafeZone, setIsEditingSingleSafeZone] = useState(false);
   const [showSafeZoneModal, setShowSafeZoneModal] = useState(false);
 
@@ -51,7 +72,7 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
     setSelectedReport,
     updateFilter,
     resetFilters,
-  } = useReports(initialReports);
+  } = useReports(initialReports, initialReportId);
 
   // Mapa de calor: reutilizamos la misma lógica que ReportMapInternal
   const heatPoints = useMemo(() => buildHeatPoints(reports), [reports]);
@@ -168,6 +189,10 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
   };
 
   const hideMainUI = isCreatingSafeZone || isEditingSafeZones;
+
+  useEffect(() => {
+    syncUrl(selectedReport?.id ?? null, selectedSafeZone?.id ?? null);
+  }, [selectedReport?.id, selectedSafeZone?.id, syncUrl]);
 
   const handleMapClick = (lat: number, lng: number) => {
     if (isCreatingSafeZone) {
@@ -363,7 +388,11 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
       <AuthWidget
         isAdmin={isAdmin}
         onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={() => setIsAdmin(false)}
+        onLogoutClick={async () => {
+          const { logoutFromSession } = await import("@/app/auth/actions");
+          await logoutFromSession();
+          window.location.reload();
+        }}
         isHidden={hideMainUI}
       />
 
@@ -371,7 +400,6 @@ export function CrisisDashboard({ initialReports }: CrisisDashboardProps) {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLogin={() => {
-          setIsAdmin(true);
           setShowLoginModal(false);
         }}
       />

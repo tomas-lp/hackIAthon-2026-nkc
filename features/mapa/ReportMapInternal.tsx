@@ -21,7 +21,7 @@ interface ReportMapInternalProps {
   onSelectReport: (report: Report | null) => void;
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone) => void;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
@@ -132,7 +132,7 @@ interface ReportMapInternalProps {
   onSelectReport: (report: Report | null) => void;
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone) => void;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
@@ -264,27 +264,33 @@ export default function ReportMapInternal({
   // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
   useEffect(() => {
     Object.values(markerRefs.current).forEach((marker) => {
-      const icon = (marker as unknown as { _icon?: HTMLElement })?._icon;
-      if (icon) icon.classList.remove("is-selected");
+      const el =
+        marker?.getElement() ??
+        (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.remove("is-selected");
     });
     if (selectedReport?.id) {
       const selectedMarker = markerRefs.current[selectedReport.id];
-      const icon = (selectedMarker as unknown as { _icon?: HTMLElement })
-        ?._icon;
-      if (icon) icon.classList.add("is-selected");
+      const el =
+        selectedMarker?.getElement() ??
+        (selectedMarker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.add("is-selected");
     }
   }, [selectedReport]);
 
   useEffect(() => {
     Object.values(szMarkerRefs.current).forEach((marker) => {
-      const icon = (marker as unknown as { _icon?: HTMLElement })?._icon;
-      if (icon) icon.classList.remove("is-selected");
+      const el =
+        marker?.getElement() ??
+        (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.remove("is-selected");
     });
     if (selectedSafeZone?.id) {
       const selectedMarker = szMarkerRefs.current[selectedSafeZone.id];
-      const icon = (selectedMarker as unknown as { _icon?: HTMLElement })
-        ?._icon;
-      if (icon) icon.classList.add("is-selected");
+      const el =
+        selectedMarker?.getElement() ??
+        (selectedMarker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.add("is-selected");
     }
   }, [selectedSafeZone]);
 
