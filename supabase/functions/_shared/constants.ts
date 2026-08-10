@@ -12,6 +12,9 @@ export const SUPABASE_KEY =
   Deno.env.get("SUPABASE_ANON_KEY") ??
   "";
 
+export const MAP_BASE_URL =
+  Deno.env.get("MAP_BASE_URL") ?? "http://localhost:3000/?report=";
+
 // ==========================================
 // CONFIGURACIÓN DE MODELOS E IAs
 // ==========================================

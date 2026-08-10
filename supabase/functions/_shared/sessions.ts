@@ -57,13 +57,21 @@ export async function saveDBSession(session: BotSession) {
   if (error) console.error("Error saving session:", error);
 }
 
-export async function saveReport(reportData: Record<string, unknown>) {
-  const { error } = await supabase.from("reports").insert(reportData);
+export async function saveReport(
+  reportData: Record<string, unknown>
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("reports")
+    .insert(reportData)
+    .select("id")
+    .single();
 
   if (error) {
     console.error("Error saving report:", error);
     throw error;
   }
+
+  return data.id;
 }
 
 function haversineDistance(

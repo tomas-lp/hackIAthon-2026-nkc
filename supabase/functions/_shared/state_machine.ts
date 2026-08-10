@@ -8,6 +8,7 @@ import { fetchCurrentWeather } from "./weather.ts";
 import { geocodeAddress } from "./geocode.ts";
 import { findBestStreetMatch } from "./fuzzy_match.ts";
 import { descripcionPuntos, climaPuntos } from "./scoring.ts";
+import { MAP_BASE_URL } from "./constants.ts";
 import {
   getDBSession,
   saveDBSession,
@@ -375,7 +376,7 @@ export async function processMessage(
             const fotoUrl = session.datos_temporales.fotoUrl || null;
             const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
 
-            await saveReport({
+            const reportId = await saveReport({
               chat_id: chatId,
               descripcion: session.datos_temporales.descripcion as string,
               lat: coords.lat,
@@ -402,7 +403,7 @@ export async function processMessage(
 
             const pautas = getPautasSeguridad(puntajeTotal);
             await adapter.sendMessage(
-              `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
+              `✅ ¡Reporte guardado con éxito!\n\n🗺️ Podés ver tu reporte y el estado de tu zona en el mapa interactivo acá:\n${MAP_BASE_URL}${reportId}\n\n${pautas}\n\nMantente a salvo.`
             );
             session.state = "IDLE";
             session.datos_temporales = {};
@@ -459,7 +460,7 @@ export async function processMessage(
           const fotoUrl = session.datos_temporales.fotoUrl || null;
           const puntajeTotal = session.datos_temporales.puntaje_parcial + 5;
 
-          await saveReport({
+          const reportId = await saveReport({
             chat_id: chatId,
             descripcion: session.datos_temporales.descripcion as string,
             lat: message.location.latitude,
@@ -481,7 +482,7 @@ export async function processMessage(
 
           const pautas = getPautasSeguridad(puntajeTotal);
           await adapter.sendMessage(
-            `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
+            `✅ ¡Reporte guardado con éxito!\n\n🗺️ Podés ver tu reporte y el estado de tu zona en el mapa interactivo acá:\n${MAP_BASE_URL}${reportId}\n\n${pautas}\n\nMantente a salvo.`
           );
           session.state = "IDLE";
           session.datos_temporales = {};
@@ -581,7 +582,7 @@ export async function processMessage(
       );
       const puntajeTotal = puntajeDescripcion + puntajeClima + puntajeFoto;
 
-      await saveReport({
+      const reportId = await saveReport({
         chat_id: chatId,
         descripcion: session.datos_temporales.descripcion as string,
         lat: session.datos_temporales.lat as number,
@@ -603,7 +604,7 @@ export async function processMessage(
 
       const pautas = getPautasSeguridad(puntajeTotal);
       await adapter.sendMessage(
-        `✅ ¡Reporte guardado con éxito y registrado en el mapa!\n\n${pautas}\n\nMantente a salvo.`
+        `✅ ¡Reporte guardado con éxito!\n\n🗺️ Podés ver tu reporte y el estado de tu zona en el mapa interactivo acá:\n${MAP_BASE_URL}${reportId}\n\n${pautas}\n\nMantente a salvo.`
       );
 
       session.state = "IDLE";
