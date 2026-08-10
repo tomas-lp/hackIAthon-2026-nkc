@@ -156,9 +156,12 @@ export async function processMessage(
                   : analisis.descripcion_breve || "Reporte desde imagen";
                 val = await validateDescription(finalDesc);
                 esEmergencia = esEmergencia || val.es_emergencia;
+                await adapter.sendMessage(
+                  "✅ La imagen fue procesada y validada correctamente por la IA."
+                );
               } else {
                 await adapter.sendMessage(
-                  "La imagen no parece mostrar una inundación o problema relacionado.\nPor favor, describe el problema en texto o envía otra foto."
+                  "⚠️ La imagen no parece mostrar una inundación o problema relacionado.\nPor favor, describe el problema en texto o envía otra foto."
                 );
                 session.state = "ESPERANDO_DESCRIPCION_REPORTE";
                 session.datos_temporales = { tipo_reporte: "emergencia" };
@@ -264,9 +267,12 @@ export async function processMessage(
           descripcionAI = text ? text : analisis.descripcion_breve;
           nivelAguaAI = analisis.nivel_agua || "NULO";
           esEmergencia = true;
+          await adapter.sendMessage(
+            "✅ La imagen fue procesada y validada correctamente por la IA."
+          );
         } else {
           await adapter.sendMessage(
-            "La imagen no parece mostrar una inundación o problema relacionado.\nPor favor, describe el problema en texto o envía otra foto."
+            "⚠️ La imagen no parece mostrar una inundación o problema relacionado.\nPor favor, describe el problema en texto o envía otra foto."
           );
           break;
         }
@@ -488,10 +494,6 @@ export async function processMessage(
         }
       } else if (text) {
         // Fallback: Si escriben una dirección en lugar de mandar el pin, pedir confirmación
-        await adapter.sendMessage(
-          `⏳ Buscando y corrigiendo las coordenadas de ${text}...`
-        );
-
         let direccionFinal = text;
         const match = findBestStreetMatch(text, adapter.phoneNumber);
         if (match) {
