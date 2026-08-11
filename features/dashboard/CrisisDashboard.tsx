@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouting } from "@/hooks/useRouting";
 import { useReports } from "@/hooks/useReports";
 import { useSafeZones } from "@/hooks/useSafeZones";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
@@ -11,10 +12,13 @@ import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
 import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
 import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
+import { CustomPointDetailSidebar } from "@/features/mapa/CustomPointDetailSidebar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
-import { ChevronRight } from "lucide-react";
+import { buildHeatPoints } from "@/lib/heatmap";
+import { RouteResult } from "@/lib/routing";
+import { ChevronRight, X, AlertTriangle } from "lucide-react";
 
 import { User } from "@supabase/supabase-js";
 
@@ -70,6 +74,151 @@ export function CrisisDashboard({
     resetFilters,
   } = useReports(initialReports, initialReportId);
 
+  // Mapa de calor: reutilizamos la misma lógica que ReportMapInternal
+  const heatPoints = useMemo(() => buildHeatPoints(reports), [reports]);
+
+  // Hook de rutas seguras
+  const { routingState, startRouting, clearRoute } = useRouting(
+    safeZones,
+    heatPoints
+  );
+
+  const [navigatingTargetId, setNavigatingTargetId] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (routingState.status !== "loading") {
+      queueMicrotask(() => {
+        setNavigatingTargetId(null);
+      });
+    }
+  }, [routingState.status]);
+
+  const [draftCustomPin, setDraftCustomPin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [activeRouteCustomPin, setActiveRouteCustomPin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [closingCustomPin, setClosingCustomPin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [isClosingDraftCustomPin, setIsClosingDraftCustomPin] = useState(false);
+
+  const [displayRoute, setDisplayRoute] = useState<RouteResult | null>(null);
+  const [isClosingRoute, setIsClosingRoute] = useState(false);
+
+  const prevActiveRouteRef = useRef<RouteResult | null>(null);
+
+  useEffect(() => {
+    if (
+      routingState.activeRoute &&
+      routingState.activeRoute !== prevActiveRouteRef.current
+    ) {
+      prevActiveRouteRef.current = routingState.activeRoute;
+      queueMicrotask(() => {
+        setDisplayRoute(routingState.activeRoute);
+        setIsClosingRoute(false);
+
+        const isNewRouteCustom =
+          routingState.activeRoute?.zone?.id === "custom-point";
+
+        if (isNewRouteCustom && draftCustomPin) {
+          const newTargetPin = {
+            lat: draftCustomPin.lat,
+            lng: draftCustomPin.lng,
+          };
+          if (activeRouteCustomPin) {
+            const oldPin = activeRouteCustomPin;
+            setClosingCustomPin(oldPin);
+            setTimeout(() => {
+              setClosingCustomPin((curr) => (curr === oldPin ? null : curr));
+            }, 300);
+          }
+          setActiveRouteCustomPin(newTargetPin);
+          setDraftCustomPin(null);
+          setIsClosingDraftCustomPin(false);
+        } else if (!isNewRouteCustom) {
+          if (activeRouteCustomPin) {
+            const oldPin = activeRouteCustomPin;
+            setClosingCustomPin(oldPin);
+            setActiveRouteCustomPin(null);
+            setTimeout(() => {
+              setClosingCustomPin((curr) => (curr === oldPin ? null : curr));
+            }, 300);
+          }
+          if (draftCustomPin) {
+            setDraftCustomPin(null);
+            setIsClosingDraftCustomPin(false);
+          }
+        }
+
+        if (selectedSafeZone) {
+          setSelectedSafeZone(null);
+        }
+      });
+    } else if (!routingState.activeRoute) {
+      prevActiveRouteRef.current = null;
+    }
+  }, [
+    routingState.activeRoute,
+    draftCustomPin,
+    activeRouteCustomPin,
+    selectedSafeZone,
+    setSelectedSafeZone,
+  ]);
+
+  const handleCancelRoute = () => {
+    setIsClosingRoute(true);
+    if (activeRouteCustomPin) {
+      setClosingCustomPin(activeRouteCustomPin);
+      setActiveRouteCustomPin(null);
+    }
+    setTimeout(() => {
+      clearRoute();
+      setDisplayRoute(null);
+      setIsClosingRoute(false);
+      setClosingCustomPin(null);
+    }, 300);
+  };
+
+  const handleCloseDraftCustomPin = () => {
+    setIsClosingDraftCustomPin(true);
+    if (draftCustomPin) {
+      const pinToClose = draftCustomPin;
+      setDraftCustomPin(null);
+      setClosingCustomPin(pinToClose);
+      setTimeout(() => {
+        setIsClosingDraftCustomPin(false);
+        setClosingCustomPin((curr) => (curr === pinToClose ? null : curr));
+      }, 300);
+    } else {
+      setIsClosingDraftCustomPin(false);
+    }
+  };
+
+  const handleNavigateToCustomPoint = (point: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
+    const customZone: SafeZone = {
+      id: "custom-point",
+      nombre: point.address || "Ubicación seleccionada",
+      descripcion: "",
+      latitud: point.lat,
+      longitud: point.lng,
+      created_at: new Date().toISOString(),
+    };
+
+    setNavigatingTargetId("custom-point");
+    startRouting(customZone);
+  };
+
   const hideMainUI = isCreatingSafeZone || isEditingSafeZones;
 
   useEffect(() => {
@@ -79,6 +228,11 @@ export function CrisisDashboard({
   const handleMapClick = (lat: number, lng: number) => {
     if (isCreatingSafeZone) {
       setDraftLocation({ lat, lng });
+    } else {
+      setDraftCustomPin({ lat, lng });
+      setIsClosingDraftCustomPin(false);
+      setSelectedReport(null);
+      setSelectedSafeZone(null);
     }
   };
 
@@ -149,6 +303,15 @@ export function CrisisDashboard({
             setIsCreatingSafeZone(true);
           }}
           onCollapse={() => setSidebarCollapsed(true)}
+          // Props de navegación (sólo usadas en modo usuario)
+          onNavigateToNearest={() => {
+            setNavigatingTargetId("nearest");
+            startRouting(null);
+          }}
+          isNavigatingNearest={
+            routingState.status === "loading" &&
+            navigatingTargetId === "nearest"
+          }
         />
       </div>
       {/* Tongue tab — always rendered, slides in/out smoothly */}
@@ -178,18 +341,79 @@ export function CrisisDashboard({
           onSelectReport={(report) => {
             setSelectedReport(report);
             setSelectedSafeZone(null);
+            if (draftCustomPin) handleCloseDraftCustomPin();
           }}
           safeZones={safeZones}
           selectedSafeZone={selectedSafeZone}
           onSelectSafeZone={(zone) => {
             setSelectedSafeZone(zone);
             setSelectedReport(null);
+            if (draftCustomPin) handleCloseDraftCustomPin();
           }}
           onMapClick={handleMapClick}
           isCreatingSafeZone={isCreatingSafeZone}
           draftLocation={draftLocation}
+          draftCustomPin={draftCustomPin}
+          activeRouteCustomPin={activeRouteCustomPin}
+          closingCustomPin={closingCustomPin}
+          activeRoute={!isAdmin ? displayRoute : null}
+          isClosingRoute={isClosingRoute}
         />
       </section>
+
+      {/* Banner de ruta activa — solo para usuarios */}
+      {!isAdmin && displayRoute && (
+        <div
+          className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center justify-between gap-4 rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-4 py-2 shadow-lg transition-all duration-300 ease-out ${
+            isClosingRoute
+              ? "-translate-y-28 opacity-0 pointer-events-none"
+              : "translate-y-0 opacity-100"
+          }`}
+          style={{ maxWidth: "calc(100vw - 2rem)" }}
+        >
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-zinc-800 text-nowrap">
+              Ruta a {displayRoute.zone.nombre}
+            </span>
+            <span className="text-[11px] text-zinc-500 text-nowrap">
+              Distancia: {(displayRoute.distanceM / 1000).toFixed(1)} km ·
+              Riesgo:{" "}
+              {displayRoute.riskScore < 1
+                ? "bajo"
+                : displayRoute.riskScore < 3
+                  ? "medio"
+                  : "alto"}
+            </span>
+          </div>
+          <button
+            onClick={handleCancelRoute}
+            title="Cancelar ruta"
+            className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-200/50 hover:text-zinc-700 cursor-pointer shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Banner de error de routing */}
+      {!isAdmin && routingState.status === "error" && routingState.error && (
+        <div
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-3 rounded-2xl border border-red-200 bg-white/90 backdrop-blur-md px-4 py-2.5 shadow-xl"
+          style={{ maxWidth: "calc(100vw - 2rem)" }}
+        >
+          <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+          <span className="text-xs font-medium text-red-700">
+            {routingState.error}
+          </span>
+          <button
+            onClick={clearRoute}
+            title="Cerrar"
+            className="ml-1 rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Auth widget - conditionally rendered is fine since it's top right, but sliding out is better */}
       <AuthWidget
@@ -218,6 +442,17 @@ export function CrisisDashboard({
         isOpen={!!selectedReport && !hideMainUI}
         onClose={() => setSelectedReport(null)}
         isAdmin={isAdmin}
+      />
+
+      <CustomPointDetailSidebar
+        customPoint={draftCustomPin}
+        isOpen={!!draftCustomPin && !isClosingDraftCustomPin && !hideMainUI}
+        onClose={handleCloseDraftCustomPin}
+        onNavigate={handleNavigateToCustomPoint}
+        isNavigating={
+          routingState.status === "loading" &&
+          navigatingTargetId === "custom-point"
+        }
       />
 
       {hideMainUI && !showSafeZoneModal && (
@@ -258,7 +493,7 @@ export function CrisisDashboard({
       {isEditingSingleSafeZone && selectedSafeZone && (
         <SafeZoneModal
           isOpen={true}
-          title="Editar Zona Segura"
+          title="Editar Centro de Evacuación"
           initialData={{
             nombre: selectedSafeZone.nombre,
             descripcion: selectedSafeZone.descripcion,
@@ -274,6 +509,20 @@ export function CrisisDashboard({
         onClose={() => setSelectedSafeZone(null)}
         onEdit={isAdmin ? () => setIsEditingSingleSafeZone(true) : undefined}
         onDelete={isAdmin ? handleDeleteSafeZone : undefined}
+        onNavigate={
+          !isAdmin
+            ? () => {
+                if (selectedSafeZone) {
+                  setNavigatingTargetId(selectedSafeZone.id);
+                  startRouting(selectedSafeZone);
+                }
+              }
+            : undefined
+        }
+        isNavigating={
+          routingState.status === "loading" &&
+          navigatingTargetId === selectedSafeZone?.id
+        }
       />
     </>
   );
