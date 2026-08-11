@@ -227,8 +227,8 @@ function generateDetourWaypoints(
         const len = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
 
         if (len > 0) {
-          // Offsets en grados (~0.0035 y ~0.006 ≈ 350m y 600m)
-          const offsets = [0.0035, 0.006];
+          // Offsets en grados (~0.0035, ~0.006, ~0.0085 y ~0.011 ≈ 350m, 600m, 850m y 1.1km)
+          const offsets = [0.0035, 0.006, 0.0085, 0.011];
           for (const offset of offsets) {
             const perpLat = (-deltaLng / len) * offset;
             const perpLng = (deltaLat / len) * offset;
@@ -276,9 +276,9 @@ export async function routeToZone(
         heatPoints
       );
 
-      // Probar cada punto de desvío
+      // Probar cada punto de desvío (hasta 16 alternativas alrededor del reclamo)
       const detourPromises = detourWaypoints
-        .slice(0, 8)
+        .slice(0, 16)
         .map((wp) => fetchOsrmRoutes(userLocation, destination, [wp]));
 
       const detourResults = await Promise.all(detourPromises);
