@@ -141,76 +141,95 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
     );
   }, [activeRoute, map, createUserIcon]);
 
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (buttonRef.current) {
+      L.DomEvent.disableClickPropagation(buttonRef.current);
+      L.DomEvent.disableScrollPropagation(buttonRef.current);
+    }
+  }, []);
+
   // ── Main click handler ───────────────────────────────────────────────
-  const handleClick = useCallback(() => {
-    // If we already have a position, just re-center the map on it.
-    if (state === "active" && positionRef.current) {
-      const bounds = L.latLngBounds(
-        [positionRef.current[0] - 0.005, positionRef.current[1] - 0.005],
-        [positionRef.current[0] + 0.005, positionRef.current[1] + 0.005]
-      );
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, duration: 0.6 });
-      return;
-    }
+  const handleClick = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      e?.preventDefault();
 
-    // Check that the browser supports geolocation.
-    if (!navigator.geolocation) {
-      setState("error");
-      setTimeout(() => setState("idle"), 2000);
-      return;
-    }
-
-    setState("loading");
-
-    navigator.geolocation.getCurrentPosition(
-      // ✅ SUCCESS — we got the user's coordinates
-      (pos) => {
-        const latlng: [number, number] = [
-          pos.coords.latitude,
-          pos.coords.longitude,
-        ];
-        positionRef.current = latlng;
-
-        // Create the marker if it doesn't exist, or move it if it does.
-        if (markerRef.current) {
-          markerRef.current.setLatLng(latlng);
-        } else {
-          markerRef.current = L.marker(latlng, {
-            icon: createUserIcon(),
-            zIndexOffset: 2000, // Always on top of other markers
-          }).addTo(map);
-
-          markerRef.current.bindTooltip("Tu ubicación", {
-            direction: "top",
-            offset: [0, -14],
-            className: "user-location-tooltip",
-          });
-        }
-
-        // Pan the map to center on the user's location.
+      // If we already have a position, just re-center the map on it.
+      if (state === "active" && positionRef.current) {
         const bounds = L.latLngBounds(
-          [latlng[0] - 0.005, latlng[1] - 0.005],
-          [latlng[0] + 0.005, latlng[1] + 0.005]
+          [positionRef.current[0] - 0.005, positionRef.current[1] - 0.005],
+          [positionRef.current[0] + 0.005, positionRef.current[1] + 0.005]
         );
         map.fitBounds(bounds, {
           padding: [50, 50],
           maxZoom: 16,
           duration: 0.6,
         });
+        return;
+      }
 
-        setState("active");
-      },
-
-      // ❌ ERROR — permission denied or GPS unavailable
-      () => {
+      // Check that the browser supports geolocation.
+      if (!navigator.geolocation) {
         setState("error");
         setTimeout(() => setState("idle"), 2000);
-      },
+        return;
+      }
 
-      // ⚙️ Options
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-  }, [map, state, createUserIcon]);
+      setState("loading");
+
+      navigator.geolocation.getCurrentPosition(
+        // ✅ SUCCESS — we got the user's coordinates
+        (pos) => {
+          const latlng: [number, number] = [
+            pos.coords.latitude,
+            pos.coords.longitude,
+          ];
+          positionRef.current = latlng;
+
+          // Create the marker if it doesn't exist, or move it if it does.
+          if (markerRef.current) {
+            markerRef.current.setLatLng(latlng);
+          } else {
+            markerRef.current = L.marker(latlng, {
+              icon: createUserIcon(),
+              zIndexOffset: 2000, // Always on top of other markers
+            }).addTo(map);
+
+            markerRef.current.bindTooltip("Tu ubicación", {
+              direction: "top",
+              offset: [0, -14],
+              className: "user-location-tooltip",
+            });
+          }
+
+          // Pan the map to center on the user's location.
+          const bounds = L.latLngBounds(
+            [latlng[0] - 0.005, latlng[1] - 0.005],
+            [latlng[0] + 0.005, latlng[1] + 0.005]
+          );
+          map.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: 16,
+            duration: 0.6,
+          });
+
+          setState("active");
+        },
+
+        // ❌ ERROR — permission denied or GPS unavailable
+        () => {
+          setState("error");
+          setTimeout(() => setState("idle"), 2000);
+        },
+
+        // ⚙️ Options
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    },
+    [map, state, createUserIcon]
+  );
 
   // ── Button colors based on state ─────────────────────────────────────
   const colors: Record<
@@ -243,8 +262,13 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
 
   return (
     <button
+      ref={buttonRef}
       id="locate-me-button"
       onClick={handleClick}
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
       title="Mostrar mi ubicación"
       className={`
         absolute top-16 right-4 z-[1000]

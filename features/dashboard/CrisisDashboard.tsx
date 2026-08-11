@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouting } from "@/hooks/useRouting";
 import { useReports } from "@/hooks/useReports";
 import { useSafeZones } from "@/hooks/useSafeZones";
@@ -95,40 +95,6 @@ export function CrisisDashboard({
     }
   }, [routingState.status]);
 
-  const [displayRoute, setDisplayRoute] = useState<RouteResult | null>(null);
-  const [isClosingRoute, setIsClosingRoute] = useState(false);
-  const [isEnteringBanner, setIsEnteringBanner] = useState(false);
-
-  useEffect(() => {
-    if (routingState.activeRoute) {
-      queueMicrotask(() => {
-        setDisplayRoute(routingState.activeRoute);
-        setIsClosingRoute(false);
-        setIsEnteringBanner(false);
-      });
-      const timer = setTimeout(() => {
-        setIsEnteringBanner(true);
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [routingState.activeRoute]);
-
-  const handleCancelRoute = () => {
-    setIsClosingRoute(true);
-    if (activeRouteCustomPin) {
-      setClosingCustomPin(activeRouteCustomPin);
-      setActiveRouteCustomPin(null);
-    }
-    setTimeout(() => {
-      clearRoute();
-      setDisplayRoute(null);
-      setIsClosingRoute(false);
-      setIsEnteringBanner(false);
-      setClosingCustomPin(null);
-    }, 300);
-  };
-
-  // Custom destination pin states
   const [draftCustomPin, setDraftCustomPin] = useState<{
     lat: number;
     lng: number;
@@ -143,16 +109,96 @@ export function CrisisDashboard({
   } | null>(null);
   const [isClosingDraftCustomPin, setIsClosingDraftCustomPin] = useState(false);
 
+  const [displayRoute, setDisplayRoute] = useState<RouteResult | null>(null);
+  const [isClosingRoute, setIsClosingRoute] = useState(false);
+
+  const prevActiveRouteRef = useRef<RouteResult | null>(null);
+
+  useEffect(() => {
+    if (
+      routingState.activeRoute &&
+      routingState.activeRoute !== prevActiveRouteRef.current
+    ) {
+      prevActiveRouteRef.current = routingState.activeRoute;
+      queueMicrotask(() => {
+        setDisplayRoute(routingState.activeRoute);
+        setIsClosingRoute(false);
+
+        const isNewRouteCustom =
+          routingState.activeRoute?.zone?.id === "custom-point";
+
+        if (isNewRouteCustom && draftCustomPin) {
+          const newTargetPin = {
+            lat: draftCustomPin.lat,
+            lng: draftCustomPin.lng,
+          };
+          if (activeRouteCustomPin) {
+            const oldPin = activeRouteCustomPin;
+            setClosingCustomPin(oldPin);
+            setTimeout(() => {
+              setClosingCustomPin((curr) => (curr === oldPin ? null : curr));
+            }, 300);
+          }
+          setActiveRouteCustomPin(newTargetPin);
+          setDraftCustomPin(null);
+          setIsClosingDraftCustomPin(false);
+        } else if (!isNewRouteCustom) {
+          if (activeRouteCustomPin) {
+            const oldPin = activeRouteCustomPin;
+            setClosingCustomPin(oldPin);
+            setActiveRouteCustomPin(null);
+            setTimeout(() => {
+              setClosingCustomPin((curr) => (curr === oldPin ? null : curr));
+            }, 300);
+          }
+          if (draftCustomPin) {
+            setDraftCustomPin(null);
+            setIsClosingDraftCustomPin(false);
+          }
+        }
+
+        if (selectedSafeZone) {
+          setSelectedSafeZone(null);
+        }
+      });
+    } else if (!routingState.activeRoute) {
+      prevActiveRouteRef.current = null;
+    }
+  }, [
+    routingState.activeRoute,
+    draftCustomPin,
+    activeRouteCustomPin,
+    selectedSafeZone,
+    setSelectedSafeZone,
+  ]);
+
+  const handleCancelRoute = () => {
+    setIsClosingRoute(true);
+    if (activeRouteCustomPin) {
+      setClosingCustomPin(activeRouteCustomPin);
+      setActiveRouteCustomPin(null);
+    }
+    setTimeout(() => {
+      clearRoute();
+      setDisplayRoute(null);
+      setIsClosingRoute(false);
+      setClosingCustomPin(null);
+    }, 300);
+  };
+
   const handleCloseDraftCustomPin = () => {
     setIsClosingDraftCustomPin(true);
     if (draftCustomPin) {
-      setClosingCustomPin(draftCustomPin);
-    }
-    setTimeout(() => {
+      const pinToClose = draftCustomPin;
       setDraftCustomPin(null);
+      setClosingCustomPin(pinToClose);
+      setTimeout(() => {
+        setIsClosingDraftCustomPin(false);
+        setClosingCustomPin((curr) => (curr === pinToClose ? null : curr));
+      }, 300);
+    } else {
       setIsClosingDraftCustomPin(false);
-      setClosingCustomPin(null);
-    }, 300);
+    }
   };
 
   const handleNavigateToCustomPoint = (point: {
@@ -160,18 +206,6 @@ export function CrisisDashboard({
     lng: number;
     address: string;
   }) => {
-    if (displayRoute) {
-      setIsClosingRoute(true);
-    }
-    if (activeRouteCustomPin) {
-      setClosingCustomPin(activeRouteCustomPin);
-      setTimeout(() => {
-        setClosingCustomPin((curr) =>
-          curr === activeRouteCustomPin ? null : curr
-        );
-      }, 300);
-    }
-
     const customZone: SafeZone = {
       id: "custom-point",
       nombre: point.address || "Ubicación seleccionada",
@@ -181,9 +215,6 @@ export function CrisisDashboard({
       created_at: new Date().toISOString(),
     };
 
-    setActiveRouteCustomPin({ lat: point.lat, lng: point.lng });
-    setDraftCustomPin(null);
-    setIsClosingDraftCustomPin(false);
     setNavigatingTargetId("custom-point");
     startRouting(customZone);
   };
@@ -333,8 +364,8 @@ export function CrisisDashboard({
       {/* Banner de ruta activa — solo para usuarios */}
       {!isAdmin && displayRoute && (
         <div
-          className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center justify-between gap-4 rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-4 py-2 shadow-lg transition-all duration-500 ease-out ${
-            !isEnteringBanner || isClosingRoute
+          className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center justify-between gap-4 rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-4 py-2 shadow-lg transition-all duration-300 ease-out ${
+            isClosingRoute
               ? "-translate-y-28 opacity-0 pointer-events-none"
               : "translate-y-0 opacity-100"
           }`}

@@ -190,13 +190,13 @@ export function computeRouteRisk(
 
 /**
  * Costo ponderado: Distancia × (1 + Riesgo × Factor).
- * Factor elevado (e.g. 4.0) garantiza que esquivar un punto de riesgo
+ * Factor elevado (e.g. 30.0) garantiza que esquivar un punto de riesgo
  * sea fuertemente preferido sobre tomar el camino directo inundado.
  */
 export function computeRouteCost(
   distanceM: number,
   riskScore: number,
-  factor: number = 4.0
+  factor: number = 30.0
 ): number {
   return distanceM * (1 + riskScore * factor);
 }
@@ -214,26 +214,28 @@ function generateDetourWaypoints(
   const detours: [number, number][] = [];
 
   for (const [hLat, hLng, intensity] of heatPoints) {
-    if (intensity < 0.1) continue;
+    if (intensity < 0.05) continue;
     const hp: [number, number] = [hLat, hLng];
 
     // Buscar si el punto de reclamo está cerca de la polilínea
     for (let i = 0; i < polyline.length - 1; i++) {
       const dist = pointToSegmentDistanceM(hp, polyline[i], polyline[i + 1]);
       if (dist <= RISK_RADIUS_M) {
-        // Generar puntos de desvío desplazados ~250m a la izquierda y derecha
+        // Generar puntos de desvío desplazados a la izquierda y derecha a 350m y 600m
         const deltaLat = polyline[i + 1][0] - polyline[i][0];
         const deltaLng = polyline[i + 1][1] - polyline[i][1];
         const len = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
 
         if (len > 0) {
-          // Normal perpendicular vector (offset aprox ~0.0025 grados ≈ 250-300m)
-          const offset = 0.0028;
-          const perpLat = (-deltaLng / len) * offset;
-          const perpLng = (deltaLat / len) * offset;
+          // Offsets en grados (~0.0035 y ~0.006 ≈ 350m y 600m)
+          const offsets = [0.0035, 0.006];
+          for (const offset of offsets) {
+            const perpLat = (-deltaLng / len) * offset;
+            const perpLng = (deltaLat / len) * offset;
 
-          detours.push([hLat + perpLat, hLng + perpLng]);
-          detours.push([hLat - perpLat, hLng - perpLng]);
+            detours.push([hLat + perpLat, hLng + perpLng]);
+            detours.push([hLat - perpLat, hLng - perpLng]);
+          }
         }
         break;
       }
@@ -268,7 +270,7 @@ export async function routeToZone(
   // 2. Si las rutas iniciales pasan por zonas de riesgo, generar desvíos
   for (const candidate of initialCandidates) {
     const risk = computeRouteRisk(candidate.polyline, heatPoints);
-    if (risk > 0.05) {
+    if (risk > 0.01) {
       const detourWaypoints = generateDetourWaypoints(
         candidate.polyline,
         heatPoints
@@ -276,7 +278,7 @@ export async function routeToZone(
 
       // Probar cada punto de desvío
       const detourPromises = detourWaypoints
-        .slice(0, 4)
+        .slice(0, 8)
         .map((wp) => fetchOsrmRoutes(userLocation, destination, [wp]));
 
       const detourResults = await Promise.all(detourPromises);

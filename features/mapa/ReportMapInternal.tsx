@@ -395,6 +395,7 @@ export default function ReportMapInternal({
 
         {activeRouteCustomPin && (
           <Marker
+            key={`active-pin-${activeRouteCustomPin.lat}-${activeRouteCustomPin.lng}`}
             position={[activeRouteCustomPin.lat, activeRouteCustomPin.lng]}
             icon={activeRouteCustomPinIcon}
             zIndexOffset={1002}
@@ -403,6 +404,7 @@ export default function ReportMapInternal({
 
         {draftCustomPin && (
           <Marker
+            key={`draft-pin-${draftCustomPin.lat}-${draftCustomPin.lng}`}
             position={[draftCustomPin.lat, draftCustomPin.lng]}
             icon={draftCustomPinIcon}
             zIndexOffset={1003}
@@ -411,6 +413,7 @@ export default function ReportMapInternal({
 
         {closingCustomPin && (
           <Marker
+            key={`closing-pin-${closingCustomPin.lat}-${closingCustomPin.lng}`}
             position={[closingCustomPin.lat, closingCustomPin.lng]}
             icon={closingCustomPinIcon}
             zIndexOffset={1001}
