@@ -11,7 +11,9 @@ import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { LocateButton } from "./LocateButton";
+import { SafeRoute } from "./SafeRoute";
 import { Flame } from "lucide-react";
+import { RouteResult } from "@/lib/routing";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -19,10 +21,13 @@ interface ReportMapInternalProps {
   onSelectReport: (report: Report | null) => void;
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone) => void;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
+  /** Ruta activa a renderizar sobre el mapa (sólo en modo usuario) */
+  activeRoute?: RouteResult | null;
+  isClosingRoute?: boolean;
 }
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
@@ -121,6 +126,63 @@ function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
   });
 }
 
+interface ReportMapInternalProps {
+  reports: Report[];
+  selectedReport: Report | null;
+  onSelectReport: (report: Report | null) => void;
+  safeZones?: SafeZone[];
+  selectedSafeZone?: SafeZone | null;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  isCreatingSafeZone?: boolean;
+  draftLocation?: { lat: number; lng: number } | null;
+  draftCustomPin?: { lat: number; lng: number } | null;
+  activeRouteCustomPin?: { lat: number; lng: number } | null;
+  closingCustomPin?: { lat: number; lng: number } | null;
+  activeRoute?: RouteResult | null;
+  isClosingRoute?: boolean;
+}
+
+function createCustomPinIcon(
+  zoom: number,
+  animMode: "spawn" | "exit" | "idle" = "spawn"
+) {
+  const minSize = 24;
+  const maxSize = 42;
+  let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
+  size = Math.max(minSize, Math.min(maxSize, size));
+
+  const animClass =
+    animMode === "exit"
+      ? "custom-pin-exit"
+      : animMode === "spawn"
+        ? "custom-pin-spawn"
+        : "";
+
+  return L.divIcon({
+    className: `custom-pin-marker-wrapper`,
+    html: `
+      <div class="${animClass}" style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: ${size}px;
+        height: ${size * 1.15}px;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+        transform-origin: bottom center;
+      ">
+        <svg width="100%" height="100%" viewBox="0 0 24 28" fill="#3b82f6" stroke="#ffffff" stroke-width="1.2">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 6.5 10 14 10 14s10-7.5 10-14c0-5.52-4.48-10-10-10z" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="12" cy="11" r="3.8" fill="#ffffff" stroke="none"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [size, size * 1.15],
+    iconAnchor: [size / 2, size * 1.15],
+    popupAnchor: [0, -size * 1.15],
+  });
+}
+
 export default function ReportMapInternal({
   reports,
   selectedReport,
@@ -131,10 +193,43 @@ export default function ReportMapInternal({
   onMapClick,
   isCreatingSafeZone,
   draftLocation,
+  draftCustomPin,
+  activeRouteCustomPin,
+  closingCustomPin,
+  activeRoute,
+  isClosingRoute,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
+
+  useEffect(() => {
+    const STYLE_ID = "custom-pin-animations";
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+      @keyframes custom-pin-spawn-anim {
+        0%   { transform: scale(0) translateY(-25px); opacity: 0; }
+        60%  { transform: scale(1.25) translateY(4px); opacity: 1; }
+        80%  { transform: scale(0.9) translateY(-2px); opacity: 1; }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+      }
+      @keyframes custom-pin-exit-anim {
+        0%   { transform: scale(1) translateY(0); opacity: 1; }
+        35%  { transform: scale(1.2) translateY(-10px); opacity: 1; }
+        100% { transform: scale(0) translateY(12px); opacity: 0; }
+      }
+      .custom-pin-spawn {
+        animation: custom-pin-spawn-anim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+      .custom-pin-exit {
+        animation: custom-pin-exit-anim 0.3s ease-in-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   const defaultIcon = useMemo(
     () => createNeutralIcon(currentZoom),
@@ -153,31 +248,49 @@ export default function ReportMapInternal({
     () => createSafeZoneIcon(currentZoom, true),
     [currentZoom]
   );
+  const draftCustomPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, "spawn"),
+    [currentZoom]
+  );
+  const activeRouteCustomPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, "idle"),
+    [currentZoom]
+  );
+  const closingCustomPinIcon = useMemo(
+    () => createCustomPinIcon(currentZoom, "exit"),
+    [currentZoom]
+  );
 
   // Directly mutate DOM classes to allow CSS transitions without recreating L.divIcon
   useEffect(() => {
     Object.values(markerRefs.current).forEach((marker) => {
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+      const el =
+        marker?.getElement() ??
+        (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.remove("is-selected");
     });
     if (selectedReport?.id) {
       const selectedMarker = markerRefs.current[selectedReport.id];
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (selectedMarker && selectedMarker._icon)
-        selectedMarker._icon.classList.add("is-selected");
+      const el =
+        selectedMarker?.getElement() ??
+        (selectedMarker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.add("is-selected");
     }
   }, [selectedReport]);
 
   useEffect(() => {
     Object.values(szMarkerRefs.current).forEach((marker) => {
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (marker && marker._icon) marker._icon.classList.remove("is-selected");
+      const el =
+        marker?.getElement() ??
+        (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.remove("is-selected");
     });
     if (selectedSafeZone?.id) {
       const selectedMarker = szMarkerRefs.current[selectedSafeZone.id];
-      // @ts-expect-error Leaflet private API to get the DOM element
-      if (selectedMarker && selectedMarker._icon)
-        selectedMarker._icon.classList.add("is-selected");
+      const el =
+        selectedMarker?.getElement() ??
+        (selectedMarker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.add("is-selected");
     }
   }, [selectedSafeZone]);
 
@@ -264,7 +377,7 @@ export default function ReportMapInternal({
               eventHandlers={{
                 click: () =>
                   isSelected
-                    ? onSelectSafeZone?.(null)
+                    ? onSelectSafeZone?.(sz) // toggle off handled by parent
                     : onSelectSafeZone?.(sz),
               }}
               zIndexOffset={1000} // Ensure safe zones render on top of reports
@@ -280,7 +393,39 @@ export default function ReportMapInternal({
           />
         )}
 
-        <LocateButton />
+        {activeRouteCustomPin && (
+          <Marker
+            key={`active-pin-${activeRouteCustomPin.lat}-${activeRouteCustomPin.lng}`}
+            position={[activeRouteCustomPin.lat, activeRouteCustomPin.lng]}
+            icon={activeRouteCustomPinIcon}
+            zIndexOffset={1002}
+          />
+        )}
+
+        {draftCustomPin && (
+          <Marker
+            key={`draft-pin-${draftCustomPin.lat}-${draftCustomPin.lng}`}
+            position={[draftCustomPin.lat, draftCustomPin.lng]}
+            icon={draftCustomPinIcon}
+            zIndexOffset={1003}
+          />
+        )}
+
+        {closingCustomPin && (
+          <Marker
+            key={`closing-pin-${closingCustomPin.lat}-${closingCustomPin.lng}`}
+            position={[closingCustomPin.lat, closingCustomPin.lng]}
+            icon={closingCustomPinIcon}
+            zIndexOffset={1001}
+          />
+        )}
+
+        <LocateButton activeRoute={activeRoute} />
+
+        {/* Ruta segura activa — solo visible en modo usuario */}
+        {activeRoute && (
+          <SafeRoute route={activeRoute} isClosing={isClosingRoute} />
+        )}
       </MapContainer>
 
       {/* Legend */}

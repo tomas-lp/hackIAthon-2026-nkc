@@ -5,6 +5,7 @@ import { Report } from "@/types/report";
 import { Loader2 } from "lucide-react";
 
 import { SafeZone } from "@/types/safeZone";
+import { RouteResult } from "@/lib/routing";
 
 interface ReportMapProps {
   reports: Report[];
@@ -12,10 +13,15 @@ interface ReportMapProps {
   onSelectReport: (report: Report | null) => void;
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone) => void;
+  onSelectSafeZone?: (zone: SafeZone | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
+  draftCustomPin?: { lat: number; lng: number } | null;
+  activeRouteCustomPin?: { lat: number; lng: number } | null;
+  closingCustomPin?: { lat: number; lng: number } | null;
+  activeRoute?: RouteResult | null;
+  isClosingRoute?: boolean;
 }
 
 const ReportMapInternal = dynamic(() => import("./ReportMapInternal"), {

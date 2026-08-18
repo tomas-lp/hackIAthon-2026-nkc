@@ -18,7 +18,7 @@ export function SafeZoneModal({
   isOpen,
   onClose,
   onSave,
-  title = "Nueva Zona Segura",
+  title = "Nuevo Centro de Evacuación",
   initialData = { nombre: "", descripcion: "" },
 }: SafeZoneModalProps) {
   const [nombre, setNombre] = useState(initialData.nombre);
