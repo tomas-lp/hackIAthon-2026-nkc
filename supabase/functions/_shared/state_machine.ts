@@ -1,11 +1,11 @@
-import {
+﻿import {
   classifyIntent,
   validateDescription,
   analyzePhoto,
   extractAddress,
 } from "./ai.ts";
 import { fetchCurrentWeather } from "./weather.ts";
-import { geocodeAddress } from "./geocode.ts";
+import { geocodeAddress, reverseGeocodeAddress } from "./geocode.ts";
 import { findBestStreetMatch } from "./fuzzy_match.ts";
 import { descripcionPuntos, climaPuntos } from "./scoring.ts";
 import { MAP_BASE_URL } from "./constants.ts";
@@ -349,6 +349,9 @@ export async function processMessage(
 
         if (coords) {
           message.location = { latitude: coords.lat, longitude: coords.lon };
+          if (coords.barrio) {
+            session.datos_temporales.barrio = coords.barrio;
+          }
           session.state = "ESPERANDO_UBICACION_REPORTE";
 
           await adapter.sendMessage(
@@ -437,6 +440,15 @@ export async function processMessage(
         );
         session.datos_temporales.lat = message.location.latitude;
         session.datos_temporales.lon = message.location.longitude;
+
+        // Intentar obtener el barrio mediante reverse geocoding
+        const rg = await reverseGeocodeAddress(
+          message.location.latitude,
+          message.location.longitude
+        );
+        if (rg && rg.barrio) {
+          session.datos_temporales.barrio = rg.barrio;
+        }
 
         const weather = await fetchCurrentWeather(
           message.location.latitude,
@@ -591,6 +603,7 @@ export async function processMessage(
         lluvia_mm: session.datos_temporales.lluvia_mm as number,
         clima_fuente: session.datos_temporales.clima_fuente as string,
         tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
+        barrio: session.datos_temporales.barrio || null,
         puntaje_base: puntajeTotal,
         puntaje_descripcion: puntajeDescripcion,
         puntaje_foto: puntajeFoto,
