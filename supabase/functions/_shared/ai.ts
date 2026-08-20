@@ -475,7 +475,7 @@ export async function transcribeAudio(
 
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("model", "whisper-large-v3-turbo"); // o whisper-large-v3
+  formData.append("model", "whisper-large-v3"); // o whisper-large-v3-turbo
   formData.append("language", "es");
 
   try {
