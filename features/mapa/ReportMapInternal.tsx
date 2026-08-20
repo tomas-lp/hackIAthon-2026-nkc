@@ -7,6 +7,7 @@ import {
   Marker,
   useMapEvents,
   GeoJSON,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -191,6 +192,50 @@ function createCustomPinIcon(
   });
 }
 
+function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
+  const map = useMap();
+
+  return (
+    <GeoJSON
+      key="barrios-layer"
+      data={data}
+      style={() => ({
+        color: "#2563eb",
+        weight: 1.5,
+        opacity: 0.7,
+        fillColor: "#3b82f6",
+        fillOpacity: 0.08,
+      })}
+      onEachFeature={(feature, layer) => {
+        const nombre = feature.properties?.nombre ?? "";
+        const tipo = feature.properties?.tipo ?? "";
+        (layer as L.Path).on({
+          mouseover(e) {
+            (e.target as L.Path).setStyle({ fillOpacity: 0.3, weight: 2.5 });
+            (e.target as L.Path).bringToFront();
+          },
+          mouseout(e) {
+            (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
+          },
+          click(e) {
+            const target = e.target as L.Polygon;
+            if (typeof target.getBounds === "function") {
+              map.fitBounds(target.getBounds(), {
+                padding: [20, 20],
+                maxZoom: 15,
+              });
+            }
+          },
+        });
+        layer.bindTooltip(
+          `<strong style="font-size:13px">${nombre}</strong><br/><span style="font-size:11px;color:#666">${tipo}</span>`,
+          { sticky: true, opacity: 0.95 }
+        );
+      }}
+    />
+  );
+}
+
 export default function ReportMapInternal({
   reports,
   selectedReport,
@@ -356,40 +401,7 @@ export default function ReportMapInternal({
 
         {/* Capa de polígonos de barrios — solo en vista /barrios */}
         {showBarrios && barriosGeoJson && (
-          <GeoJSON
-            key="barrios-layer"
-            data={barriosGeoJson}
-            style={() => ({
-              color: "#2563eb",
-              weight: 1.5,
-              opacity: 0.7,
-              fillColor: "#3b82f6",
-              fillOpacity: 0.08,
-            })}
-            onEachFeature={(feature, layer) => {
-              const nombre = feature.properties?.nombre ?? "";
-              const tipo = feature.properties?.tipo ?? "";
-              (layer as L.Path).on({
-                mouseover(e) {
-                  (e.target as L.Path).setStyle({
-                    fillOpacity: 0.3,
-                    weight: 2.5,
-                  });
-                  (e.target as L.Path).bringToFront();
-                },
-                mouseout(e) {
-                  (e.target as L.Path).setStyle({
-                    fillOpacity: 0.08,
-                    weight: 1.5,
-                  });
-                },
-              });
-              layer.bindTooltip(
-                `<strong style="font-size:13px">${nombre}</strong><br/><span style="font-size:11px;color:#666">${tipo}</span>`,
-                { sticky: true, opacity: 0.95 }
-              );
-            }}
-          />
+          <BarriosLayer data={barriosGeoJson} />
         )}
 
         <ZoomTracker onZoomChange={setCurrentZoom} />
