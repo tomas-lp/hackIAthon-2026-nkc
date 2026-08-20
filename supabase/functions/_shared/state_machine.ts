@@ -633,19 +633,60 @@ export async function processMessage(
         session.datos_temporales = {};
         session.intentos_fallidos = 0;
       } else if (text) {
-        await adapter.sendMessage(
-          `⏳ Buscando y corrigiendo las coordenadas de ${text}...`
-        );
-
         let direccionFinal = text;
         const match = findBestStreetMatch(text, adapter.phoneNumber);
         if (match) {
           direccionFinal = match.fullAddress;
         }
 
-        const coords = await geocodeAddress(direccionFinal);
+        session.datos_temporales.direccion_detectada = direccionFinal;
+
+        const msgConfirm = `He registrado que la zona de consulta es *${direccionFinal}*. ¿Es correcta esta ubicación para ingresarla al mapa?`;
+        if (adapter.sendMenu) {
+          await adapter.sendMenu(msgConfirm, [
+            { id: "CONFIRMAR_DIR_CONSULTA_SI", title: "✅ Sí, es correcta" },
+            { id: "CONFIRMAR_DIR_CONSULTA_NO", title: "❌ No, usaré el GPS" },
+          ]);
+        } else {
+          await adapter.sendMessage(msgConfirm + "\n\nResponde 'Sí' o 'No'.");
+        }
+        session.state = "CONFIRMANDO_DIRECCION_CONSULTA";
+      } else {
+        session.intentos_fallidos++;
+        if (session.intentos_fallidos >= 3) {
+          session.state = "IDLE";
+          session.datos_temporales = {};
+          session.intentos_fallidos = 0;
+          await adapter.sendMessage(
+            "Consulta cancelada por errores de formato."
+          );
+        } else {
+          await adapter.sendMessage(
+            `Para darte el clima necesito tu ubicación.\nPor favor, compártela ${attachLocationHint}.`
+          );
+        }
+      }
+      break;
+    }
+
+    case "CONFIRMANDO_DIRECCION_CONSULTA": {
+      if (
+        cleanText === "confirmar_dir_consulta_si" ||
+        cleanText === "sí" ||
+        cleanText === "si" ||
+        cleanText === "✅ sí, es correcta"
+      ) {
+        await adapter.sendMessage(
+          `⏳ Buscando las coordenadas de ${session.datos_temporales.direccion_detectada}...`
+        );
+        const coords = await geocodeAddress(
+          session.datos_temporales.direccion_detectada as string
+        );
 
         if (coords) {
+          await adapter.sendMessage(
+            "⏳ Analizando el clima histórico y actual en esa ubicación..."
+          );
           const weather = await fetchCurrentWeather(coords.lat, coords.lon);
           const nearbyCount = await countNearbyReports(
             coords.lat,
@@ -654,12 +695,8 @@ export async function processMessage(
           );
           const lluvia = weather ? weather.precip_mm : 0;
 
-          let msj = `📊 Estado actual en un radio de 2 kilómetros`;
-          if (match) msj += ` (aprox. desde ${direccionFinal}):`;
-          else msj += `:`;
-
           await adapter.sendMessage(
-            `${msj}\n\n🌧️ Lluvia acumulada en las últimas 24h: ${lluvia}mm\n🚨 Hay ${nearbyCount} reporte(s) cerca de ti.\n\nMantente a salvo.`
+            `📊 Estado actual en un radio de 2 kilómetros (aprox. desde ${session.datos_temporales.direccion_detectada}):\n\n🌧️ Lluvia acumulada en las últimas 24h: ${lluvia}mm\n🚨 Hay ${nearbyCount} reporte(s) cerca de ti.\n\nMantente a salvo.`
           );
 
           session.state = "IDLE";
@@ -678,22 +715,21 @@ export async function processMessage(
             await adapter.sendMessage(
               `❌ No fue posible verificar esa dirección.\nPor favor, comparte tu ubicación ${attachLocationHint}.\n\nIntento ${session.intentos_fallidos} de 3.`
             );
+            session.state = "ESPERANDO_UBICACION_CONSULTA";
           }
         }
+      } else if (
+        cleanText === "confirmar_dir_consulta_no" ||
+        cleanText === "no" ||
+        cleanText === "no, usaré el gps" ||
+        cleanText === "❌ no, usaré el gps"
+      ) {
+        await adapter.sendMessage(
+          `Entendido.\n\n📍 Ahora, por favor envía tu ubicación ${attachLocationHint}.`
+        );
+        session.state = "ESPERANDO_UBICACION_CONSULTA";
       } else {
-        session.intentos_fallidos++;
-        if (session.intentos_fallidos >= 3) {
-          session.state = "IDLE";
-          session.datos_temporales = {};
-          session.intentos_fallidos = 0;
-          await adapter.sendMessage(
-            "Consulta cancelada por errores de formato."
-          );
-        } else {
-          await adapter.sendMessage(
-            `Para darte el clima necesito tu ubicación.\nPor favor, compártela ${attachLocationHint}.`
-          );
-        }
+        await adapter.sendMessage("Por favor responde 'Sí' o 'No'.");
       }
       break;
     }
