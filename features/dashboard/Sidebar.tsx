@@ -324,7 +324,7 @@ export function Sidebar({
                   <Plus className="h-4 w-4" />
                   Crear
                 </button>
-              ) : (
+              ) : onNavigateToNearest ? (
                 <button
                   onClick={onNavigateToNearest}
                   disabled={isNavigatingNearest}
@@ -337,7 +337,7 @@ export function Sidebar({
                   )}
                   {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
-              )}
+              ) : null}
             </div>
 
             <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">

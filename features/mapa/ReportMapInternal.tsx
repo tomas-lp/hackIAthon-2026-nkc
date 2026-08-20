@@ -65,6 +65,8 @@ function MapEventsHandler({
 }) {
   useMapEvents({
     click: (e) => {
+      // Prevent click from bubbling to Next.js <Link> elements outside the map
+      e.originalEvent?.stopPropagation();
       onClick?.(e.latlng.lat, e.latlng.lng);
     },
   });
@@ -218,6 +220,8 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
             (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
           },
           click(e) {
+            // Prevent the native click from reaching Next.js <Link> elements
+            e.originalEvent?.stopPropagation();
             const target = e.target as L.Polygon;
             if (typeof target.getBounds === "function") {
               map.fitBounds(target.getBounds(), {
@@ -259,9 +263,16 @@ export default function ReportMapInternal({
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<GeoJSON.FeatureCollection | null>(null);
 
-  // Carga los polígonos de barrios solo cuando se necesitan
+  // Carga los polígonos de barrios solo cuando se necesitan,
+  // y los limpia cuando showBarrios pasa a false para que la capa
+  // desaparezca correctamente en navegación client-side (React reutiliza
+  // la instancia del componente entre / y /barrios).
   useEffect(() => {
-    if (!showBarrios) return;
+    if (!showBarrios) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBarriosGeoJson(null);
+      return;
+    }
     fetch("/data/barrios-corrientes.geojson")
       .then((r) => r.json())
       .then(setBarriosGeoJson)
@@ -427,8 +438,14 @@ export default function ReportMapInternal({
               position={[report.latitud, report.longitud]}
               icon={isNew ? newDefaultIcon : defaultIcon}
               eventHandlers={{
-                click: () =>
-                  isSelected ? onSelectReport(null) : onSelectReport(report),
+                click: (e) => {
+                  e.originalEvent?.stopPropagation();
+                  if (isSelected) {
+                    onSelectReport(null);
+                  } else {
+                    onSelectReport(report);
+                  }
+                },
               }}
             ></Marker>
           );
@@ -445,10 +462,14 @@ export default function ReportMapInternal({
               position={[sz.latitud, sz.longitud]}
               icon={defaultSzIcon}
               eventHandlers={{
-                click: () =>
-                  isSelected
-                    ? onSelectSafeZone?.(sz) // toggle off handled by parent
-                    : onSelectSafeZone?.(sz),
+                click: (e) => {
+                  e.originalEvent?.stopPropagation();
+                  if (isSelected) {
+                    onSelectSafeZone?.(sz);
+                  } else {
+                    onSelectSafeZone?.(sz);
+                  }
+                },
               }}
               zIndexOffset={1000} // Ensure safe zones render on top of reports
             />

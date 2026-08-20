@@ -306,11 +306,15 @@ export function CrisisDashboard({
             setIsCreatingSafeZone(true);
           }}
           onCollapse={() => setSidebarCollapsed(true)}
-          // Props de navegación (sólo usadas en modo usuario)
-          onNavigateToNearest={() => {
-            setNavigatingTargetId("nearest");
-            startRouting(null);
-          }}
+          // Props de navegación (sólo usadas en modo usuario, nunca en admin)
+          onNavigateToNearest={
+            !isAdmin
+              ? () => {
+                  setNavigatingTargetId("nearest");
+                  startRouting(null);
+                }
+              : undefined
+          }
           isNavigatingNearest={
             routingState.status === "loading" &&
             navigatingTargetId === "nearest"
@@ -454,7 +458,7 @@ export function CrisisDashboard({
         customPoint={draftCustomPin}
         isOpen={!!draftCustomPin && !isClosingDraftCustomPin && !hideMainUI}
         onClose={handleCloseDraftCustomPin}
-        onNavigate={handleNavigateToCustomPoint}
+        onNavigate={!isAdmin ? handleNavigateToCustomPoint : undefined}
         isNavigating={
           routingState.status === "loading" &&
           navigatingTargetId === "custom-point"
