@@ -195,55 +195,163 @@ function createCustomPinIcon(
   });
 }
 
+interface BarrioTooltipInfo {
+  nombre: string;
+  tipo: string;
+  reportCount: number;
+  x: number;
+  y: number;
+}
+
 function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
   const map = useMap();
+  const isDragging = useRef(false);
+  const [tooltip, setTooltip] = useState<BarrioTooltipInfo | null>(null);
+
+  useEffect(() => {
+    const container = map.getContainer();
+    let startX = 0;
+    let startY = 0;
+
+    const onPointerDown = (e: PointerEvent) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      isDragging.current = false;
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!(e.buttons & 1)) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (dx * dx + dy * dy > 25) {
+        isDragging.current = true;
+         
+        setTooltip(null);
+      }
+    };
+
+    const onPointerUp = () => {
+      isDragging.current = false;
+    };
+
+    container.addEventListener("pointerdown", onPointerDown);
+    container.addEventListener("pointermove", onPointerMove);
+    container.addEventListener("pointerup", onPointerUp);
+    container.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      container.removeEventListener("pointerdown", onPointerDown);
+      container.removeEventListener("pointermove", onPointerMove);
+      container.removeEventListener("pointerup", onPointerUp);
+      container.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [map]);
 
   return (
-    <GeoJSON
-      key="barrios-layer"
-      data={data}
-      style={() => ({
-        color: "#2563eb",
-        weight: 1.5,
-        opacity: 0.7,
-        fillColor: "#3b82f6",
-        fillOpacity: 0.08,
-      })}
-      onEachFeature={(feature, layer) => {
-        const nombre = feature.properties?.nombre ?? "";
-        const tipo = feature.properties?.tipo ?? "";
-        (layer as L.Path).on({
-          mouseover(e) {
-            (e.target as L.Path).setStyle({ fillOpacity: 0.3, weight: 2.5 });
-            (e.target as L.Path).bringToFront();
-          },
-          mouseout(e) {
-            (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
-          },
-          click(e) {
-            // Prevent the native click from reaching Next.js <Link> elements
-            e.originalEvent?.stopPropagation();
-            const target = e.target as L.Polygon;
-            if (typeof target.getBounds === "function") {
-              map.fitBounds(target.getBounds(), {
-                padding: [20, 20],
-                maxZoom: 15,
-              });
-            }
-          },
-        });
-        const reportCount = feature.properties?.report_count ?? 0;
-        const countBadge =
-          reportCount > 0
-            ? `<br/><span style="font-size:12px;font-weight:600;color:#e74c3c">🚨 ${reportCount} reportes</span>`
-            : `<br/><span style="font-size:11px;color:#27ae60">✅ Sin reportes</span>`;
+    <>
+      <GeoJSON
+        key="barrios-layer"
+        data={data}
+        style={() => ({
+          color: "#2563eb",
+          weight: 1.5,
+          opacity: 0.7,
+          fillColor: "#3b82f6",
+          fillOpacity: 0.08,
+        })}
+        onEachFeature={(feature, layer) => {
+          const nombre = feature.properties?.nombre ?? "";
+          const tipo = feature.properties?.tipo ?? "";
+          const reportCount = feature.properties?.report_count ?? 0;
 
-        layer.bindTooltip(
-          `<strong style="font-size:13px">${nombre}</strong><br/><span style="font-size:11px;color:#666">${tipo}</span>${countBadge}`,
-          { sticky: true, opacity: 0.95 }
-        );
-      }}
-    />
+          (layer as L.Path).on({
+            mouseover(e) {
+              if (isDragging.current) return;
+              (e.target as L.Path).setStyle({ fillOpacity: 0.3, weight: 2.5 });
+              (e.target as L.Path).bringToFront();
+              const containerRect = map.getContainer().getBoundingClientRect();
+              const orig = e.originalEvent as MouseEvent;
+              setTooltip({
+                nombre,
+                tipo,
+                reportCount,
+                x: orig.clientX - containerRect.left + 12,
+                y: orig.clientY - containerRect.top - 10,
+              });
+            },
+            mousemove(e) {
+              if (isDragging.current) {
+                setTooltip(null);
+                return;
+              }
+              const containerRect = map.getContainer().getBoundingClientRect();
+              const orig = e.originalEvent as MouseEvent;
+              setTooltip((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      x: orig.clientX - containerRect.left + 12,
+                      y: orig.clientY - containerRect.top - 10,
+                    }
+                  : null
+              );
+            },
+            mouseout(e) {
+              (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
+              setTooltip(null);
+            },
+            click(e) {
+              e.originalEvent?.stopPropagation();
+              if (isDragging.current) return;
+              const target = e.target as L.Polygon;
+              if (typeof target.getBounds === "function") {
+                map.fitBounds(target.getBounds(), {
+                  padding: [20, 20],
+                  maxZoom: 15,
+                });
+              }
+            },
+          });
+        }}
+      />
+      {/* Tooltip React: posicionado absolutamente dentro del contenedor del mapa */}
+      {tooltip && (
+        <div
+          style={{
+            position: "absolute",
+            left: tooltip.x,
+            top: tooltip.y,
+            zIndex: 9999,
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: 6,
+            padding: "6px 10px",
+            pointerEvents: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <strong style={{ fontSize: 13 }}>{tooltip.nombre}</strong>
+          <br />
+          <span style={{ fontSize: 11, color: "#666" }}>{tooltip.tipo}</span>
+          {tooltip.reportCount > 0 ? (
+            <>
+              <br />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#e74c3c" }}>
+                🚨 {tooltip.reportCount} reportes
+              </span>
+            </>
+          ) : (
+            <>
+              <br />
+              <span style={{ fontSize: 11, color: "#27ae60" }}>
+                ✅ Sin reportes
+              </span>
+            </>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
