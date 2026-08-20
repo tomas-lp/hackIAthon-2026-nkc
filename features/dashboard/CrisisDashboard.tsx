@@ -19,6 +19,7 @@ import { safeZoneService } from "@/services/safeZoneService";
 import { buildHeatPoints } from "@/lib/heatmap";
 import { RouteResult } from "@/lib/routing";
 import { ChevronRight, X, AlertTriangle } from "lucide-react";
+import { MapViewTabs } from "@/features/mapa/MapViewTabs";
 
 import { User } from "@supabase/supabase-js";
 
@@ -333,6 +334,8 @@ export function CrisisDashboard({
       >
         <ChevronRight className="h-4 w-4" />
       </button>
+
+      <MapViewTabs />
 
       <section className="absolute inset-0 h-full w-full">
         <ReportMap
