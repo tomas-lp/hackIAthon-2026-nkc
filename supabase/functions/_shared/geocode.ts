@@ -85,6 +85,7 @@ export async function geocodeAddress(
   // FALLBACK SEGURO
   const addrWithoutNumber = address
     .replace(/\b\d+\b/g, "")
+    .replace(/\s*,\s*/g, ", ")
     .replace(/\s+/g, " ")
     .trim();
   if (addrWithoutNumber !== address && addrWithoutNumber.length > 3) {
