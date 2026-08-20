@@ -26,11 +26,13 @@ import { User } from "@supabase/supabase-js";
 interface CrisisDashboardProps {
   initialReports: Report[];
   user?: User | null;
+  showBarrios?: boolean;
 }
 
 export function CrisisDashboard({
   initialReports,
   user,
+  showBarrios = false,
 }: CrisisDashboardProps) {
   const isAdmin = !!user;
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -361,6 +363,7 @@ export function CrisisDashboard({
           closingCustomPin={closingCustomPin}
           activeRoute={!isAdmin ? displayRoute : null}
           isClosingRoute={isClosingRoute}
+          showBarrios={showBarrios}
         />
       </section>
 

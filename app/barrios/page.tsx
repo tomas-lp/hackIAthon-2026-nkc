@@ -1,11 +1,26 @@
-import { BarriosMap } from "@/features/barrios/BarriosMap";
-import { MapViewTabs } from "@/features/mapa/MapViewTabs";
+import { reportService } from "@/services/reportService";
+import { CrisisDashboard } from "@/features/dashboard/CrisisDashboard";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
-export default function BarriosPage() {
+export const dynamic = "force-dynamic";
+
+export default async function BarriosPage() {
+  const reports = await reportService.getReports();
+
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
-      <BarriosMap />
-      <MapViewTabs />
+    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
+      <CrisisDashboard
+        initialReports={reports}
+        user={user}
+        showBarrios={true}
+      />
     </main>
   );
 }

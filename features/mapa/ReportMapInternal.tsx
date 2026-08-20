@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  GeoJSON,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -141,6 +147,8 @@ interface ReportMapInternalProps {
   closingCustomPin?: { lat: number; lng: number } | null;
   activeRoute?: RouteResult | null;
   isClosingRoute?: boolean;
+  /** Cuando es true, renderiza la capa de polígonos de barrios sobre el mapa */
+  showBarrios?: boolean;
 }
 
 function createCustomPinIcon(
@@ -198,10 +206,22 @@ export default function ReportMapInternal({
   closingCustomPin,
   activeRoute,
   isClosingRoute,
+  showBarrios = false,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
+  const [barriosGeoJson, setBarriosGeoJson] =
+    useState<GeoJSON.FeatureCollection | null>(null);
+
+  // Carga los polígonos de barrios solo cuando se necesitan
+  useEffect(() => {
+    if (!showBarrios) return;
+    fetch("/data/barrios-corrientes.geojson")
+      .then((r) => r.json())
+      .then(setBarriosGeoJson)
+      .catch((e) => console.error("Error cargando barrios:", e));
+  }, [showBarrios]);
 
   useEffect(() => {
     const STYLE_ID = "custom-pin-animations";
@@ -333,6 +353,44 @@ export default function ReportMapInternal({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
+
+        {/* Capa de polígonos de barrios — solo en vista /barrios */}
+        {showBarrios && barriosGeoJson && (
+          <GeoJSON
+            key="barrios-layer"
+            data={barriosGeoJson}
+            style={() => ({
+              color: "#2563eb",
+              weight: 1.5,
+              opacity: 0.7,
+              fillColor: "#3b82f6",
+              fillOpacity: 0.08,
+            })}
+            onEachFeature={(feature, layer) => {
+              const nombre = feature.properties?.nombre ?? "";
+              const tipo = feature.properties?.tipo ?? "";
+              (layer as L.Path).on({
+                mouseover(e) {
+                  (e.target as L.Path).setStyle({
+                    fillOpacity: 0.3,
+                    weight: 2.5,
+                  });
+                  (e.target as L.Path).bringToFront();
+                },
+                mouseout(e) {
+                  (e.target as L.Path).setStyle({
+                    fillOpacity: 0.08,
+                    weight: 1.5,
+                  });
+                },
+              });
+              layer.bindTooltip(
+                `<strong style="font-size:13px">${nombre}</strong><br/><span style="font-size:11px;color:#666">${tipo}</span>`,
+                { sticky: true, opacity: 0.95 }
+              );
+            }}
+          />
+        )}
 
         <ZoomTracker onZoomChange={setCurrentZoom} />
         <MapEventsHandler onClick={onMapClick} />
