@@ -27,8 +27,22 @@ export function SafeRoute({ route, isClosing }: SafeRouteProps) {
   const { polyline, zone } = route;
   const [fadeOpacity, setFadeOpacity] = useState(0);
 
+  const isHealthCenterTarget =
+    Boolean((zone as unknown as { isHealthCenter?: boolean }).isHealthCenter) ||
+    Boolean((zone as unknown as { tipo?: string }).tipo) ||
+    zone?.id?.startsWith("hc-") ||
+    zone?.descripcion?.includes("CAPS") ||
+    zone?.descripcion?.includes("SAPS") ||
+    zone?.descripcion?.includes("Hospital") ||
+    zone?.descripcion?.includes("Clínica") ||
+    zone?.descripcion?.includes("Centro de Salud") ||
+    zone?.descripcion?.includes("Posta de Salud");
   const isCustomTarget = zone?.id === "custom-point";
-  const mainColor = isCustomTarget ? "#3b82f6" : "#10b981";
+  const mainColor = isHealthCenterTarget
+    ? "#ef4444"
+    : isCustomTarget
+      ? "#3b82f6"
+      : "#10b981";
 
   // ── Animación de aparición (fade in) y desvanecimiento (fade out) ────────────
   useEffect(() => {

@@ -9,6 +9,7 @@ import {
   Trash2,
   Navigation,
   Loader2,
+  Building2,
 } from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
 import { useEffect, useState } from "react";
@@ -24,6 +25,10 @@ interface SafeZoneDetailSidebarProps {
   onNavigate?: () => void;
   /** true mientras se está calculando una ruta hacia este centro */
   isNavigating?: boolean;
+  categoryTitle?: string;
+  typeBadge?: string;
+  typeText?: string;
+  buttonColor?: "blue" | "red";
 }
 
 export function SafeZoneDetailSidebar({
@@ -34,22 +39,27 @@ export function SafeZoneDetailSidebar({
   onDelete,
   onNavigate,
   isNavigating = false,
+  categoryTitle = "Centro de evacuación",
+  typeBadge,
+  typeText,
+  buttonColor = "blue",
 }: SafeZoneDetailSidebarProps) {
-  const [address, setAddress] = useState<string | null>(null);
+  const [asyncAddress, setAsyncAddress] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(!isOpen);
   const [activeSafeZone, setActiveSafeZone] = useState<SafeZone | null>(
     safeZone
   );
+  const [prevSafeZone, setPrevSafeZone] = useState<SafeZone | null>(safeZone);
 
-  useEffect(() => {
+  if (safeZone !== prevSafeZone) {
+    setPrevSafeZone(safeZone);
     if (safeZone) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveSafeZone(safeZone);
       setIsClosing(false);
     } else {
       setIsClosing(true);
     }
-  }, [safeZone, isOpen]);
+  }
 
   const handleClose = () => {
     setIsClosing(true);
@@ -61,22 +71,43 @@ export function SafeZoneDetailSidebar({
   useEffect(() => {
     let isCancelled = false;
 
-    if (activeSafeZone?.latitud && activeSafeZone?.longitud) {
+    if (!activeSafeZone) {
+      return;
+    }
+
+    if (activeSafeZone.latitud && activeSafeZone.longitud) {
       resolveAddress(activeSafeZone.latitud, activeSafeZone.longitud)
         .then((resolved) => {
-          if (!isCancelled) setAddress(resolved);
+          if (!isCancelled && resolved) setAsyncAddress(resolved);
         })
         .catch(() => {
-          if (!isCancelled) setAddress("Ubicación no disponible");
+          if (!isCancelled) setAsyncAddress(null);
         });
     }
 
     return () => {
       isCancelled = true;
     };
-  }, [activeSafeZone?.latitud, activeSafeZone?.longitud]);
+  }, [activeSafeZone]);
 
   if (!activeSafeZone) return null;
+
+  const isDescSameAsName =
+    activeSafeZone.descripcion &&
+    activeSafeZone.nombre &&
+    activeSafeZone.descripcion.trim().toLowerCase() ===
+      activeSafeZone.nombre.trim().toLowerCase();
+
+  const displayAddress =
+    asyncAddress ||
+    (!isDescSameAsName && activeSafeZone.descripcion) ||
+    `Lat ${activeSafeZone.latitud.toFixed(4)}, Lng ${activeSafeZone.longitud.toFixed(4)}`;
+
+  const showDescription =
+    !typeText &&
+    activeSafeZone.descripcion &&
+    activeSafeZone.descripcion !== displayAddress &&
+    !isDescSameAsName;
 
   return (
     <aside
@@ -87,9 +118,16 @@ export function SafeZoneDetailSidebar({
       }`}
     >
       <div className="flex items-center justify-between mb-2 px-1.5 pt-1">
-        <span className="text-sm font-semibold text-zinc-800 tracking-tight">
-          Centro de evacuación
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-zinc-800 tracking-tight">
+            {categoryTitle}
+          </span>
+          {typeBadge && (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 border border-red-200">
+              {typeBadge}
+            </span>
+          )}
+        </div>
         <button
           onClick={handleClose}
           className="rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200/50 hover:text-zinc-800"
@@ -108,15 +146,23 @@ export function SafeZoneDetailSidebar({
           </span>
         </div>
 
+        {typeText && (
+          <div className="flex items-center gap-2.5 text-xs p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
+            <Building2 className="h-4 w-4 text-zinc-400 shrink-0" />
+            <span className="font-medium text-zinc-600 leading-relaxed">
+              Tipo: {typeText}
+            </span>
+          </div>
+        )}
+
         <div className="flex items-start gap-2.5 text-xs p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
           <MapPin className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
           <span className="font-medium text-zinc-600 leading-relaxed">
-            {address ??
-              `Lat ${activeSafeZone.latitud.toFixed(4)}, Lng ${activeSafeZone.longitud.toFixed(4)}`}
+            {displayAddress}
           </span>
         </div>
 
-        {activeSafeZone.descripcion && (
+        {showDescription && (
           <div className="flex items-start gap-2.5 text-xs px-1">
             <AlignLeft className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
             <span className="font-medium text-zinc-600 leading-relaxed italic">
@@ -151,7 +197,11 @@ export function SafeZoneDetailSidebar({
             <button
               onClick={onNavigate}
               disabled={isNavigating}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+              className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-white transition-colors active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm ${
+                buttonColor === "red"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-blue-500 hover:bg-blue-600"
+              }`}
             >
               {isNavigating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

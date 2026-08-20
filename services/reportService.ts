@@ -5,7 +5,7 @@ import {
   puntajeReal as calcPuntajeReal,
 } from "@/lib/zones";
 import { Report, ReportFilters } from "@/types/report";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/utils/supabase/client";
 
 export interface IReportService {
   getReports(filters?: ReportFilters): Promise<Report[]>;
@@ -58,10 +58,9 @@ type ReportDbRow = {
 };
 
 export class SupabaseReportService implements IReportService {
-  private supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  private supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  private supabase = createBrowserClient(this.supabaseUrl!, this.supabaseKey!);
+  private get supabase() {
+    return createClient();
+  }
 
   private mapDbRowToReport(row: ReportDbRow, ahora = new Date()): Report {
     const mapTipo = (t: string) => {
@@ -200,8 +199,8 @@ export class SupabaseReportService implements IReportService {
       return [];
     }
 
-    const dbReports = (data || []).map((r) =>
-      this.mapDbRowToReport(r as ReportDbRow)
+    const dbReports = ((data || []) as ReportDbRow[]).map((r: ReportDbRow) =>
+      this.mapDbRowToReport(r)
     );
 
     return this.applyFilters(dbReports, filters);

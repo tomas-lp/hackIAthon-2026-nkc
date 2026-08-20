@@ -81,9 +81,16 @@ export function HeatLayer({ points }: HeatLayerProps) {
         };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (typeof (L as any).heatLayer !== "function") {
+        console.warn("L.heatLayer function not found on Leaflet instance");
+        return;
+      }
+
       const { maxZoom, minOpacity, gradient } = HEATMAP_CONFIG;
       const initial = heatmapRadiusAt(map.getZoom(), map.getCenter().lat);
-      const layer = L.heatLayer(points, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const layer = (L as any).heatLayer(points, {
         radius: initial.radius,
         blur: initial.blur,
         maxZoom,
