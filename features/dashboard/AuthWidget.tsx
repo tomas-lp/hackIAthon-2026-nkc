@@ -1,8 +1,7 @@
 "use client";
 
-import { User, LogOut, X, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { User, LogOut, X, Loader2, Sun, Moon } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
 import { loginWithCredentials } from "@/app/auth/actions";
 
 interface AuthWidgetProps {
@@ -12,32 +11,102 @@ interface AuthWidgetProps {
   isHidden?: boolean;
 }
 
+const subscribeDarkMode = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
+};
+
+const getDarkModeSnapshot = () => {
+  if (typeof window === "undefined") return false;
+  return document.documentElement.classList.contains("dark");
+};
+
+const getDarkModeServerSnapshot = () => false;
+
 export function AuthWidget({
   isAdmin,
   onLoginClick,
   onLogoutClick,
   isHidden,
 }: AuthWidgetProps) {
+  const isDarkMode = useSyncExternalStore(
+    subscribeDarkMode,
+    getDarkModeSnapshot,
+    getDarkModeServerSnapshot
+  );
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle("dark");
+  };
+
   return (
     <div
-      className={`absolute right-4 top-4 z-[1000] transition-all duration-300 ease-in-out ${
+      className={`absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out ${
         isHidden
           ? "-translate-y-20 opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100"
       }`}
     >
       {isAdmin ? (
-        <button
-          onClick={onLogoutClick}
-          className="flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm transition-colors hover:bg-red-50"
-        >
-          <LogOut className="h-4 w-4" />
-          Cerrar sesión
-        </button>
+        <>
+          {/* Top Row: Sliding Logout Button + User Profile Button */}
+          <div className="flex items-center gap-2 relative">
+            {/* Standalone Logout Pill Button - slides out to the LEFT with spring bounce */}
+            <button
+              onClick={() => {
+                setShowUserMenu(false);
+                onLogoutClick();
+              }}
+              title="Cerrar sesión"
+              className={`flex items-center gap-2 rounded-full border border-red-200/80 bg-white/90 px-4 py-2 text-xs font-bold text-red-600 shadow-md backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer hover:bg-red-50 active:scale-95 ${
+                showUserMenu
+                  ? "translate-x-0 opacity-100 scale-100"
+                  : "translate-x-12 opacity-0 pointer-events-none scale-90"
+              }`}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Cerrar sesión</span>
+            </button>
+
+            {/* Circular User Profile Button */}
+            <button
+              onClick={() => setShowUserMenu((prev) => !prev)}
+              title="Menú de usuario"
+              className={`flex items-center justify-center rounded-full border border-white/40 p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
+                showUserMenu
+                  ? "bg-zinc-800 text-white border-zinc-700"
+                  : "bg-white/70 text-zinc-700 hover:bg-white/90"
+              }`}
+            >
+              <User className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Theme Toggle Button (Moon / Sun) */}
+          <button
+            onClick={toggleDarkMode}
+            title={
+              isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+            }
+            className="flex items-center justify-center rounded-full border border-white/40 bg-white/70 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
+          >
+            {isDarkMode ? (
+              <Sun className="h-5 w-5 text-amber-500" />
+            ) : (
+              <Moon className="h-5 w-5 text-indigo-600" />
+            )}
+          </button>
+        </>
       ) : (
         <button
           onClick={onLoginClick}
-          className="flex items-center justify-center rounded-full border border-white/40 bg-white/60 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+          className="flex items-center justify-center rounded-full border border-white/40 bg-white/60 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
         >
           <User className="h-5 w-5" />
         </button>
@@ -57,7 +126,6 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   if (!isOpen) return null;
 
@@ -71,7 +139,7 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
       setError(result.error);
     } else {
       onLogin();
-      router.refresh();
+      window.location.reload();
     }
   };
 

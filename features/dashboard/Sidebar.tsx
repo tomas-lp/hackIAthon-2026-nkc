@@ -7,7 +7,6 @@ import { HealthCenter } from "@/types/healthCenter";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
 import {
-  Plus,
   ChevronLeft,
   ChevronDown,
   Check,
@@ -154,15 +153,13 @@ function HealthCenterCard({
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                {healthCenter.tipo}
-              </span>
-            </div>
             <span className="text-sm font-medium text-black">
               {healthCenter.nombre}
             </span>
-            <span className="text-xs font-medium text-black/70">{address}</span>
+            <span className="text-xs font-medium text-black/50">
+              {healthCenter.tipo}
+            </span>
+            <span className="text-xs font-medium text-black/80">{address}</span>
           </div>
         </div>
       </button>
@@ -311,7 +308,6 @@ export function Sidebar({
   onUpdateFilter,
   isAdmin,
   safeZones = [],
-  onCreateSafeZone,
   selectedSafeZone,
   onSelectSafeZone,
   healthCenters = [],
@@ -323,6 +319,7 @@ export function Sidebar({
   onNavigateToNearestHealthCenter,
   isNavigatingNearestHealthCenter = false,
 }: SidebarProps) {
+  const [activeAdminTab, setActiveAdminTab] = useState<string>("Mapa");
   const [categoryMode, setCategoryMode] = useState<"EVACUACION" | "SALUD">(
     "EVACUACION"
   );
@@ -358,14 +355,21 @@ export function Sidebar({
     });
   }, [filters.tipo, reports]);
 
+  const adminMenuOptions = [
+    "Mapa",
+    "Marcadores",
+    "Regiones",
+    "Panel de Administración",
+  ];
+
   return (
-    <aside className="flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs max-h-[85vh]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex gap-2 bg-inu py-2 px-4 rounded-2xl">
-          <div className="font-black text-4xl leading-8 logo flex justify-center items-center text-white rounded-2xl">
+    <aside className="flex flex-col gap-3 m-4 z-100 w-72 max-w-72 rounded-2xl border border-gray-200 bg-white/60 p-2.5 backdrop-blur-xs max-h-[85vh]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center">
+          <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
             INU
           </div>
-          <span className="text-md text-white/90 leading-4">
+          <span className="text-xs text-white/90 leading-3.5 font-medium">
             Sistema de Alerta
             <br />
             para Inundaciones
@@ -376,90 +380,103 @@ export function Sidebar({
             id="sidebar-collapse-btn"
             onClick={onCollapse}
             title="Ocultar panel"
-            className="rounded-lg border border-gray-200 bg-white p-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
-        {/* Sección Selector: Centros de evacuación / Centros de salud */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div ref={categoryMenuRef} className="relative">
+      {isAdmin ? (
+        /* Admin Navigation View */
+        <div className="flex flex-col gap-1.5 py-0.5">
+          {adminMenuOptions.map((option) => {
+            const isSelected = activeAdminTab === option;
+            return (
               <button
-                type="button"
-                onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
-                className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
-              >
-                <span>
-                  {categoryMode === "EVACUACION"
-                    ? "Centros de evacuación"
-                    : "Centros de salud"}
-                </span>
-                <ChevronDown
-                  className={`h-3 w-3 ml-1 transition-transform duration-200 ${
-                    isCategoryMenuOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              <div
-                className={`absolute left-0 top-full mt-2 z-50 w-56 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
-                  isCategoryMenuOpen
-                    ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
-                    : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
+                key={option}
+                onClick={() => setActiveAdminTab(option)}
+                className={`w-full rounded-xl border px-3.5 py-2.5 text-left font-medium text-xs transition-all duration-200 cursor-pointer shadow-2xs ${
+                  isSelected
+                    ? "border-zinc-400 bg-white text-zinc-950 font-bold shadow-xs scale-[1.01]"
+                    : "border-gray-200/80 bg-white/90 text-zinc-700 hover:bg-gray-50 hover:border-gray-300"
                 }`}
               >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        /* User Normal View */
+        <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
+          {/* Sección Selector: Centros de evacuación / Centros de salud */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div ref={categoryMenuRef} className="relative">
                 <button
                   type="button"
-                  onClick={() => {
-                    setCategoryMode("EVACUACION");
-                    setIsCategoryMenuOpen(false);
-                  }}
-                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
-                    categoryMode === "EVACUACION"
-                      ? "bg-gray-100 font-semibold text-zinc-900"
-                      : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
-                  }`}
-                >
-                  <span>Centros de evacuación</span>
-                  {categoryMode === "EVACUACION" && (
-                    <Check className="h-4 w-4 text-zinc-700" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryMode("SALUD");
-                    setIsCategoryMenuOpen(false);
-                  }}
-                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
-                    categoryMode === "SALUD"
-                      ? "bg-gray-100 font-semibold text-zinc-900"
-                      : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
-                  }`}
-                >
-                  <span>Centros de salud</span>
-                  {categoryMode === "SALUD" && (
-                    <Check className="h-4 w-4 text-zinc-700" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {categoryMode === "EVACUACION" ? (
-              isAdmin ? (
-                <button
-                  onClick={onCreateSafeZone}
+                  onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
                   className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
                 >
-                  <Plus className="h-4 w-4" />
-                  Crear
+                  <span>
+                    {categoryMode === "EVACUACION"
+                      ? "Centros de evacuación"
+                      : "Centros de salud"}
+                  </span>
+                  <ChevronDown
+                    className={`h-3 w-3 ml-1 transition-transform duration-200 ${
+                      isCategoryMenuOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </button>
-              ) : (
+
+                <div
+                  className={`absolute left-0 top-full mt-2 z-50 w-56 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
+                    isCategoryMenuOpen
+                      ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
+                      : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryMode("EVACUACION");
+                      setIsCategoryMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
+                      categoryMode === "EVACUACION"
+                        ? "bg-gray-100 font-semibold text-zinc-900"
+                        : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                    }`}
+                  >
+                    <span>Centros de evacuación</span>
+                    {categoryMode === "EVACUACION" && (
+                      <Check className="h-4 w-4 text-zinc-700" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryMode("SALUD");
+                      setIsCategoryMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
+                      categoryMode === "SALUD"
+                        ? "bg-gray-100 font-semibold text-zinc-900"
+                        : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                    }`}
+                  >
+                    <span>Centros de salud</span>
+                    {categoryMode === "SALUD" && (
+                      <Check className="h-4 w-4 text-zinc-700" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {categoryMode === "EVACUACION" ? (
                 <button
                   onClick={onNavigateToNearest}
                   disabled={isNavigatingNearest}
@@ -472,9 +489,7 @@ export function Sidebar({
                   )}
                   {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
-              )
-            ) : (
-              !isAdmin && (
+              ) : (
                 <button
                   onClick={onNavigateToNearestHealthCenter}
                   disabled={isNavigatingNearestHealthCenter}
@@ -489,91 +504,91 @@ export function Sidebar({
                     ? "Calculando…"
                     : "Ir al más cercano"}
                 </button>
-              )
-            )}
-          </div>
+              )}
+            </div>
 
-          <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
-            <div className="gap-2 flex flex-col overflow-auto pr-2">
-              {categoryMode === "EVACUACION" ? (
-                safeZones.length > 0 ? (
-                  safeZones.map((sz) => (
-                    <SafeZoneCard
-                      key={sz.id}
-                      safeZone={sz}
-                      isSelected={selectedSafeZone?.id === sz.id}
-                      onSelect={onSelectSafeZone || (() => {})}
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
+              <div className="gap-2 flex flex-col overflow-auto pr-2">
+                {categoryMode === "EVACUACION" ? (
+                  safeZones.length > 0 ? (
+                    safeZones.map((sz) => (
+                      <SafeZoneCard
+                        key={sz.id}
+                        safeZone={sz}
+                        isSelected={selectedSafeZone?.id === sz.id}
+                        onSelect={onSelectSafeZone || (() => {})}
+                      />
+                    ))
+                  ) : (
+                    <div className="px-3 py-6 text-center text-xs text-zinc-500">
+                      No hay centros de evacuación cargados.
+                    </div>
+                  )
+                ) : healthCenters.length > 0 ? (
+                  healthCenters.map((hc) => (
+                    <HealthCenterCard
+                      key={hc.id}
+                      healthCenter={hc}
+                      isSelected={selectedHealthCenter?.id === hc.id}
+                      onSelect={onSelectHealthCenter || (() => {})}
                     />
                   ))
                 ) : (
                   <div className="px-3 py-6 text-center text-xs text-zinc-500">
-                    No hay centros de evacuación cargados.
+                    No hay centros de salud disponibles.
                   </div>
-                )
-              ) : healthCenters.length > 0 ? (
-                healthCenters.map((hc) => (
-                  <HealthCenterCard
-                    key={hc.id}
-                    healthCenter={hc}
-                    isSelected={selectedHealthCenter?.id === hc.id}
-                    onSelect={onSelectHealthCenter || (() => {})}
-                  />
-                ))
-              ) : (
-                <div className="px-3 py-6 text-center text-xs text-zinc-500">
-                  No hay centros de salud disponibles.
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col flex-1 min-h-0 gap-2">
+            <div className="w-full flex items-center justify-between relative z-20">
+              <span className="text-md font-medium text-black text-nowrap">
+                Últimas alertas
+              </span>
+              <FilterDropdown
+                value={filters.tipo || ""}
+                onChange={(val) => onUpdateFilter("tipo", val)}
+              />
+            </div>
+
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
+              {loading && (
+                <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
+                  Cargando alertas...
+                </div>
+              )}
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
+                  {error}
+                </div>
+              )}
+
+              {!loading && !error && visibleReports.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
+                  No hay alertas de este tipo.
+                </div>
+              )}
+
+              {!loading && !error && visibleReports.length > 0 && (
+                <div className="gap-2 flex flex-col overflow-auto pr-2">
+                  {visibleReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      report={report}
+                      isSelected={selectedReport?.id === report.id}
+                      onSelect={onSelectReport}
+                      isAdmin={isAdmin}
+                    />
+                  ))}
                 </div>
               )}
             </div>
           </div>
         </div>
-
-        <div className="flex flex-col flex-1 min-h-0 gap-2">
-          <div className="w-full flex items-center justify-between relative z-20">
-            <span className="text-md font-medium text-black text-nowrap">
-              Últimas alertas
-            </span>
-            <FilterDropdown
-              value={filters.tipo || ""}
-              onChange={(val) => onUpdateFilter("tipo", val)}
-            />
-          </div>
-
-          <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
-            {loading && (
-              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
-                Cargando alertas...
-              </div>
-            )}
-
-            {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
-                {error}
-              </div>
-            )}
-
-            {!loading && !error && visibleReports.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
-                No hay alertas de este tipo.
-              </div>
-            )}
-
-            {!loading && !error && visibleReports.length > 0 && (
-              <div className="gap-2 flex flex-col overflow-auto pr-2">
-                {visibleReports.map((report) => (
-                  <ReportCard
-                    key={report.id}
-                    report={report}
-                    isSelected={selectedReport?.id === report.id}
-                    onSelect={onSelectReport}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      )}
     </aside>
   );
 }
