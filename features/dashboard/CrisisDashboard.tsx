@@ -13,11 +13,14 @@ import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
 import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { CustomPointDetailSidebar } from "@/features/mapa/CustomPointDetailSidebar";
+import { LayerControls } from "@/features/mapa/LayerControls";
+import { LiquidGlassSegmentedBar } from "@/features/dashboard/LiquidGlassSegmentedBar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
 import { buildHeatPoints } from "@/lib/heatmap";
 import { RouteResult } from "@/lib/routing";
+import { createClient } from "@/utils/supabase/client";
 import { ChevronRight, X, AlertTriangle } from "lucide-react";
 
 import { User } from "@supabase/supabase-js";
@@ -29,11 +32,41 @@ interface CrisisDashboardProps {
 
 export function CrisisDashboard({
   initialReports,
-  user,
+  user: initialUser,
 }: CrisisDashboardProps) {
-  const isAdmin = !!user;
+  const [currentUser, setCurrentUser] = useState<User | null>(
+    initialUser ?? null
+  );
+  const [prevInitialUser, setPrevInitialUser] = useState(initialUser);
+
+  if (initialUser !== prevInitialUser) {
+    setPrevInitialUser(initialUser);
+    setCurrentUser(initialUser ?? null);
+  }
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUser(user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const isAdmin = !!currentUser;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Layer Toggles for Admin
+  const [showEvacuationCenters, setShowEvacuationCenters] = useState(true);
+  const [showMedicalCenters, setShowMedicalCenters] = useState(true);
+  const [activeListTab, setActiveListTab] = useState("Todo");
 
   const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
 
@@ -334,6 +367,20 @@ export function CrisisDashboard({
         <ChevronRight className="h-4 w-4" />
       </button>
 
+      {/* Liquid Glass Segmented Bar for Admin view */}
+      {isAdmin && (
+        <LiquidGlassSegmentedBar
+          tabs={["Todo", "Barrios", "Mi lista 1"]}
+          activeTab={activeListTab}
+          onTabChange={setActiveListTab}
+          onAddList={() => {
+            const listName = prompt("Nombre de la nueva lista:");
+            if (listName) setActiveListTab(listName);
+          }}
+          isHidden={hideMainUI}
+        />
+      )}
+
       <section className="absolute inset-0 h-full w-full">
         <ReportMap
           reports={reports}
@@ -358,8 +405,24 @@ export function CrisisDashboard({
           closingCustomPin={closingCustomPin}
           activeRoute={!isAdmin ? displayRoute : null}
           isClosingRoute={isClosingRoute}
+          isAdmin={isAdmin}
+          showEvacuationCenters={showEvacuationCenters}
+          showMedicalCenters={showMedicalCenters}
         />
       </section>
+
+      {/* Layer Controls & References for Admin */}
+      {isAdmin && (
+        <LayerControls
+          showEvacuationCenters={showEvacuationCenters}
+          setShowEvacuationCenters={setShowEvacuationCenters}
+          showMedicalCenters={showMedicalCenters}
+          setShowMedicalCenters={setShowMedicalCenters}
+          onCreateEvacuationCenter={() => setIsCreatingSafeZone(true)}
+          onCreateMedicalCenter={() => setIsCreatingSafeZone(true)}
+          isHidden={hideMainUI}
+        />
+      )}
 
       {/* Banner de ruta activa — solo para usuarios */}
       {!isAdmin && displayRoute && (
@@ -435,7 +498,7 @@ export function CrisisDashboard({
         }}
       />
 
-      <BotQRWidget isHidden={hideMainUI} />
+      {!isAdmin && <BotQRWidget isHidden={hideMainUI} />}
 
       <ReportDetailSidebar
         report={selectedReport}

@@ -141,6 +141,9 @@ interface ReportMapInternalProps {
   closingCustomPin?: { lat: number; lng: number } | null;
   activeRoute?: RouteResult | null;
   isClosingRoute?: boolean;
+  isAdmin?: boolean;
+  showEvacuationCenters?: boolean;
+  showMedicalCenters?: boolean;
 }
 
 function createCustomPinIcon(
@@ -198,6 +201,8 @@ export default function ReportMapInternal({
   closingCustomPin,
   activeRoute,
   isClosingRoute,
+  isAdmin,
+  showEvacuationCenters = true,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
@@ -364,26 +369,27 @@ export default function ReportMapInternal({
           );
         })}
 
-        {safeZones.map((sz) => {
-          const isSelected = selectedSafeZone?.id === sz.id;
-          return (
-            <Marker
-              key={sz.id}
-              ref={(marker) => {
-                szMarkerRefs.current[sz.id] = marker;
-              }}
-              position={[sz.latitud, sz.longitud]}
-              icon={defaultSzIcon}
-              eventHandlers={{
-                click: () =>
-                  isSelected
-                    ? onSelectSafeZone?.(sz) // toggle off handled by parent
-                    : onSelectSafeZone?.(sz),
-              }}
-              zIndexOffset={1000} // Ensure safe zones render on top of reports
-            />
-          );
-        })}
+        {showEvacuationCenters &&
+          safeZones.map((sz) => {
+            const isSelected = selectedSafeZone?.id === sz.id;
+            return (
+              <Marker
+                key={sz.id}
+                ref={(marker) => {
+                  szMarkerRefs.current[sz.id] = marker;
+                }}
+                position={[sz.latitud, sz.longitud]}
+                icon={defaultSzIcon}
+                eventHandlers={{
+                  click: () =>
+                    isSelected
+                      ? onSelectSafeZone?.(sz)
+                      : onSelectSafeZone?.(sz),
+                }}
+                zIndexOffset={1000}
+              />
+            );
+          })}
 
         {isCreatingSafeZone && draftLocation && (
           <Marker
@@ -420,7 +426,7 @@ export default function ReportMapInternal({
           />
         )}
 
-        <LocateButton activeRoute={activeRoute} />
+        {!isAdmin && <LocateButton activeRoute={activeRoute} />}
 
         {/* Ruta segura activa — solo visible en modo usuario */}
         {activeRoute && (
@@ -428,22 +434,24 @@ export default function ReportMapInternal({
         )}
       </MapContainer>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-1000 bg-white/50 backdrop-blur-xs border border-gray-200 rounded-xl px-4 py-3 text-xs flex flex-col gap-1.5">
-        <span className="font-medium text-zinc-600 flex items-center gap-1.5">
-          <Flame className="w-4 h-4 text-orange-500" /> Riesgo por intensidad:
-        </span>
-        <div
-          className="h-3 w-52 rounded-full mt-1"
-          style={{
-            background: `linear-gradient(to right, ${heatGradientCss})`,
-          }}
-        />
-        <div className="flex justify-between font-mono text-[11px] text-zinc-400">
-          <span>Bajo</span>
-          <span>Alto</span>
+      {/* Legend for User view */}
+      {!isAdmin && (
+        <div className="absolute bottom-4 left-4 z-1000 bg-white/50 backdrop-blur-xs border border-gray-200 rounded-xl px-4 py-3 text-xs flex flex-col gap-1.5">
+          <span className="font-medium text-zinc-600 flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-orange-500" /> Riesgo por intensidad:
+          </span>
+          <div
+            className="h-3 w-52 rounded-full mt-1"
+            style={{
+              background: `linear-gradient(to right, ${heatGradientCss})`,
+            }}
+          />
+          <div className="flex justify-between font-mono text-[11px] text-zinc-400">
+            <span>Bajo</span>
+            <span>Alto</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

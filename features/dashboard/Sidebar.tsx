@@ -6,7 +6,6 @@ import { SafeZone } from "@/types/safeZone";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
 import {
-  Plus,
   ChevronLeft,
   ChevronDown,
   Check,
@@ -260,13 +259,14 @@ export function Sidebar({
   onUpdateFilter,
   isAdmin,
   safeZones = [],
-  onCreateSafeZone,
   selectedSafeZone,
   onSelectSafeZone,
   onCollapse,
   onNavigateToNearest,
   isNavigatingNearest = false,
 }: SidebarProps) {
+  const [activeAdminTab, setActiveAdminTab] = useState<string>("Mapa");
+
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
       (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
@@ -283,14 +283,21 @@ export function Sidebar({
     });
   }, [filters.tipo, reports]);
 
+  const adminMenuOptions = [
+    "Mapa",
+    "Marcadores",
+    "Regiones",
+    "Panel de Administración",
+  ];
+
   return (
-    <aside className="flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs max-h-[85vh]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex gap-2 bg-inu py-2 px-4 rounded-2xl">
-          <div className="font-black text-4xl leading-8 logo flex justify-center items-center text-white rounded-2xl">
+    <aside className="flex flex-col gap-3 m-4 z-100 w-72 max-w-72 rounded-2xl border border-gray-200 bg-white/60 p-2.5 backdrop-blur-xs max-h-[85vh]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center">
+          <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
             INU
           </div>
-          <span className="text-md text-white/90 leading-4">
+          <span className="text-xs text-white/90 leading-3.5 font-medium">
             Sistema de Alerta
             <br />
             para Inundaciones
@@ -301,30 +308,43 @@ export function Sidebar({
             id="sidebar-collapse-btn"
             onClick={onCollapse}
             title="Ocultar panel"
-            className="rounded-lg border border-gray-200 bg-white p-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         )}
       </div>
-      <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
-        {/* Sección Zonas Seguras — admin: con botón Crear / usuario: con botón Ruta al centro más cercano */}
-        {safeZones.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-md font-medium text-black text-nowrap">
-                Centros de evacuación
-              </span>
 
-              {isAdmin ? (
-                <button
-                  onClick={onCreateSafeZone}
-                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4" />
-                  Crear
-                </button>
-              ) : (
+      {isAdmin ? (
+        /* Admin Navigation View */
+        <div className="flex flex-col gap-1.5 py-0.5">
+          {adminMenuOptions.map((option) => {
+            const isSelected = activeAdminTab === option;
+            return (
+              <button
+                key={option}
+                onClick={() => setActiveAdminTab(option)}
+                className={`w-full rounded-xl border px-3.5 py-2.5 text-left font-medium text-xs transition-all duration-200 cursor-pointer shadow-2xs ${
+                  isSelected
+                    ? "border-zinc-400 bg-white text-zinc-950 font-bold shadow-xs scale-[1.01]"
+                    : "border-gray-200/80 bg-white/90 text-zinc-700 hover:bg-gray-50 hover:border-gray-300"
+                }`}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        /* User Normal View */
+        <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
+          {/* Sección Zonas Seguras — usuario: con botón Ruta al centro más cercano */}
+          {safeZones.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-md font-medium text-black text-nowrap">
+                  Centros de evacuación
+                </span>
                 <button
                   onClick={onNavigateToNearest}
                   disabled={isNavigatingNearest}
@@ -337,88 +357,70 @@ export function Sidebar({
                   )}
                   {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
+              </div>
+
+              <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
+                <div className="gap-2 flex flex-col overflow-auto pr-2">
+                  {safeZones.map((sz) => (
+                    <SafeZoneCard
+                      key={sz.id}
+                      safeZone={sz}
+                      isSelected={selectedSafeZone?.id === sz.id}
+                      onSelect={onSelectSafeZone || (() => {})}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col flex-1 min-h-0 gap-2">
+            <div className="w-full flex items-center justify-between relative z-20">
+              <span className="text-md font-medium text-black text-nowrap">
+                Últimas alertas
+              </span>
+              <FilterDropdown
+                value={filters.tipo || ""}
+                onChange={(val) => onUpdateFilter("tipo", val)}
+              />
+            </div>
+
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
+              {loading && (
+                <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
+                  Cargando alertas...
+                </div>
+              )}
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
+                  {error}
+                </div>
+              )}
+
+              {!loading && !error && visibleReports.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
+                  No hay alertas de este tipo.
+                </div>
+              )}
+
+              {!loading && !error && visibleReports.length > 0 && (
+                <div className="gap-2 flex flex-col overflow-auto pr-2">
+                  {visibleReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      report={report}
+                      isSelected={selectedReport?.id === report.id}
+                      onSelect={onSelectReport}
+                      isAdmin={isAdmin}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-
-            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
-              <div className="gap-2 flex flex-col overflow-auto pr-2">
-                {safeZones.map((sz) => (
-                  <SafeZoneCard
-                    key={sz.id}
-                    safeZone={sz}
-                    isSelected={selectedSafeZone?.id === sz.id}
-                    onSelect={onSelectSafeZone || (() => {})}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Botón Crear standalone para admin cuando no hay zonas todavía */}
-        {isAdmin && safeZones.length === 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-md font-medium text-black text-nowrap">
-                Centros de evacuación
-              </span>
-              <button
-                onClick={onCreateSafeZone}
-                className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                Crear
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col flex-1 min-h-0 gap-2">
-          <div className="w-full flex items-center justify-between relative z-20">
-            <span className="text-md font-medium text-black text-nowrap">
-              Últimas alertas
-            </span>
-            <FilterDropdown
-              value={filters.tipo || ""}
-              onChange={(val) => onUpdateFilter("tipo", val)}
-            />
-          </div>
-
-          <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
-            {loading && (
-              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
-                Cargando alertas...
-              </div>
-            )}
-
-            {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
-                {error}
-              </div>
-            )}
-
-            {!loading && !error && visibleReports.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
-                No hay alertas de este tipo.
-              </div>
-            )}
-
-            {!loading && !error && visibleReports.length > 0 && (
-              <div className="gap-2 flex flex-col overflow-auto pr-2">
-                {visibleReports.map((report) => (
-                  <ReportCard
-                    key={report.id}
-                    report={report}
-                    isSelected={selectedReport?.id === report.id}
-                    onSelect={onSelectReport}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

@@ -22,6 +22,9 @@ interface ReportMapProps {
   closingCustomPin?: { lat: number; lng: number } | null;
   activeRoute?: RouteResult | null;
   isClosingRoute?: boolean;
+  isAdmin?: boolean;
+  showEvacuationCenters?: boolean;
+  showMedicalCenters?: boolean;
 }
 
 const ReportMapInternal = dynamic(() => import("./ReportMapInternal"), {
