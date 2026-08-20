@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
+import { HealthCenter } from "@/types/healthCenter";
 import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
@@ -22,12 +23,20 @@ interface ReportMapInternalProps {
   safeZones?: SafeZone[];
   selectedSafeZone?: SafeZone | null;
   onSelectSafeZone?: (zone: SafeZone | null) => void;
+  healthCenters?: HealthCenter[];
+  selectedHealthCenter?: HealthCenter | null;
+  onSelectHealthCenter?: (center: HealthCenter | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
-  /** Ruta activa a renderizar sobre el mapa (sólo en modo usuario) */
+  draftCustomPin?: { lat: number; lng: number } | null;
+  activeRouteCustomPin?: { lat: number; lng: number } | null;
+  closingCustomPin?: { lat: number; lng: number } | null;
   activeRoute?: RouteResult | null;
   isClosingRoute?: boolean;
+  isAdmin?: boolean;
+  showEvacuationCenters?: boolean;
+  showMedicalCenters?: boolean;
 }
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
@@ -126,24 +135,40 @@ function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
   });
 }
 
-interface ReportMapInternalProps {
-  reports: Report[];
-  selectedReport: Report | null;
-  onSelectReport: (report: Report | null) => void;
-  safeZones?: SafeZone[];
-  selectedSafeZone?: SafeZone | null;
-  onSelectSafeZone?: (zone: SafeZone | null) => void;
-  onMapClick?: (lat: number, lng: number) => void;
-  isCreatingSafeZone?: boolean;
-  draftLocation?: { lat: number; lng: number } | null;
-  draftCustomPin?: { lat: number; lng: number } | null;
-  activeRouteCustomPin?: { lat: number; lng: number } | null;
-  closingCustomPin?: { lat: number; lng: number } | null;
-  activeRoute?: RouteResult | null;
-  isClosingRoute?: boolean;
-  isAdmin?: boolean;
-  showEvacuationCenters?: boolean;
-  showMedicalCenters?: boolean;
+function createHealthCenterIcon(zoom: number, isVisible: boolean = true) {
+  const minSize = 12;
+  const maxSize = 22;
+  let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
+  size = Math.max(minSize, Math.min(maxSize, size));
+
+  return L.divIcon({
+    className: `custom-health-center-marker ${isVisible ? "is-visible" : "is-hidden"}`,
+    html: `
+      <div class="marker-inner transition-all duration-300 ease-out" style="
+        background-color: #ef4444;
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 4px;
+        border: 1.5px solid #ffffff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        opacity: ${isVisible ? 1 : 0};
+        transform: scale(${isVisible ? 1 : 0.4});
+        pointer-events: ${isVisible ? "auto" : "none"};
+      ">
+        <svg width="${size * 0.65}" height="${size * 0.65}" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
 }
 
 function createCustomPinIcon(
@@ -193,6 +218,9 @@ export default function ReportMapInternal({
   safeZones = [],
   selectedSafeZone,
   onSelectSafeZone,
+  healthCenters = [],
+  selectedHealthCenter,
+  onSelectHealthCenter,
   onMapClick,
   isCreatingSafeZone,
   draftLocation,
@@ -203,9 +231,11 @@ export default function ReportMapInternal({
   isClosingRoute,
   isAdmin,
   showEvacuationCenters = true,
+  showMedicalCenters = true,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
+  const hcMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
 
   useEffect(() => {
@@ -251,6 +281,14 @@ export default function ReportMapInternal({
   );
   const draftSzIcon = useMemo(
     () => createSafeZoneIcon(currentZoom, true),
+    [currentZoom]
+  );
+  const hcIconVisible = useMemo(
+    () => createHealthCenterIcon(currentZoom, true),
+    [currentZoom]
+  );
+  const hcIconHidden = useMemo(
+    () => createHealthCenterIcon(currentZoom, false),
     [currentZoom]
   );
   const draftCustomPinIcon = useMemo(
@@ -299,6 +337,22 @@ export default function ReportMapInternal({
     }
   }, [selectedSafeZone]);
 
+  useEffect(() => {
+    Object.values(hcMarkerRefs.current).forEach((marker) => {
+      const el =
+        marker?.getElement() ??
+        (marker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.remove("is-selected");
+    });
+    if (selectedHealthCenter?.id) {
+      const selectedMarker = hcMarkerRefs.current[selectedHealthCenter.id];
+      const el =
+        selectedMarker?.getElement() ??
+        (selectedMarker as unknown as { _icon?: HTMLElement })?._icon;
+      if (el) el.classList.add("is-selected");
+    }
+  }, [selectedHealthCenter]);
+
   const validReports = useMemo(
     () =>
       reports.filter(
@@ -306,6 +360,26 @@ export default function ReportMapInternal({
           Number.isFinite(report.latitud) && Number.isFinite(report.longitud)
       ),
     [reports]
+  );
+
+  const validSafeZones = useMemo(
+    () =>
+      safeZones.filter(
+        (sz) => Number.isFinite(sz.latitud) && Number.isFinite(sz.longitud)
+      ),
+    [safeZones]
+  );
+
+  const validHealthCenters = useMemo(
+    () =>
+      healthCenters.filter(
+        (hc) =>
+          hc.lat !== null &&
+          hc.lon !== null &&
+          Number.isFinite(hc.lat) &&
+          Number.isFinite(hc.lon)
+      ),
+    [healthCenters]
   );
 
   const heatPoints = useMemo(
@@ -326,7 +400,7 @@ export default function ReportMapInternal({
   const nowTimestamp = useMemo(() => Date.now(), []);
 
   return (
-    <div className="relative w-full h-full min-h-125 font-sans">
+    <div className="relative w-full h-full min-h-[500px] font-sans">
       <MapContainer
         center={CORRIENTES_CENTER}
         zoom={INITIAL_ZOOM}
@@ -370,7 +444,7 @@ export default function ReportMapInternal({
         })}
 
         {showEvacuationCenters &&
-          safeZones.map((sz) => {
+          validSafeZones.map((sz) => {
             const isSelected = selectedSafeZone?.id === sz.id;
             return (
               <Marker
@@ -387,6 +461,29 @@ export default function ReportMapInternal({
                       : onSelectSafeZone?.(sz),
                 }}
                 zIndexOffset={1000}
+              />
+            );
+          })}
+
+        {showMedicalCenters &&
+          validHealthCenters.map((hc) => {
+            const isSelected = selectedHealthCenter?.id === hc.id;
+            const isVisible = currentZoom >= 11 || isSelected;
+            return (
+              <Marker
+                key={`hc-${hc.id}`}
+                ref={(marker) => {
+                  hcMarkerRefs.current[hc.id] = marker;
+                }}
+                position={[hc.lat!, hc.lon!]}
+                icon={isVisible ? hcIconVisible : hcIconHidden}
+                eventHandlers={{
+                  click: () =>
+                    isSelected
+                      ? onSelectHealthCenter?.(null)
+                      : onSelectHealthCenter?.(hc),
+                }}
+                zIndexOffset={isSelected ? 1100 : 1000}
               />
             );
           })}
