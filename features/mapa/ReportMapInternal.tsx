@@ -12,6 +12,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+import { createClient } from "@/utils/supabase/client";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
@@ -231,8 +232,14 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
             }
           },
         });
+        const reportCount = feature.properties?.report_count ?? 0;
+        const countBadge =
+          reportCount > 0
+            ? `<br/><span style="font-size:12px;font-weight:600;color:#e74c3c">🚨 ${reportCount} reportes</span>`
+            : `<br/><span style="font-size:11px;color:#27ae60">✅ Sin reportes</span>`;
+
         layer.bindTooltip(
-          `<strong style="font-size:13px">${nombre}</strong><br/><span style="font-size:11px;color:#666">${tipo}</span>`,
+          `<strong style="font-size:13px">${nombre}</strong><br/><span style="font-size:11px;color:#666">${tipo}</span>${countBadge}`,
           { sticky: true, opacity: 0.95 }
         );
       }}
@@ -262,22 +269,31 @@ export default function ReportMapInternal({
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<GeoJSON.FeatureCollection | null>(null);
+  const supabase = createClient();
 
-  // Carga los polígonos de barrios solo cuando se necesitan,
-  // y los limpia cuando showBarrios pasa a false para que la capa
-  // desaparezca correctamente en navegación client-side (React reutiliza
-  // la instancia del componente entre / y /barrios).
+  // Carga los polígonos de barrios dinámicamente desde PostGIS
   useEffect(() => {
     if (!showBarrios) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setBarriosGeoJson(null);
       return;
     }
-    fetch("/data/barrios-corrientes.geojson")
-      .then((r) => r.json())
-      .then(setBarriosGeoJson)
-      .catch((e) => console.error("Error cargando barrios:", e));
-  }, [showBarrios]);
+
+    const fetchBarrios = async () => {
+      const { data, error } = await supabase.rpc("get_barrios_geojson");
+      if (error) {
+        console.error("Error cargando barrios desde PostGIS:", error);
+        return;
+      }
+      if (data) {
+        setBarriosGeoJson(data as unknown as GeoJSON.FeatureCollection);
+      }
+    };
+
+    fetchBarrios().catch((e) =>
+      console.error("Error inesperado cargando barrios:", e)
+    );
+  }, [showBarrios, supabase]);
 
   useEffect(() => {
     const STYLE_ID = "custom-pin-animations";
