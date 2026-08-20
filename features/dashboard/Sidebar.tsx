@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
+import { HealthCenter } from "@/types/healthCenter";
 import { formatDate, TYPE_CONFIG } from "@/lib/utils";
 import { resolveAddress } from "@/lib/geocode";
 import {
@@ -112,11 +113,61 @@ interface SidebarProps {
   onCreateSafeZone?: () => void;
   selectedSafeZone?: SafeZone | null;
   onSelectSafeZone?: (zone: SafeZone) => void;
+  healthCenters?: HealthCenter[];
+  selectedHealthCenter?: HealthCenter | null;
+  onSelectHealthCenter?: (center: HealthCenter) => void;
   onCollapse?: () => void;
   /** Usuario: navegar a la zona segura con menor costo de ruta */
   onNavigateToNearest?: () => void;
   /** true mientras se está calculando la ruta al centro más cercano */
   isNavigatingNearest?: boolean;
+  onNavigateToNearestHealthCenter?: () => void;
+  isNavigatingNearestHealthCenter?: boolean;
+}
+
+function HealthCenterCard({
+  healthCenter,
+  isSelected,
+  onSelect,
+}: {
+  healthCenter: HealthCenter;
+  isSelected: boolean;
+  onSelect: (hc: HealthCenter) => void;
+}) {
+  const address = healthCenter.direccion
+    ? healthCenter.localidad
+      ? `${healthCenter.direccion}, ${healthCenter.localidad}`
+      : healthCenter.direccion
+    : healthCenter.localidad || "Corrientes";
+
+  return (
+    <div
+      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
+        isSelected
+          ? "border-gray-200 bg-gray-200"
+          : "border-gray-200 bg-white/80"
+      }`}
+    >
+      <button
+        onClick={() => onSelect(healthCenter)}
+        className="w-full text-left hover:bg-zinc-50 transition rounded-2xl p-3 cursor-pointer"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                {healthCenter.tipo}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-black">
+              {healthCenter.nombre}
+            </span>
+            <span className="text-xs font-medium text-black/70">{address}</span>
+          </div>
+        </div>
+      </button>
+    </div>
+  );
 }
 
 function SafeZoneCard({
@@ -263,10 +314,34 @@ export function Sidebar({
   onCreateSafeZone,
   selectedSafeZone,
   onSelectSafeZone,
+  healthCenters = [],
+  selectedHealthCenter,
+  onSelectHealthCenter,
   onCollapse,
   onNavigateToNearest,
   isNavigatingNearest = false,
+  onNavigateToNearestHealthCenter,
+  isNavigatingNearestHealthCenter = false,
 }: SidebarProps) {
+  const [categoryMode, setCategoryMode] = useState<"EVACUACION" | "SALUD">(
+    "EVACUACION"
+  );
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        categoryMenuRef.current &&
+        !categoryMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoryMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
       (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
@@ -307,16 +382,76 @@ export function Sidebar({
           </button>
         )}
       </div>
-      <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
-        {/* Sección Zonas Seguras — admin: con botón Crear / usuario: con botón Ruta al centro más cercano */}
-        {safeZones.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-md font-medium text-black text-nowrap">
-                Centros de evacuación
-              </span>
 
-              {isAdmin ? (
+      <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
+        {/* Sección Selector: Centros de evacuación / Centros de salud */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div ref={categoryMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
+                className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
+              >
+                <span>
+                  {categoryMode === "EVACUACION"
+                    ? "Centros de evacuación"
+                    : "Centros de salud"}
+                </span>
+                <ChevronDown
+                  className={`h-3 w-3 ml-1 transition-transform duration-200 ${
+                    isCategoryMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <div
+                className={`absolute left-0 top-full mt-2 z-50 w-56 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
+                  isCategoryMenuOpen
+                    ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
+                    : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryMode("EVACUACION");
+                    setIsCategoryMenuOpen(false);
+                  }}
+                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
+                    categoryMode === "EVACUACION"
+                      ? "bg-gray-100 font-semibold text-zinc-900"
+                      : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                  }`}
+                >
+                  <span>Centros de evacuación</span>
+                  {categoryMode === "EVACUACION" && (
+                    <Check className="h-4 w-4 text-zinc-700" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryMode("SALUD");
+                    setIsCategoryMenuOpen(false);
+                  }}
+                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
+                    categoryMode === "SALUD"
+                      ? "bg-gray-100 font-semibold text-zinc-900"
+                      : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                  }`}
+                >
+                  <span>Centros de salud</span>
+                  {categoryMode === "SALUD" && (
+                    <Check className="h-4 w-4 text-zinc-700" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {categoryMode === "EVACUACION" ? (
+              isAdmin ? (
                 <button
                   onClick={onCreateSafeZone}
                   className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
@@ -337,41 +472,61 @@ export function Sidebar({
                   )}
                   {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
+              )
+            ) : (
+              !isAdmin && (
+                <button
+                  onClick={onNavigateToNearestHealthCenter}
+                  disabled={isNavigatingNearestHealthCenter}
+                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isNavigatingNearestHealthCenter ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Navigation className="h-4 w-4" />
+                  )}
+                  {isNavigatingNearestHealthCenter
+                    ? "Calculando…"
+                    : "Ir al más cercano"}
+                </button>
+              )
+            )}
+          </div>
+
+          <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
+            <div className="gap-2 flex flex-col overflow-auto pr-2">
+              {categoryMode === "EVACUACION" ? (
+                safeZones.length > 0 ? (
+                  safeZones.map((sz) => (
+                    <SafeZoneCard
+                      key={sz.id}
+                      safeZone={sz}
+                      isSelected={selectedSafeZone?.id === sz.id}
+                      onSelect={onSelectSafeZone || (() => {})}
+                    />
+                  ))
+                ) : (
+                  <div className="px-3 py-6 text-center text-xs text-zinc-500">
+                    No hay centros de evacuación cargados.
+                  </div>
+                )
+              ) : healthCenters.length > 0 ? (
+                healthCenters.map((hc) => (
+                  <HealthCenterCard
+                    key={hc.id}
+                    healthCenter={hc}
+                    isSelected={selectedHealthCenter?.id === hc.id}
+                    onSelect={onSelectHealthCenter || (() => {})}
+                  />
+                ))
+              ) : (
+                <div className="px-3 py-6 text-center text-xs text-zinc-500">
+                  No hay centros de salud disponibles.
+                </div>
               )}
             </div>
-
-            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
-              <div className="gap-2 flex flex-col overflow-auto pr-2">
-                {safeZones.map((sz) => (
-                  <SafeZoneCard
-                    key={sz.id}
-                    safeZone={sz}
-                    isSelected={selectedSafeZone?.id === sz.id}
-                    onSelect={onSelectSafeZone || (() => {})}
-                  />
-                ))}
-              </div>
-            </div>
           </div>
-        )}
-
-        {/* Botón Crear standalone para admin cuando no hay zonas todavía */}
-        {isAdmin && safeZones.length === 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-md font-medium text-black text-nowrap">
-                Centros de evacuación
-              </span>
-              <button
-                onClick={onCreateSafeZone}
-                className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                Crear
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
 
         <div className="flex flex-col flex-1 min-h-0 gap-2">
           <div className="w-full flex items-center justify-between relative z-20">

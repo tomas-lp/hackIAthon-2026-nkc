@@ -73,7 +73,7 @@ export function useRouting(safeZones: SafeZone[], heatPoints: HeatPoint[]) {
    * - Si `targetZone` es una SafeZone concreta → calcula la ruta sólo a esa zona.
    */
   const startRouting = useCallback(
-    async (targetZone?: SafeZone | null) => {
+    async (targetZone?: SafeZone | null, zonesOverride?: SafeZone[]) => {
       setRoutingState({ status: "loading", activeRoute: null, error: null });
 
       try {
@@ -84,14 +84,22 @@ export function useRouting(safeZones: SafeZone[], heatPoints: HeatPoint[]) {
         if (targetZone) {
           result = await routeToZone(userLocation, targetZone, heatPoints);
         } else {
-          result = await findSafestRoute(userLocation, safeZones, heatPoints);
+          const candidateZones =
+            zonesOverride && zonesOverride.length > 0
+              ? zonesOverride
+              : safeZones;
+          result = await findSafestRoute(
+            userLocation,
+            candidateZones,
+            heatPoints
+          );
         }
 
         if (!result) {
           setRoutingState({
             status: "error",
             activeRoute: null,
-            error: "No se encontraron rutas a zonas seguras disponibles.",
+            error: "No se encontraron rutas a ubicaciones disponibles.",
           });
           return;
         }

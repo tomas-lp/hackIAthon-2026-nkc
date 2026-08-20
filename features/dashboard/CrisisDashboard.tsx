@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouting } from "@/hooks/useRouting";
 import { useReports } from "@/hooks/useReports";
 import { useSafeZones } from "@/hooks/useSafeZones";
+import { useHealthCenters } from "@/hooks/useHealthCenters";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
 import { Sidebar } from "@/features/dashboard/Sidebar";
 import { ReportMap } from "@/features/mapa/ReportMap";
@@ -11,11 +12,14 @@ import { ReportDetailSidebar } from "@/features/mapa/ReportDetailSidebar";
 import { AuthWidget, LoginModal } from "@/features/dashboard/AuthWidget";
 import { BotQRWidget } from "@/features/dashboard/BotQRWidget";
 import { SafeZoneModal } from "@/features/mapa/SafeZoneModal";
+import { HealthCenterModal } from "@/features/mapa/HealthCenterModal";
 import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { CustomPointDetailSidebar } from "@/features/mapa/CustomPointDetailSidebar";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
+import { HealthCenter, HealthCenterType } from "@/types/healthCenter";
 import { safeZoneService } from "@/services/safeZoneService";
+import { healthCenterService } from "@/services/healthCenterService";
 import { buildHeatPoints } from "@/lib/heatmap";
 import { RouteResult } from "@/lib/routing";
 import { ChevronRight, X, AlertTriangle } from "lucide-react";
@@ -39,6 +43,61 @@ export function CrisisDashboard({
 
   // Zonas Seguras state
   const { safeZones, refresh: refreshSafeZones } = useSafeZones();
+
+  // Centros de Salud state
+  const { healthCenters, refresh: refreshHealthCenters } = useHealthCenters();
+  const [isEditingSingleHealthCenter, setIsEditingSingleHealthCenter] =
+    useState(false);
+  const [selectedHealthCenterId, setSelectedHealthCenterId] = useState<
+    string | null
+  >(null);
+  const selectedHealthCenter = useMemo(
+    () => healthCenters.find((hc) => hc.id === selectedHealthCenterId) ?? null,
+    [healthCenters, selectedHealthCenterId]
+  );
+  const setSelectedHealthCenter = useCallback((hc: HealthCenter | null) => {
+    setSelectedHealthCenterId(hc?.id ?? null);
+  }, []);
+
+  const handleSaveHealthCenter = async (data: {
+    nombre: string;
+    tipo: HealthCenterType;
+  }) => {
+    if (selectedHealthCenter) {
+      await healthCenterService.updateHealthCenter(
+        selectedHealthCenter.id,
+        data
+      );
+      setIsEditingSingleHealthCenter(false);
+      refreshHealthCenters();
+    }
+  };
+
+  const handleDeleteHealthCenter = async () => {
+    if (!selectedHealthCenter) return;
+    await healthCenterService.deleteHealthCenter(selectedHealthCenter.id);
+    setSelectedHealthCenter(null);
+    refreshHealthCenters();
+  };
+
+  const healthZones = useMemo(
+    () =>
+      healthCenters
+        .filter((hc) => hc.lat !== null && hc.lon !== null)
+        .map((hc) => ({
+          id: `hc-${hc.id}`,
+          nombre: hc.nombre,
+          descripcion: `${hc.tipo} · ${
+            hc.direccion || hc.localidad || "Corrientes"
+          }`,
+          latitud: hc.lat!,
+          longitud: hc.lon!,
+          created_at: hc.updated_at,
+          isHealthCenter: true,
+          tipo: hc.tipo,
+        })),
+    [healthCenters]
+  );
   const [isCreatingSafeZone, setIsCreatingSafeZone] = useState(false);
   const [isEditingSafeZones, setIsEditingSafeZones] = useState(false);
   const [draftLocation, setDraftLocation] = useState<{
@@ -228,11 +287,12 @@ export function CrisisDashboard({
   const handleMapClick = (lat: number, lng: number) => {
     if (isCreatingSafeZone) {
       setDraftLocation({ lat, lng });
-    } else {
+    } else if (!isAdmin) {
       setDraftCustomPin({ lat, lng });
       setIsClosingDraftCustomPin(false);
       setSelectedReport(null);
       setSelectedSafeZone(null);
+      setSelectedHealthCenter(null);
     }
   };
 
@@ -286,6 +346,7 @@ export function CrisisDashboard({
           onSelectReport={(report) => {
             setSelectedReport(report);
             setSelectedSafeZone(null);
+            setSelectedHealthCenter(null);
           }}
           onUpdateFilter={updateFilter}
           onResetFilters={resetFilters}
@@ -295,12 +356,23 @@ export function CrisisDashboard({
           onSelectSafeZone={(zone) => {
             setSelectedSafeZone(zone);
             setSelectedReport(null);
+            setSelectedHealthCenter(null);
             setIsEditingSafeZones(false);
             setIsCreatingSafeZone(false);
             setDraftLocation(null);
           }}
           onCreateSafeZone={() => {
             setIsCreatingSafeZone(true);
+          }}
+          healthCenters={healthCenters}
+          selectedHealthCenter={selectedHealthCenter}
+          onSelectHealthCenter={(center) => {
+            setSelectedHealthCenter(center);
+            setSelectedReport(null);
+            setSelectedSafeZone(null);
+            setIsEditingSafeZones(false);
+            setIsCreatingSafeZone(false);
+            setDraftLocation(null);
           }}
           onCollapse={() => setSidebarCollapsed(true)}
           // Props de navegación (sólo usadas en modo usuario)
@@ -311,6 +383,14 @@ export function CrisisDashboard({
           isNavigatingNearest={
             routingState.status === "loading" &&
             navigatingTargetId === "nearest"
+          }
+          onNavigateToNearestHealthCenter={() => {
+            setNavigatingTargetId("nearest-hc");
+            startRouting(null, healthZones);
+          }}
+          isNavigatingNearestHealthCenter={
+            routingState.status === "loading" &&
+            navigatingTargetId === "nearest-hc"
           }
         />
       </div>
@@ -341,6 +421,7 @@ export function CrisisDashboard({
           onSelectReport={(report) => {
             setSelectedReport(report);
             setSelectedSafeZone(null);
+            setSelectedHealthCenter(null);
             if (draftCustomPin) handleCloseDraftCustomPin();
           }}
           safeZones={safeZones}
@@ -348,14 +429,23 @@ export function CrisisDashboard({
           onSelectSafeZone={(zone) => {
             setSelectedSafeZone(zone);
             setSelectedReport(null);
+            setSelectedHealthCenter(null);
+            if (draftCustomPin) handleCloseDraftCustomPin();
+          }}
+          healthCenters={healthCenters}
+          selectedHealthCenter={selectedHealthCenter}
+          onSelectHealthCenter={(center) => {
+            setSelectedHealthCenter(center);
+            setSelectedReport(null);
+            setSelectedSafeZone(null);
             if (draftCustomPin) handleCloseDraftCustomPin();
           }}
           onMapClick={handleMapClick}
           isCreatingSafeZone={isCreatingSafeZone}
           draftLocation={draftLocation}
-          draftCustomPin={draftCustomPin}
-          activeRouteCustomPin={activeRouteCustomPin}
-          closingCustomPin={closingCustomPin}
+          draftCustomPin={!isAdmin ? draftCustomPin : null}
+          activeRouteCustomPin={!isAdmin ? activeRouteCustomPin : null}
+          closingCustomPin={!isAdmin ? closingCustomPin : null}
           activeRoute={!isAdmin ? displayRoute : null}
           isClosingRoute={isClosingRoute}
         />
@@ -444,16 +534,18 @@ export function CrisisDashboard({
         isAdmin={isAdmin}
       />
 
-      <CustomPointDetailSidebar
-        customPoint={draftCustomPin}
-        isOpen={!!draftCustomPin && !isClosingDraftCustomPin && !hideMainUI}
-        onClose={handleCloseDraftCustomPin}
-        onNavigate={handleNavigateToCustomPoint}
-        isNavigating={
-          routingState.status === "loading" &&
-          navigatingTargetId === "custom-point"
-        }
-      />
+      {!isAdmin && (
+        <CustomPointDetailSidebar
+          customPoint={draftCustomPin}
+          isOpen={!!draftCustomPin && !isClosingDraftCustomPin && !hideMainUI}
+          onClose={handleCloseDraftCustomPin}
+          onNavigate={handleNavigateToCustomPoint}
+          isNavigating={
+            routingState.status === "loading" &&
+            navigatingTargetId === "custom-point"
+          }
+        />
+      )}
 
       {hideMainUI && !showSafeZoneModal && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
@@ -522,6 +614,79 @@ export function CrisisDashboard({
         isNavigating={
           routingState.status === "loading" &&
           navigatingTargetId === selectedSafeZone?.id
+        }
+      />
+
+      {isEditingSingleHealthCenter && selectedHealthCenter && (
+        <HealthCenterModal
+          isOpen={true}
+          title="Editar Centro de Salud"
+          initialData={{
+            nombre: selectedHealthCenter.nombre,
+            tipo: selectedHealthCenter.tipo,
+          }}
+          onClose={() => setIsEditingSingleHealthCenter(false)}
+          onSave={handleSaveHealthCenter}
+        />
+      )}
+
+      <SafeZoneDetailSidebar
+        safeZone={
+          selectedHealthCenter &&
+          selectedHealthCenter.lat !== null &&
+          selectedHealthCenter.lon !== null
+            ? {
+                id: `hc-${selectedHealthCenter.id}`,
+                nombre: selectedHealthCenter.nombre,
+                descripcion: "",
+                latitud: selectedHealthCenter.lat,
+                longitud: selectedHealthCenter.lon,
+                created_at: selectedHealthCenter.updated_at,
+              }
+            : null
+        }
+        categoryTitle="Centro de salud"
+        typeText={selectedHealthCenter?.tipo}
+        buttonColor="blue"
+        isOpen={
+          !!selectedHealthCenter && !hideMainUI && !isEditingSingleHealthCenter
+        }
+        onClose={() => setSelectedHealthCenter(null)}
+        onEdit={
+          isAdmin ? () => setIsEditingSingleHealthCenter(true) : undefined
+        }
+        onDelete={isAdmin ? handleDeleteHealthCenter : undefined}
+        onNavigate={
+          !isAdmin &&
+          selectedHealthCenter &&
+          selectedHealthCenter.lat !== null &&
+          selectedHealthCenter.lon !== null
+            ? () => {
+                const hcZone: SafeZone & {
+                  isHealthCenter?: boolean;
+                  tipo?: string;
+                } = {
+                  id: `hc-${selectedHealthCenter.id}`,
+                  nombre: selectedHealthCenter.nombre,
+                  descripcion: `${selectedHealthCenter.tipo} · ${
+                    selectedHealthCenter.direccion ||
+                    selectedHealthCenter.localidad ||
+                    "Corrientes"
+                  }`,
+                  latitud: selectedHealthCenter.lat!,
+                  longitud: selectedHealthCenter.lon!,
+                  created_at: selectedHealthCenter.updated_at,
+                  isHealthCenter: true,
+                  tipo: selectedHealthCenter.tipo,
+                };
+                setNavigatingTargetId(selectedHealthCenter.id);
+                startRouting(hcZone);
+              }
+            : undefined
+        }
+        isNavigating={
+          routingState.status === "loading" &&
+          navigatingTargetId === selectedHealthCenter?.id
         }
       />
     </>
