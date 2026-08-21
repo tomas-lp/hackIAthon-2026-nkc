@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, Polygon, Polyline, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  Polyline,
+  Tooltip,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -22,9 +30,31 @@ interface RegionsMapInternalProps {
   onAddDraftPoint: (point: [number, number]) => void;
   onFinishDrawing: () => void;
   onCancelDrawing: () => void;
+  selectedRegionId: string | null;
 }
 
-// Subcomponente para manejar eventos y renderizar el borrador de dibujo
+// --- Subcomponente: vuela al bounds de la región seleccionada desde el sidebar ---
+function RegionFocuser({
+  regiones,
+  selectedRegionId,
+}: {
+  regiones: RegionPersonalizada[];
+  selectedRegionId: string | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedRegionId) return;
+    const region = regiones.find((r) => r.id === selectedRegionId);
+    if (!region || region.points.length < 3) return;
+    const bounds = L.latLngBounds(region.points);
+    map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 });
+  }, [selectedRegionId, regiones, map]);
+
+  return null;
+}
+
+// --- Subcomponente: dibuja el borrador y gestiona los eventos de dibujo ---
 function DrawingOverlay({
   isDrawing,
   draftPoints,
@@ -38,40 +68,35 @@ function DrawingOverlay({
 }) {
   const map = useMap();
   const [mousePos, setMousePos] = useState<[number, number] | null>(null);
+  const [isSnapping, setIsSnapping] = useState(false);
 
-  // Configuramos el cursor
   useEffect(() => {
     if (isDrawing) {
       map.getContainer().style.cursor = "crosshair";
     } else {
       map.getContainer().style.cursor = "";
       setMousePos(null);
+      setIsSnapping(false);
     }
   }, [isDrawing, map]);
 
   useMapEvents({
     mousemove(e) {
-      if (isDrawing) {
-        setMousePos([e.latlng.lat, e.latlng.lng]);
-        
-        // Comprobar snap to close (si hay mas de 2 puntos)
-        if (draftPoints.length > 2) {
-          const firstPt = map.latLngToContainerPoint(draftPoints[0]);
-          const currentPt = map.latLngToContainerPoint(e.latlng);
-          const distance = firstPt.distanceTo(currentPt);
-          
-          if (distance < 20) {
-            map.getContainer().style.cursor = "pointer";
-          } else {
-            map.getContainer().style.cursor = "crosshair";
-          }
-        }
+      if (!isDrawing) return;
+      setMousePos([e.latlng.lat, e.latlng.lng]);
+
+      if (draftPoints.length > 2) {
+        const firstPt = map.latLngToContainerPoint(draftPoints[0]);
+        const currentPt = map.latLngToContainerPoint(e.latlng);
+        const distance = firstPt.distanceTo(currentPt);
+        const snap = distance < 20;
+        setIsSnapping(snap);
+        map.getContainer().style.cursor = snap ? "pointer" : "crosshair";
       }
     },
     click(e) {
       if (!isDrawing) return;
 
-      // Verificamos si hizo click muy cerca del primer punto para cerrar el poligono
       if (draftPoints.length > 2) {
         const firstPt = map.latLngToContainerPoint(draftPoints[0]);
         const currentPt = map.latLngToContainerPoint(e.latlng);
@@ -80,50 +105,142 @@ function DrawingOverlay({
           return;
         }
       }
-
       onAddPoint([e.latlng.lat, e.latlng.lng]);
     },
-    // Click derecho o escape cancelaríamos si quisiéramos desde acá
     contextmenu(e) {
       if (isDrawing) {
         e.originalEvent.preventDefault();
         if (draftPoints.length > 2) onFinish();
       }
-    }
+    },
   });
 
   if (!isDrawing) return null;
 
-  // Mostramos el poligono que se va formando
-  const displayPolygon = [...draftPoints];
-  // Mostramos la linea punteada hacia el cursor
-  let activeLine: [number, number][] = [];
-  if (draftPoints.length > 0 && mousePos) {
-    activeLine = [draftPoints[draftPoints.length - 1], mousePos];
+  // Solo dibujamos Polyline de segmentos (no Polygon para evitar el cierre visual prematuro)
+  // Cuando hay >= 3 puntos y está en snap, mostramos la línea de cierre en punteado
+  const segments: [number, number][][] = [];
+  for (let i = 0; i < draftPoints.length - 1; i++) {
+    segments.push([draftPoints[i], draftPoints[i + 1]]);
   }
+
+  // Línea dinámica hacia el cursor
+  const activeLine: [number, number][] =
+    draftPoints.length > 0 && mousePos
+      ? [draftPoints[draftPoints.length - 1], mousePos]
+      : [];
+
+  // Línea de cierre (snap preview) hacia el primer punto
+  const closingLine: [number, number][] =
+    isSnapping && draftPoints.length > 2 && mousePos
+      ? [mousePos, draftPoints[0]]
+      : [];
+
+  // Fill preview: solo cuando está en modo snap (a punto de cerrar)
+  const fillPreview = isSnapping ? [...draftPoints] : [];
 
   return (
     <>
-      {displayPolygon.length > 0 && (
-        <Polygon 
-          positions={displayPolygon} 
-          pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.3, weight: 2 }} 
+      {/* Fill de preview cuando está cerrando */}
+      {fillPreview.length > 2 && (
+        <Polygon
+          positions={fillPreview}
+          pathOptions={{
+            color: "#3b82f6",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.25,
+            weight: 0,
+            stroke: false,
+          }}
         />
       )}
+
+      {/* Segmentos ya trazados */}
+      {segments.map((seg, i) => (
+        <Polyline
+          key={i}
+          positions={seg}
+          pathOptions={{ color: "#3b82f6", weight: 2.5 }}
+        />
+      ))}
+
+      {/* Línea dinámica hacia el cursor */}
       {activeLine.length > 0 && (
-        <Polyline 
-          positions={activeLine} 
-          pathOptions={{ color: '#3b82f6', weight: 2, dashArray: '5, 5' }} 
+        <Polyline
+          positions={activeLine}
+          pathOptions={{
+            color: "#3b82f6",
+            weight: 2,
+            dashArray: "6, 6",
+            opacity: 0.8,
+          }}
+        />
+      )}
+
+      {/* Línea de cierre preview (snap) */}
+      {closingLine.length > 0 && (
+        <Polyline
+          positions={closingLine}
+          pathOptions={{
+            color: "#3b82f6",
+            weight: 2,
+            dashArray: "6, 6",
+            opacity: 0.6,
+          }}
         />
       )}
     </>
   );
 }
 
-// Subcomponente para renderizar una region guardada y calcular su hover
-function RegionShape({ region, reports }: { region: RegionPersonalizada, reports: Report[] }) {
+// Marcadores imperativos para los puntos del borrador.
+// Usamos L.circleMarker (SVG nativo de Leaflet): perfectamente centrado,
+// sin animaciones CSS, sin estilos DOM que pisar, y se borran al terminar.
+function DraftMarkers({
+  isDrawing,
+  draftPoints,
+}: {
+  isDrawing: boolean;
+  draftPoints: [number, number][];
+}) {
   const map = useMap();
-  
+  const markersRef = useRef<L.CircleMarker[]>([]);
+
+  useEffect(() => {
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    if (!isDrawing) return;
+
+    draftPoints.forEach((pt) => {
+      const circle = L.circleMarker(pt, {
+        radius: 6,
+        color: "#3b82f6",
+        weight: 2.5,
+        fillColor: "#ffffff",
+        fillOpacity: 1,
+        interactive: false,
+      }).addTo(map);
+      markersRef.current.push(circle);
+    });
+
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+    };
+  }, [draftPoints, isDrawing, map]);
+
+  return null;
+}
+
+// --- Subcomponente: región guardada con hover stats ---
+function RegionShape({
+  region,
+  reports,
+}: {
+  region: RegionPersonalizada;
+  reports: Report[];
+}) {
   const pointsCount = useMemo(() => {
     let count = 0;
     for (const r of reports) {
@@ -135,21 +252,27 @@ function RegionShape({ region, reports }: { region: RegionPersonalizada, reports
   }, [region.points, reports]);
 
   return (
-    <Polygon 
+    <Polygon
       positions={region.points}
-      pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.2, weight: 2 }}
+      pathOptions={{
+        color: "#10b981",
+        fillColor: "#10b981",
+        fillOpacity: 0.2,
+        weight: 2,
+      }}
       eventHandlers={{
         mouseover: (e) => {
-          const layer = e.target;
-          layer.setStyle({ fillOpacity: 0.5, color: '#059669' });
+          e.target.setStyle({ fillOpacity: 0.5, color: "#059669" });
         },
         mouseout: (e) => {
-          const layer = e.target;
-          layer.setStyle({ fillOpacity: 0.2, color: '#10b981' });
-        }
+          e.target.setStyle({ fillOpacity: 0.2, color: "#10b981" });
+        },
       }}
     >
-      <Tooltip sticky className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 shadow-xl px-3 py-2">
+      <Tooltip
+        sticky
+        className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 shadow-xl px-3 py-2"
+      >
         <div className="flex flex-col gap-1">
           <span className="font-bold text-gray-800">{region.nombre}</span>
           <span className="text-zinc-600 text-xs">
@@ -161,20 +284,33 @@ function RegionShape({ region, reports }: { region: RegionPersonalizada, reports
   );
 }
 
-// Para ajustar el mapa al terminar de dibujar
-function MapFitter({ draftPoints, finishedDrawing }: { draftPoints: [number, number][], finishedDrawing: boolean }) {
+// --- Subcomponente: fly-to al bounds del borrador cuando se confirma ---
+function DraftFitter({
+  draftPoints,
+  active,
+}: {
+  draftPoints: [number, number][];
+  active: boolean;
+}) {
   const map = useMap();
-  
+  const fittedRef = useRef(false);
+
   useEffect(() => {
-    if (finishedDrawing && draftPoints.length > 2) {
+    if (active && draftPoints.length > 2 && !fittedRef.current) {
+      fittedRef.current = true;
       const bounds = L.latLngBounds(draftPoints);
-      map.flyToBounds(bounds, { padding: [50, 50], duration: 1.5 });
+      // fitBounds es instantáneo, sin animación de vuelo que lagee el popup
+      map.fitBounds(bounds, { padding: [80, 80] });
     }
-  }, [finishedDrawing, draftPoints, map]);
+    if (!active) {
+      fittedRef.current = false;
+    }
+  }, [active, draftPoints, map]);
 
   return null;
 }
 
+// --- Componente principal ---
 export default function RegionsMapInternal({
   reports,
   regiones,
@@ -182,15 +318,21 @@ export default function RegionsMapInternal({
   draftPoints,
   onAddDraftPoint,
   onFinishDrawing,
-  onCancelDrawing
+  onCancelDrawing,
+  selectedRegionId,
 }: RegionsMapInternalProps) {
-  
   const validReports = useMemo(
-    () => reports.filter((r) => Number.isFinite(r.latitud) && Number.isFinite(r.longitud)),
+    () =>
+      reports.filter(
+        (r) => Number.isFinite(r.latitud) && Number.isFinite(r.longitud)
+      ),
     [reports]
   );
-  
+
   const heatPoints = useMemo(() => buildHeatPoints(validReports), [validReports]);
+
+  // showNamePopup está activo cuando isDrawing=false pero aún hay draftPoints
+  const showingNamePopup = !isDrawing && draftPoints.length > 2;
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
@@ -202,36 +344,55 @@ export default function RegionsMapInternal({
         className="w-full h-full z-0"
       >
         <TileLayer
-          attribution='&copy; OpenStreetMap'
+          attribution="&copy; OpenStreetMap"
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         <HeatLayer points={heatPoints} />
 
-        {/* Las regiones guardadas */}
-        {!isDrawing && regiones.map(region => (
+        {/* Regiones guardadas — siempre visibles (incluso durante el popup de nombre) */}
+        {regiones.map((region) => (
           <RegionShape key={region.id} region={region} reports={validReports} />
         ))}
 
-        {/* Capa de dibujo (activa si isDrawing es true) */}
-        <DrawingOverlay 
-          isDrawing={isDrawing} 
-          draftPoints={draftPoints} 
+        {/* Borrador del polígono en construcción */}
+        <DrawingOverlay
+          isDrawing={isDrawing}
+          draftPoints={draftPoints}
           onAddPoint={onAddDraftPoint}
           onFinish={onFinishDrawing}
         />
 
-        {/* Ajuste de camara */}
-        <MapFitter draftPoints={draftPoints} finishedDrawing={!isDrawing && draftPoints.length > 2} />
+        {/* Marcadores de puntos del borrador */}
+        <DraftMarkers isDrawing={isDrawing} draftPoints={draftPoints} />
 
+        {/* Polígono del borrador visible durante el popup de nombre */}
+        {showingNamePopup && (
+          <Polygon
+            positions={draftPoints}
+            pathOptions={{
+              color: "#3b82f6",
+              fillColor: "#3b82f6",
+              fillOpacity: 0.25,
+              weight: 2,
+              dashArray: "6 4",
+            }}
+          />
+        )}
+
+        {/* Fly-to al confirmar el polígono (cuando aparece el popup de nombre) */}
+        <DraftFitter draftPoints={draftPoints} active={showingNamePopup} />
+
+        {/* Fly-to al hacer click en una región del sidebar */}
+        <RegionFocuser regiones={regiones} selectedRegionId={selectedRegionId} />
       </MapContainer>
 
-      {/* Overlay de oscurecimiento si se está dibujando */}
+      {/* Overlay de oscurecimiento mientras se dibuja */}
       {isDrawing && (
         <div className="absolute inset-0 bg-black/10 pointer-events-none z-[1000] transition-opacity duration-300">
           <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-200 pointer-events-auto">
             <span className="font-semibold text-gray-800 text-sm">
-              Dibuja la región o polígono en el mapa (clickea para añadir puntos)
+              Dibuja la región · clickeá para añadir puntos · doble click al primer punto para cerrar
             </span>
           </div>
         </div>

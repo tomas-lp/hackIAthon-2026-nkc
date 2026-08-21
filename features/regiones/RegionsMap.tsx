@@ -24,7 +24,8 @@ export function RegionsMap({
   draftPoints,
   onAddDraftPoint,
   onFinishDrawing,
-  onCancelDrawing
+  onCancelDrawing,
+  selectedRegionId,
 }: {
   reports: Report[];
   regiones: RegionPersonalizada[];
@@ -33,6 +34,7 @@ export function RegionsMap({
   onAddDraftPoint: (pt: [number, number]) => void;
   onFinishDrawing: () => void;
   onCancelDrawing: () => void;
+  selectedRegionId: string | null;
 }) {
   return (
     <RegionsMapInternal
@@ -43,6 +45,7 @@ export function RegionsMap({
       onAddDraftPoint={onAddDraftPoint}
       onFinishDrawing={onFinishDrawing}
       onCancelDrawing={onCancelDrawing}
+      selectedRegionId={selectedRegionId}
     />
   );
 }
