@@ -20,7 +20,8 @@ export function useUrlSelection() {
     if (reportId) params.set("report", reportId);
     if (safeZoneId) params.set("safeZone", safeZoneId);
     const qs = params.toString();
-    window.history.replaceState(null, "", qs ? `?${qs}` : "/");
+    const basePath = window.location.pathname;
+    window.history.replaceState(null, "", basePath + (qs ? `?${qs}` : ""));
   };
 
   return { initialReportId, initialSafeZoneId, syncUrl };

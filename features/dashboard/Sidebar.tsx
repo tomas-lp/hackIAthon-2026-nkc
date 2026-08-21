@@ -476,7 +476,7 @@ export function Sidebar({
                 </div>
               </div>
 
-              {categoryMode === "EVACUACION" ? (
+              {categoryMode === "EVACUACION" && onNavigateToNearest ? (
                 <button
                   onClick={onNavigateToNearest}
                   disabled={isNavigatingNearest}
@@ -489,7 +489,8 @@ export function Sidebar({
                   )}
                   {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
-              ) : (
+              ) : categoryMode === "SALUD" &&
+                onNavigateToNearestHealthCenter ? (
                 <button
                   onClick={onNavigateToNearestHealthCenter}
                   disabled={isNavigatingNearestHealthCenter}
@@ -504,7 +505,7 @@ export function Sidebar({
                     ? "Calculando…"
                     : "Ir al más cercano"}
                 </button>
-              )}
+              ) : null}
             </div>
 
             <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">

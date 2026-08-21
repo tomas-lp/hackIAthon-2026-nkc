@@ -26,17 +26,18 @@ import { buildHeatPoints } from "@/lib/heatmap";
 import { RouteResult } from "@/lib/routing";
 import { createClient } from "@/utils/supabase/client";
 import { ChevronRight, X, AlertTriangle } from "lucide-react";
-
 import { User } from "@supabase/supabase-js";
 
 interface CrisisDashboardProps {
   initialReports: Report[];
   user?: User | null;
+  showBarrios?: boolean;
 }
 
 export function CrisisDashboard({
   initialReports,
   user: initialUser,
+  showBarrios = false,
 }: CrisisDashboardProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(
     initialUser ?? null
@@ -70,7 +71,9 @@ export function CrisisDashboard({
   // Layer Toggles for Admin
   const [showEvacuationCenters, setShowEvacuationCenters] = useState(true);
   const [showMedicalCenters, setShowMedicalCenters] = useState(true);
-  const [activeListTab, setActiveListTab] = useState("Todo");
+  const [activeListTab, setActiveListTab] = useState(
+    showBarrios ? "Barrios" : "Todo"
+  );
 
   const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
 
@@ -408,11 +411,15 @@ export function CrisisDashboard({
             setDraftLocation(null);
           }}
           onCollapse={() => setSidebarCollapsed(true)}
-          // Props de navegación (sólo usadas en modo usuario)
-          onNavigateToNearest={() => {
-            setNavigatingTargetId("nearest");
-            startRouting(null);
-          }}
+          // Props de navegación (sólo usadas en modo usuario, nunca en admin)
+          onNavigateToNearest={
+            !isAdmin
+              ? () => {
+                  setNavigatingTargetId("nearest");
+                  startRouting(null);
+                }
+              : undefined
+          }
           isNavigatingNearest={
             routingState.status === "loading" &&
             navigatingTargetId === "nearest"
@@ -447,15 +454,28 @@ export function CrisisDashboard({
         <ChevronRight className="h-4 w-4" />
       </button>
 
-      {/* Liquid Glass Segmented Bar for Admin view */}
       {isAdmin && (
         <LiquidGlassSegmentedBar
           tabs={["Todo", "Barrios", "Mi lista 1"]}
           activeTab={activeListTab}
-          onTabChange={setActiveListTab}
+          onTabChange={(tab) => {
+            setActiveListTab(tab);
+            if (tab === "Barrios") {
+              window.history.pushState(
+                null,
+                "",
+                `/barrios${window.location.search}`
+              );
+            } else {
+              window.history.pushState(null, "", `/${window.location.search}`);
+            }
+          }}
           onAddList={() => {
             const listName = prompt("Nombre de la nueva lista:");
-            if (listName) setActiveListTab(listName);
+            if (listName) {
+              setActiveListTab(listName);
+              window.history.pushState(null, "", `/${window.location.search}`);
+            }
           }}
           isHidden={hideMainUI}
         />
@@ -498,6 +518,7 @@ export function CrisisDashboard({
           isAdmin={isAdmin}
           showEvacuationCenters={showEvacuationCenters}
           showMedicalCenters={showMedicalCenters}
+          showBarrios={isAdmin ? activeListTab === "Barrios" : false}
         />
       </section>
 

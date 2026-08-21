@@ -29,6 +29,7 @@ interface ReportMapProps {
   isAdmin?: boolean;
   showEvacuationCenters?: boolean;
   showMedicalCenters?: boolean;
+  showBarrios?: boolean;
 }
 
 const ReportMapInternal = dynamic(() => import("./ReportMapInternal"), {

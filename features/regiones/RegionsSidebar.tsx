@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { RegionPersonalizada } from "@/types/region";
 import { formatDate } from "@/lib/utils";
 import { Plus, ChevronLeft, Trash2 } from "lucide-react";
@@ -38,7 +37,7 @@ function RegionCard({
             {region.points.length} puntos en el polígono
           </span>
         </div>
-        
+
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -61,7 +60,6 @@ export function RegionsSidebar({
   onCollapse,
   isCreating,
 }: RegionsSidebarProps) {
-  
   return (
     <aside className="flex flex-col gap-4 m-4 z-100 w-md max-w-md rounded-2xl border border-gray-200 bg-white/50 p-3 backdrop-blur-xs max-h-[85vh]">
       <div className="flex items-center justify-between gap-3">
@@ -72,7 +70,9 @@ export function RegionsSidebar({
                 INU
               </div>
               <span className="text-md text-white/90 leading-4">
-                Regiones<br />Personalizadas
+                Regiones
+                <br />
+                Personalizadas
               </span>
             </div>
           </Link>
@@ -105,19 +105,16 @@ export function RegionsSidebar({
           <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden h-[50vh]">
             {regiones.length === 0 && (
               <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500">
-                No tienes regiones personalizadas.<br/>
-                Haz clic en "Nueva región" para crear una.
+                No tienes regiones personalizadas.
+                <br />
+                Haz clic en &quot;Nueva región&quot; para crear una.
               </div>
             )}
 
             {regiones.length > 0 && (
               <div className="gap-2 flex flex-col overflow-auto pr-2">
                 {regiones.map((r) => (
-                  <RegionCard
-                    key={r.id}
-                    region={r}
-                    onDelete={onDeleteRegion}
-                  />
+                  <RegionCard key={r.id} region={r} onDelete={onDeleteRegion} />
                 ))}
               </div>
             )}

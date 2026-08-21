@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, Polygon, Polyline, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  Polyline,
+  Tooltip,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -45,6 +53,7 @@ function DrawingOverlay({
       map.getContainer().style.cursor = "crosshair";
     } else {
       map.getContainer().style.cursor = "";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMousePos(null);
     }
   }, [isDrawing, map]);
@@ -53,67 +62,60 @@ function DrawingOverlay({
     mousemove(e) {
       if (isDrawing) {
         setMousePos([e.latlng.lat, e.latlng.lng]);
-        
+
         // Comprobar snap to close (si hay mas de 2 puntos)
         if (draftPoints.length > 2) {
           const firstPt = map.latLngToContainerPoint(draftPoints[0]);
           const currentPt = map.latLngToContainerPoint(e.latlng);
-          const distance = firstPt.distanceTo(currentPt);
-          
-          if (distance < 20) {
-            map.getContainer().style.cursor = "pointer";
-          } else {
-            map.getContainer().style.cursor = "crosshair";
+          const dx = firstPt.x - currentPt.x;
+          const dy = firstPt.y - currentPt.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 15) {
+            setMousePos(draftPoints[0]);
           }
         }
       }
     },
     click(e) {
-      if (!isDrawing) return;
-
-      // Verificamos si hizo click muy cerca del primer punto para cerrar el poligono
-      if (draftPoints.length > 2) {
-        const firstPt = map.latLngToContainerPoint(draftPoints[0]);
+      if (isDrawing) {
+        const firstPt = map.latLngToContainerPoint(draftPoints[0] || [0, 0]);
         const currentPt = map.latLngToContainerPoint(e.latlng);
-        if (firstPt.distanceTo(currentPt) < 20) {
+        const dx = firstPt.x - currentPt.x;
+        const dy = firstPt.y - currentPt.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 15 && draftPoints.length > 2) {
           onFinish();
-          return;
+        } else {
+          onAddPoint([e.latlng.lat, e.latlng.lng]);
         }
       }
-
-      onAddPoint([e.latlng.lat, e.latlng.lng]);
     },
-    // Click derecho o escape cancelaríamos si quisiéramos desde acá
-    contextmenu(e) {
-      if (isDrawing) {
-        e.originalEvent.preventDefault();
-        if (draftPoints.length > 2) onFinish();
-      }
-    }
   });
 
-  if (!isDrawing) return null;
-
-  // Mostramos el poligono que se va formando
-  const displayPolygon = [...draftPoints];
-  // Mostramos la linea punteada hacia el cursor
-  let activeLine: [number, number][] = [];
-  if (draftPoints.length > 0 && mousePos) {
-    activeLine = [draftPoints[draftPoints.length - 1], mousePos];
-  }
+  const activeLine = useMemo(() => {
+    if (!mousePos || draftPoints.length === 0) return null;
+    return [...draftPoints, mousePos];
+  }, [draftPoints, mousePos]);
 
   return (
     <>
-      {displayPolygon.length > 0 && (
-        <Polygon 
-          positions={displayPolygon} 
-          pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.3, weight: 2 }} 
+      {draftPoints.length > 0 && (
+        <Polygon
+          positions={draftPoints}
+          pathOptions={{
+            color: "#3b82f6",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.1,
+            weight: 2,
+          }}
         />
       )}
-      {activeLine.length > 0 && (
-        <Polyline 
-          positions={activeLine} 
-          pathOptions={{ color: '#3b82f6', weight: 2, dashArray: '5, 5' }} 
+      {activeLine && (
+        <Polyline
+          positions={activeLine}
+          pathOptions={{ color: "#3b82f6", weight: 2, dashArray: "5, 5" }}
         />
       )}
     </>
@@ -121,9 +123,13 @@ function DrawingOverlay({
 }
 
 // Subcomponente para renderizar una region guardada y calcular su hover
-function RegionShape({ region, reports }: { region: RegionPersonalizada, reports: Report[] }) {
-  const map = useMap();
-  
+function RegionShape({
+  region,
+  reports,
+}: {
+  region: RegionPersonalizada;
+  reports: Report[];
+}) {
   const pointsCount = useMemo(() => {
     let count = 0;
     for (const r of reports) {
@@ -135,21 +141,29 @@ function RegionShape({ region, reports }: { region: RegionPersonalizada, reports
   }, [region.points, reports]);
 
   return (
-    <Polygon 
+    <Polygon
       positions={region.points}
-      pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.2, weight: 2 }}
+      pathOptions={{
+        color: "#10b981",
+        fillColor: "#10b981",
+        fillOpacity: 0.2,
+        weight: 2,
+      }}
       eventHandlers={{
         mouseover: (e) => {
           const layer = e.target;
-          layer.setStyle({ fillOpacity: 0.5, color: '#059669' });
+          layer.setStyle({ fillOpacity: 0.4, color: "#059669" });
         },
         mouseout: (e) => {
           const layer = e.target;
-          layer.setStyle({ fillOpacity: 0.2, color: '#10b981' });
-        }
+          layer.setStyle({ fillOpacity: 0.2, color: "#10b981" });
+        },
       }}
     >
-      <Tooltip sticky className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 shadow-xl px-3 py-2">
+      <Tooltip
+        sticky
+        className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 shadow-xl px-3 py-2"
+      >
         <div className="flex flex-col gap-1">
           <span className="font-bold text-gray-800">{region.nombre}</span>
           <span className="text-zinc-600 text-xs">
@@ -162,9 +176,15 @@ function RegionShape({ region, reports }: { region: RegionPersonalizada, reports
 }
 
 // Para ajustar el mapa al terminar de dibujar
-function MapFitter({ draftPoints, finishedDrawing }: { draftPoints: [number, number][], finishedDrawing: boolean }) {
+function MapFitter({
+  draftPoints,
+  finishedDrawing,
+}: {
+  draftPoints: [number, number][];
+  finishedDrawing: boolean;
+}) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (finishedDrawing && draftPoints.length > 2) {
       const bounds = L.latLngBounds(draftPoints);
@@ -182,15 +202,19 @@ export default function RegionsMapInternal({
   draftPoints,
   onAddDraftPoint,
   onFinishDrawing,
-  onCancelDrawing
 }: RegionsMapInternalProps) {
-  
   const validReports = useMemo(
-    () => reports.filter((r) => Number.isFinite(r.latitud) && Number.isFinite(r.longitud)),
+    () =>
+      reports.filter(
+        (r) => Number.isFinite(r.latitud) && Number.isFinite(r.longitud)
+      ),
     [reports]
   );
-  
-  const heatPoints = useMemo(() => buildHeatPoints(validReports), [validReports]);
+
+  const heatPoints = useMemo(
+    () => buildHeatPoints(validReports),
+    [validReports]
+  );
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
@@ -202,28 +226,35 @@ export default function RegionsMapInternal({
         className="w-full h-full z-0"
       >
         <TileLayer
-          attribution='&copy; OpenStreetMap'
+          attribution="&copy; OpenStreetMap"
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         <HeatLayer points={heatPoints} />
 
         {/* Las regiones guardadas */}
-        {!isDrawing && regiones.map(region => (
-          <RegionShape key={region.id} region={region} reports={validReports} />
-        ))}
+        {!isDrawing &&
+          regiones.map((region) => (
+            <RegionShape
+              key={region.id}
+              region={region}
+              reports={validReports}
+            />
+          ))}
 
         {/* Capa de dibujo (activa si isDrawing es true) */}
-        <DrawingOverlay 
-          isDrawing={isDrawing} 
-          draftPoints={draftPoints} 
+        <DrawingOverlay
+          isDrawing={isDrawing}
+          draftPoints={draftPoints}
           onAddPoint={onAddDraftPoint}
           onFinish={onFinishDrawing}
         />
 
         {/* Ajuste de camara */}
-        <MapFitter draftPoints={draftPoints} finishedDrawing={!isDrawing && draftPoints.length > 2} />
-
+        <MapFitter
+          draftPoints={draftPoints}
+          finishedDrawing={!isDrawing && draftPoints.length > 2}
+        />
       </MapContainer>
 
       {/* Overlay de oscurecimiento si se está dibujando */}
@@ -231,7 +262,8 @@ export default function RegionsMapInternal({
         <div className="absolute inset-0 bg-black/10 pointer-events-none z-[1000] transition-opacity duration-300">
           <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-200 pointer-events-auto">
             <span className="font-semibold text-gray-800 text-sm">
-              Dibuja la región o polígono en el mapa (clickea para añadir puntos)
+              Dibuja la región o polígono en el mapa (clickea para añadir
+              puntos)
             </span>
           </div>
         </div>

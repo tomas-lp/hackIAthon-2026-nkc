@@ -8,7 +8,7 @@ interface CustomPointDetailSidebarProps {
   customPoint: { lat: number; lng: number } | null;
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (point: { lat: number; lng: number; address: string }) => void;
+  onNavigate?: (point: { lat: number; lng: number; address: string }) => void;
   isNavigating?: boolean;
 }
 
@@ -103,24 +103,26 @@ export function CustomPointDetailSidebar({
           </div>
         </div>
 
-        <button
-          onClick={() =>
-            onNavigate({
-              lat: activePoint.lat,
-              lng: activePoint.lng,
-              address: displayAddress,
-            })
-          }
-          disabled={isNavigating}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm"
-        >
-          {isNavigating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Navigation className="h-4 w-4" />
-          )}
-          {isNavigating ? "Calculando…" : "Cómo llegar"}
-        </button>
+        {onNavigate && (
+          <button
+            onClick={() =>
+              onNavigate({
+                lat: activePoint.lat,
+                lng: activePoint.lng,
+                address: displayAddress,
+              })
+            }
+            disabled={isNavigating}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+          >
+            {isNavigating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Navigation className="h-4 w-4" />
+            )}
+            {isNavigating ? "Calculando…" : "Cómo llegar"}
+          </button>
+        )}
       </div>
     </aside>
   );
