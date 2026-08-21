@@ -122,6 +122,8 @@ interface SidebarProps {
   isNavigatingNearest?: boolean;
   onNavigateToNearestHealthCenter?: () => void;
   isNavigatingNearestHealthCenter?: boolean;
+  activeAdminTab?: string;
+  onAdminTabChange?: (tab: string) => void;
 }
 
 function HealthCenterCard({
@@ -318,8 +320,20 @@ export function Sidebar({
   isNavigatingNearest = false,
   onNavigateToNearestHealthCenter,
   isNavigatingNearestHealthCenter = false,
+  activeAdminTab: activeAdminTabProp,
+  onAdminTabChange,
 }: SidebarProps) {
-  const [activeAdminTab, setActiveAdminTab] = useState<string>("Mapa");
+  const [internalActiveAdminTab, setInternalActiveAdminTab] = useState<string>("Mapa");
+  const activeAdminTab = activeAdminTabProp ?? internalActiveAdminTab;
+
+  const handleAdminTabClick = (option: string) => {
+    if (onAdminTabChange) {
+      onAdminTabChange(option);
+    } else {
+      setInternalActiveAdminTab(option);
+    }
+  };
+
   const [categoryMode, setCategoryMode] = useState<"EVACUACION" | "SALUD">(
     "EVACUACION"
   );
@@ -395,7 +409,7 @@ export function Sidebar({
             return (
               <button
                 key={option}
-                onClick={() => setActiveAdminTab(option)}
+                onClick={() => handleAdminTabClick(option)}
                 className={`w-full rounded-xl border px-3.5 py-2.5 text-left font-medium text-xs transition-all duration-200 cursor-pointer shadow-2xs ${
                   isSelected
                     ? "border-zinc-400 bg-white text-zinc-950 font-bold shadow-xs scale-[1.01]"

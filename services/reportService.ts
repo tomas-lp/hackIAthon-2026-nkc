@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 
 export interface IReportService {
   getReports(filters?: ReportFilters): Promise<Report[]>;
+  getAllReports(): Promise<Report[]>;
   getReportById(id: string): Promise<Report | null>;
 }
 
@@ -137,8 +138,7 @@ export class SupabaseReportService implements IReportService {
         row.telegram_username ??
         row.chat_id?.toString?.() ??
         "",
-      localidad:
-        row.localidad ?? row.ubicacion ?? row.chat_id?.toString?.() ?? null,
+      localidad: row.localidad ?? row.ubicacion ?? null,
       puntajeBase,
       puntajeDescripcion: Number(row.puntaje_descripcion ?? 0),
       puntajeFoto: Number(row.puntaje_foto ?? 0),
@@ -204,6 +204,22 @@ export class SupabaseReportService implements IReportService {
     );
 
     return this.applyFilters(dbReports, filters);
+  }
+
+  async getAllReports(): Promise<Report[]> {
+    const { data, error } = await this.supabase
+      .from("reports")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase getAllReports error:", error.message);
+      return [];
+    }
+
+    return ((data || []) as ReportDbRow[]).map((r: ReportDbRow) =>
+      this.mapDbRowToReport(r)
+    );
   }
 
   async getReportById(id: string): Promise<Report | null> {

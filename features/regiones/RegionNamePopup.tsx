@@ -1,52 +1,91 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { RegionLista } from "@/types/region";
+import { ChevronDown } from "lucide-react";
 
 interface RegionNamePopupProps {
-  onConfirm: (name: string) => void;
+  listas: RegionLista[];
+  selectedListId?: string;
+  onConfirm: (name: string, listaId?: string) => void;
   onCancel: () => void;
 }
 
-export function RegionNamePopup({ onConfirm, onCancel }: RegionNamePopupProps) {
+export function RegionNamePopup({
+  listas,
+  selectedListId,
+  onConfirm,
+  onCancel,
+}: RegionNamePopupProps) {
+  const displayListas =
+    listas.length > 0
+      ? listas
+      : [{ id: "", user_id: "", nombre: "Lista 1", created_at: "" }];
+
   const [name, setName] = useState("");
+  const [listaId, setListaId] = useState<string>(
+    selectedListId || displayListas[0]?.id || ""
+  );
 
   return (
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2000] bg-white rounded-2xl p-4 shadow-2xl border border-gray-200 min-w-[300px] flex flex-col gap-3 animate-in fade-in zoom-in duration-200">
-      <h3 className="text-sm font-bold text-gray-800">Nombrar región</h3>
-      <input
-        type="text"
-        autoFocus
-        placeholder="Ej: Zona Norte, Barrio Centro..."
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && name.trim()) {
-            onConfirm(name.trim());
-          }
-          if (e.key === "Escape") {
-            onCancel();
-          }
-        }}
-        className="w-full rounded-xl border border-gray-200 bg-zinc-50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-colors"
-      />
-      <div className="flex justify-end gap-2 mt-1">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2000] bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-gray-200/80 w-[340px] flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
+      <h3 className="text-base font-semibold text-zinc-900">Nueva zona</h3>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-zinc-700">Nombre</label>
+        <input
+          type="text"
+          autoFocus
+          placeholder="Nombre"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && name.trim()) {
+              onConfirm(name.trim(), listaId || undefined);
+            }
+            if (e.key === "Escape") {
+              onCancel();
+            }
+          }}
+          className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-zinc-700">Lista</label>
+        <div className="relative w-full">
+          <select
+            value={listaId}
+            onChange={(e) => setListaId(e.target.value)}
+            className="w-full appearance-none rounded-2xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all cursor-pointer"
+          >
+            {displayListas.map((l) => (
+              <option key={l.id || l.nombre} value={l.id}>
+                {l.nombre}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3 mt-2">
         <button
+          type="button"
           onClick={onCancel}
-          className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
-          title="Cancelar"
+          className="rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-zinc-800 transition hover:bg-gray-50 active:scale-95 cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          Cancelar
         </button>
         <button
+          type="button"
           onClick={() => {
-            if (name.trim()) onConfirm(name.trim());
+            if (name.trim()) onConfirm(name.trim(), listaId || undefined);
           }}
           disabled={!name.trim()}
-          className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors disabled:opacity-50 cursor-pointer"
-          title="Confirmar"
+          className="rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-zinc-800 transition hover:bg-gray-50 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
-          <Check className="w-5 h-5" />
+          Guardar
         </button>
       </div>
     </div>

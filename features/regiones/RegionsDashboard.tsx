@@ -1,42 +1,90 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Report } from "@/types/report";
-import { RegionPersonalizada } from "@/types/region";
+import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { User } from "@supabase/supabase-js";
-import { RegionsSidebar } from "./RegionsSidebar";
+import { Sidebar } from "../dashboard/Sidebar";
+import { LiquidGlassSegmentedBar } from "../dashboard/LiquidGlassSegmentedBar";
+import { AuthWidget, LoginModal } from "../dashboard/AuthWidget";
 import { RegionsMap } from "./RegionsMap";
 import { RegionNamePopup } from "./RegionNamePopup";
+import { NewListModal } from "./NewListModal";
+import { RegionsTableUI } from "./RegionsTableUI";
 import { regionService } from "@/services/regionService";
-import { AuthWidget } from "../dashboard/AuthWidget";
 import { ChevronRight } from "lucide-react";
+import { useReports } from "@/hooks/useReports";
 
 interface RegionsDashboardProps {
   initialReports: Report[];
+  initialAllReports?: Report[];
   initialRegiones: RegionPersonalizada[];
   user: User | null;
 }
 
 export function RegionsDashboard({
   initialReports,
+  initialAllReports = [],
   initialRegiones,
   user,
 }: RegionsDashboardProps) {
-  const [reports] = useState<Report[]>(initialReports);
+  const router = useRouter();
   const [regiones, setRegiones] = useState<RegionPersonalizada[]>(initialRegiones);
+  const [allReports] = useState<Report[]>(
+    initialAllReports.length > 0 ? initialAllReports : initialReports
+  );
+  const [listas, setListas] = useState<RegionLista[]>([]);
+  const [activeAdminTab, setActiveAdminTab] = useState<string>("Regiones");
+  const [activeHeaderTab, setActiveHeaderTab] = useState<string>("Todo");
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [draftPoints, setDraftPoints] = useState<[number, number][]>([]);
   const [showNamePopup, setShowNamePopup] = useState(false);
+  const [showNewListModal, setShowNewListModal] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Bug fix: fetch las regiones al montar el componente en el cliente
-  // para que aparezcan inmediatamente al recargar la página
-  useEffect(() => {
-    regionService.getRegions().then(setRegiones);
+  const {
+    reports,
+    filters,
+    loading,
+    error,
+    selectedReport,
+    setSelectedReport,
+    updateFilter,
+    resetFilters,
+  } = useReports(initialReports);
+
+  // Cargar regiones y listas al montar
+  const refreshData = useCallback(async () => {
+    try {
+      const [fetchedRegiones, fetchedListas] = await Promise.all([
+        regionService.getRegions(),
+        regionService.getLists(),
+      ]);
+      setRegiones(fetchedRegiones);
+      setListas(fetchedListas);
+    } catch (err) {
+      console.error("Error refreshing regions data:", err);
+    }
   }, []);
 
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // Manejo de navegación en menú lateral
+  const handleAdminTabChange = (tab: string) => {
+    if (tab === "Mapa") {
+      router.push("/");
+    } else {
+      setActiveAdminTab(tab);
+    }
+  };
+
+  // Iniciar dibujo de región (desde el botón + de la tabla o mapa)
   const handleCreateRegion = () => {
     setIsDrawing(true);
     setDraftPoints([]);
@@ -54,7 +102,7 @@ export function RegionsDashboard({
       if (current.length > 2) {
         setIsDrawing(false);
         setShowNamePopup(true);
-        return current; // preservamos los puntos para mostrar el polígono bajo el popup
+        return current;
       }
       alert("Una región debe tener al menos 3 puntos.");
       return current;
@@ -68,13 +116,13 @@ export function RegionsDashboard({
     setSidebarCollapsed(false);
   };
 
-  const handleConfirmName = async (name: string) => {
+  // Confirmar nombre y lista para la nueva región
+  const handleConfirmName = async (name: string, listaId?: string) => {
     try {
-      await regionService.createRegion(name, draftPoints);
-      const updatedRegiones = await regionService.getRegions();
-      setRegiones(updatedRegiones);
+      await regionService.createRegion(name, draftPoints, listaId);
+      await refreshData();
     } catch (e) {
-      console.error(e);
+      console.error("Error guardando región:", e);
       alert("Error guardando la región");
     } finally {
       setIsDrawing(false);
@@ -84,76 +132,175 @@ export function RegionsDashboard({
     }
   };
 
-  const handleDeleteRegion = async (id: string) => {
-    if (!confirm("¿Eliminar esta región?")) return;
+  // Borrar regiones (individual o masivo)
+  const handleDeleteRegions = async (ids: string[]) => {
     try {
-      await regionService.deleteRegion(id);
-      const updatedRegiones = await regionService.getRegions();
-      setRegiones(updatedRegiones);
+      await regionService.deleteRegions(ids);
+      await refreshData();
     } catch (e) {
       console.error(e);
-      alert("Error eliminando la región");
+      alert("Error eliminando la(s) región(es)");
+    }
+  };
+
+  // Crear nueva lista (desde Nueva+ del header)
+  const handleCreateNewList = async (listName: string) => {
+    const newList = await regionService.createList(listName);
+    if (newList) {
+      await refreshData();
+      setActiveHeaderTab(newList.nombre);
     }
   };
 
   const handleSelectRegion = (id: string) => {
     setSelectedRegionId(id);
-    // Si el panel está colapsado, lo expandimos para ver la selección
-    setSidebarCollapsed(false);
+    setActiveAdminTab("Mapa"); // Ir a la vista de mapa enfocada
   };
 
+  // Pestañas dinámicas para el header bar
+  const headerTabs = ["Todo", "Barrios", ...listas.map((l) => l.nombre)];
+
+  // 1. Filtrado de polígonos en el mapa:
+  // - "Todo": solo mapa de calor con reclamos normal, SIN polígonos.
+  // - "Barrios": opción vacía por ahora.
+  // - "Lista X": muestra ÚNICAMENTE los polígonos pertenecientes a esa lista.
+  const displayedMapRegiones = useMemo(() => {
+    if (activeHeaderTab === "Todo" || activeHeaderTab === "Barrios") {
+      return [];
+    }
+
+    return regiones.filter((r) => {
+      const rListName = r.lista_nombre || "Lista 1";
+      return rListName === activeHeaderTab || r.lista_id === activeHeaderTab;
+    });
+  }, [regiones, activeHeaderTab]);
+
+  // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa
+  const isMapVisible = activeAdminTab !== "Regiones" || isDrawing || showNamePopup;
+
   return (
-    <>
-      {/* Botón flotante para re-abrir el sidebar cuando está colapsado */}
-      {sidebarCollapsed && !isDrawing && (
+    <div className="relative h-screen w-screen overflow-hidden bg-zinc-100 font-sans">
+      {/* Barra superior Header LiquidGlassSegmentedBar */}
+      <LiquidGlassSegmentedBar
+        tabs={headerTabs}
+        activeTab={activeHeaderTab}
+        onTabChange={(tab) => {
+          setActiveHeaderTab(tab);
+        }}
+        onAddList={() => setShowNewListModal(true)}
+        isHidden={isDrawing || showNamePopup}
+      />
+
+      {/* Botón flotante para abrir sidebar si está colapsado */}
+      {sidebarCollapsed && !isDrawing && !showNamePopup && (
         <button
           onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-4 top-4 z-[200] flex items-center gap-1.5 rounded-full border border-gray-200 bg-white/90 backdrop-blur-sm px-3 py-2 text-sm font-semibold text-gray-700 shadow-lg transition-all hover:bg-gray-50 hover:scale-105 cursor-pointer"
+          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
           title="Mostrar panel"
         >
           <ChevronRight className="h-4 w-4" />
-          Mis Regiones
         </button>
       )}
 
+      {/* Menú lateral izquierdo (Sidebar de Home) */}
       <div
         className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
         style={{
           transform:
-            sidebarCollapsed || isDrawing ? "translateX(-110%)" : "translateX(0)",
+            sidebarCollapsed || isDrawing || showNamePopup
+              ? "translateX(-110%)"
+              : "translateX(0)",
         }}
       >
-        <RegionsSidebar
-          regiones={regiones}
-          onDeleteRegion={handleDeleteRegion}
-          onCreateRegion={handleCreateRegion}
+        <Sidebar
+          reports={reports}
+          filters={filters}
+          loading={loading}
+          error={error}
+          selectedReport={selectedReport}
+          onSelectReport={(r) => setSelectedReport(r)}
+          onUpdateFilter={updateFilter}
+          onResetFilters={resetFilters}
+          isAdmin={true}
+          activeAdminTab={activeAdminTab}
+          onAdminTabChange={handleAdminTabChange}
           onCollapse={() => setSidebarCollapsed(true)}
-          onSelectRegion={handleSelectRegion}
-          selectedRegionId={selectedRegionId}
-          isCreating={isDrawing}
         />
       </div>
 
-      <section className="absolute inset-0 h-full w-full">
-        <RegionsMap
-          reports={reports}
-          regiones={regiones}
-          isDrawing={isDrawing}
-          draftPoints={draftPoints}
-          onAddDraftPoint={handleAddDraftPoint}
-          onFinishDrawing={handleFinishDrawing}
-          onCancelDrawing={handleCancelDrawing}
-          selectedRegionId={selectedRegionId}
-        />
-      </section>
+      {/* Widget de Usuario (arriba a la derecha) */}
+      <AuthWidget
+        isAdmin={!!user}
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogoutClick={async () => {
+          const { logoutFromSession } = await import("@/app/auth/actions");
+          await logoutFromSession();
+          window.location.href = "/";
+        }}
+        isHidden={isDrawing || showNamePopup}
+      />
 
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={() => setShowLoginModal(false)}
+      />
+
+      {/* Modal para crear nueva Lista desde Nueva+ */}
+      <NewListModal
+        isOpen={showNewListModal}
+        onClose={() => setShowNewListModal(false)}
+        onSave={handleCreateNewList}
+      />
+
+      {/* Contenido Principal: Tabla de Regiones o Mapa */}
+      {!isMapVisible ? (
+        <main
+          className={`absolute inset-0 pt-20 pb-8 px-4 overflow-y-auto z-10 flex justify-center transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
+          }`}
+        >
+          <RegionsTableUI
+            regiones={regiones}
+            listas={listas}
+            reports={reports}
+            allReports={allReports}
+            activeListFilter={activeHeaderTab}
+            onListFilterChange={(listName) => setActiveHeaderTab(listName)}
+            onSelectRegion={handleSelectRegion}
+            onCreateRegion={handleCreateRegion}
+            onDeleteRegions={handleDeleteRegions}
+            selectedRegionId={selectedRegionId}
+          />
+        </main>
+      ) : (
+        <section className="absolute inset-0 h-full w-full">
+          <RegionsMap
+            reports={reports}
+            regiones={displayedMapRegiones}
+            isDrawing={isDrawing}
+            draftPoints={draftPoints}
+            onAddDraftPoint={handleAddDraftPoint}
+            onFinishDrawing={handleFinishDrawing}
+            onCancelDrawing={handleCancelDrawing}
+            selectedRegionId={selectedRegionId}
+          />
+        </section>
+      )}
+
+      {/* Popup al completar un polígono (Modificado según Foto 2) */}
       {showNamePopup && (
         <RegionNamePopup
+          listas={listas}
+          selectedListId={
+            listas.find((l) => l.nombre === activeHeaderTab)?.id
+          }
           onConfirm={handleConfirmName}
           onCancel={handleCancelDrawing}
         />
       )}
 
+      {/* Botones de acción durante el dibujo */}
       {isDrawing && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
           <button
@@ -164,17 +311,6 @@ export function RegionsDashboard({
           </button>
         </div>
       )}
-
-      <AuthWidget
-        isAdmin={!!user}
-        onLoginClick={() => {}}
-        onLogoutClick={async () => {
-          const { logoutFromSession } = await import("@/app/auth/actions");
-          await logoutFromSession();
-          window.location.href = "/";
-        }}
-        isHidden={isDrawing}
-      />
-    </>
+    </div>
   );
 }
