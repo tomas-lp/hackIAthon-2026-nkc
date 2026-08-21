@@ -14,20 +14,26 @@ export default async function RegionesPersonalizadasPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Si no esta logueado, redirigir al home o mostrar algo
+  // Si no esta logueado, redirigir al home
   if (!user) {
     redirect("/");
   }
 
-  // Cargar datos asincronamente
-  const [reports, regiones] = await Promise.all([
+  // Cargar reportes activos, todos los reportes historicos y regiones
+  const [reports, allReports, regiones] = await Promise.all([
     reportService.getReports(),
-    regionService.getRegions()
+    reportService.getAllReports(),
+    regionService.getRegions(),
   ]);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
-      <RegionsDashboard initialReports={reports} initialRegiones={regiones} user={user} />
+    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
+      <RegionsDashboard
+        initialReports={reports}
+        initialAllReports={allReports}
+        initialRegiones={regiones}
+        user={user}
+      />
     </main>
   );
 }
