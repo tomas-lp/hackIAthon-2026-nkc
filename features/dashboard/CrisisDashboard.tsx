@@ -75,6 +75,14 @@ export function CrisisDashboard({
     showBarrios ? "Barrios" : "Todo"
   );
 
+  useEffect(() => {
+    if (activeListTab === "Barrios") {
+      localStorage.setItem("lastMapView", "Barrios");
+    } else if (activeListTab === "Todo") {
+      localStorage.setItem("lastMapView", "Todo");
+    }
+  }, [activeListTab]);
+
   const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
 
   // Zonas Seguras state

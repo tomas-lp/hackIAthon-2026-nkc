@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
@@ -323,11 +324,26 @@ export function Sidebar({
   activeAdminTab: activeAdminTabProp,
   onAdminTabChange,
 }: SidebarProps) {
+  const router = useRouter();
   const [internalActiveAdminTab, setInternalActiveAdminTab] =
     useState<string>("Mapa");
   const activeAdminTab = activeAdminTabProp ?? internalActiveAdminTab;
 
   const handleAdminTabClick = (option: string) => {
+    if (option === "Regiones") {
+      router.push("/regiones-personalizadas");
+      return;
+    }
+    if (option === "Mapa") {
+      const lastMapView = localStorage.getItem("lastMapView");
+      if (lastMapView === "Barrios") {
+        router.push("/barrios");
+      } else {
+        router.push("/");
+      }
+      return;
+    }
+
     if (onAdminTabChange) {
       onAdminTabChange(option);
     } else {
