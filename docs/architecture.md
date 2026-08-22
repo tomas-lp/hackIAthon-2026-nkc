@@ -1,4 +1,4 @@
-# Backend & Arquitectura del Sistema (Inú)
+# Backend & Arquitectura del Sistema (Inu)
 
 > Documentación exhaustiva de la infraestructura técnica del backend, esquema de base de datos en Supabase, arquitectura de las Edge Functions (Telegram/WhatsApp) y el consumo de datos desde el frontend (Mapa).
 
@@ -6,7 +6,7 @@
 
 ## 1. Visión General de la Arquitectura
 
-El ecosistema de **Inú** funciona bajo una arquitectura orientada a eventos y procesamiento en el borde (Edge), conectando plataformas de mensajería con servicios de IA de inferencia ultra rápida y un mapa interactivo de Next.js.
+El ecosistema de **Inu** funciona bajo una arquitectura orientada a eventos y procesamiento en el borde (Edge), conectando plataformas de mensajería con servicios de IA de inferencia ultra rápida y un mapa interactivo de Next.js.
 
 1. **Supabase Edge Functions (Deno Runtime)**: Hospeda los webhooks de Telegram y WhatsApp, así como toda la máquina de estados conversacional, validaciones de seguridad y lógica de negocio (IA, Scoring).
 2. **Supabase Postgres Database**: Almacenamiento central con capacidad geoespacial (PostGIS). Contiene las sesiones temporales de los bots y los reportes públicos de emergencias.
