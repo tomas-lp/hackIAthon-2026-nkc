@@ -56,6 +56,11 @@ body {
   height: 100%;
 }
 
+/* Remove default focus outline from interactive SVG paths (polygons) */
+path.leaflet-interactive:focus {
+  outline: none;
+}
+
 /* Pulsing animation for the "My Location" blue dot */
 @keyframes locate-pulse {
   0% {

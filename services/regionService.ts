@@ -66,6 +66,7 @@ export const regionService = {
       return [];
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map((row: any) => {
       const coords = row.geom_json?.coordinates?.[0] || [];
       const points = coords.map((c: number[]) => [c[1], c[0]]);
@@ -104,7 +105,7 @@ export const regionService = {
     }
 
     // Convert Leaflet [lat, lng] to PostGIS POLYGON((lng lat, lng lat, ...)) string
-    let ring = [...points];
+    const ring = [...points];
     const first = ring[0];
     const last = ring[ring.length - 1];
     if (first[0] !== last[0] || first[1] !== last[1]) {

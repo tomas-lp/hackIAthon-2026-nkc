@@ -95,6 +95,7 @@ export function RegionsTableUI({
   // Mantener sincronizado selectedType si cambia activeListFilter desde el header
   useEffect(() => {
     if (activeListFilter === "Todo") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedType("TODOS");
     } else {
       setSelectedType(activeListFilter);
@@ -508,7 +509,9 @@ export function RegionsTableUI({
                   </th>
                 )}
                 <th className="px-6 py-3.5 font-bold text-zinc-900">Nombre</th>
-                <th className="px-6 py-3.5 font-bold text-zinc-900">Localidad</th>
+                <th className="px-6 py-3.5 font-bold text-zinc-900">
+                  Localidad
+                </th>
                 <th className="px-6 py-3.5 font-bold text-zinc-900">
                   Cantidad de reclamos
                 </th>
@@ -551,8 +554,8 @@ export function RegionsTableUI({
                         isSelected
                           ? "bg-zinc-100"
                           : isChecked
-                          ? "bg-red-50/60"
-                          : "hover:bg-zinc-50/80"
+                            ? "bg-red-50/60"
+                            : "hover:bg-zinc-50/80"
                       }`}
                     >
                       {/* Checkbox (solo visible en modo eliminación) */}

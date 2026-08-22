@@ -75,6 +75,7 @@ function DrawingOverlay({
       map.getContainer().style.cursor = "crosshair";
     } else {
       map.getContainer().style.cursor = "";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMousePos(null);
       setIsSnapping(false);
     }
@@ -105,6 +106,7 @@ function DrawingOverlay({
           return;
         }
       }
+
       onAddPoint([e.latlng.lat, e.latlng.lng]);
     },
     contextmenu(e) {
@@ -311,16 +313,16 @@ function DraftFitter({
 }
 
 // --- Componente principal ---
-export default function RegionsMapInternal({
-  reports,
-  regiones,
-  isDrawing,
-  draftPoints,
-  onAddDraftPoint,
-  onFinishDrawing,
-  onCancelDrawing,
-  selectedRegionId,
-}: RegionsMapInternalProps) {
+export default function RegionsMapInternal(props: RegionsMapInternalProps) {
+  const {
+    reports,
+    regiones,
+    isDrawing,
+    draftPoints,
+    onAddDraftPoint,
+    onFinishDrawing,
+    selectedRegionId,
+  } = props;
   const validReports = useMemo(
     () =>
       reports.filter(
@@ -329,7 +331,10 @@ export default function RegionsMapInternal({
     [reports]
   );
 
-  const heatPoints = useMemo(() => buildHeatPoints(validReports), [validReports]);
+  const heatPoints = useMemo(
+    () => buildHeatPoints(validReports),
+    [validReports]
+  );
 
   // showNamePopup está activo cuando isDrawing=false pero aún hay draftPoints
   const showingNamePopup = !isDrawing && draftPoints.length > 2;
@@ -384,7 +389,10 @@ export default function RegionsMapInternal({
         <DraftFitter draftPoints={draftPoints} active={showingNamePopup} />
 
         {/* Fly-to al hacer click en una región del sidebar */}
-        <RegionFocuser regiones={regiones} selectedRegionId={selectedRegionId} />
+        <RegionFocuser
+          regiones={regiones}
+          selectedRegionId={selectedRegionId}
+        />
       </MapContainer>
 
       {/* Overlay de oscurecimiento mientras se dibuja */}
@@ -392,7 +400,8 @@ export default function RegionsMapInternal({
         <div className="absolute inset-0 bg-black/10 pointer-events-none z-[1000] transition-opacity duration-300">
           <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-200 pointer-events-auto">
             <span className="font-semibold text-gray-800 text-sm">
-              Dibuja la región · clickeá para añadir puntos · doble click al primer punto para cerrar
+              Dibuja la región · clickeá para añadir puntos · doble click al
+              primer punto para cerrar
             </span>
           </div>
         </div>

@@ -301,13 +301,34 @@ Responde ÚNICAMENTE con JSON válido:
       true
     );
     if (res.direccion_detectada && res.direccion_detectada.trim().length > 0) {
-      if (res.direccion_detectada.toLowerCase() === "null") return null;
+      if (
+        res.direccion_detectada.toLowerCase() === "null" ||
+        res.direccion_detectada.toLowerCase() === "none"
+      )
+        return null;
       return res.direccion_detectada.trim();
     }
     return null;
   } catch (error) {
-    console.error("Fallo extracción de dirección:", error);
-    return null;
+    console.error("Fallo", error);
+    try {
+      const fallbackRes = await runTextAIFallback("validation", prompt, true);
+      if (
+        fallbackRes &&
+        fallbackRes.direccion_detectada &&
+        fallbackRes.direccion_detectada.trim().length > 0
+      ) {
+        if (
+          fallbackRes.direccion_detectada.toLowerCase() === "null" ||
+          fallbackRes.direccion_detectada.toLowerCase() === "none"
+        )
+          return null;
+        return fallbackRes.direccion_detectada.trim();
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
@@ -323,10 +324,26 @@ export function Sidebar({
   activeAdminTab: activeAdminTabProp,
   onAdminTabChange,
 }: SidebarProps) {
-  const [internalActiveAdminTab, setInternalActiveAdminTab] = useState<string>("Mapa");
+  const router = useRouter();
+  const [internalActiveAdminTab, setInternalActiveAdminTab] =
+    useState<string>("Mapa");
   const activeAdminTab = activeAdminTabProp ?? internalActiveAdminTab;
 
   const handleAdminTabClick = (option: string) => {
+    if (option === "Regiones") {
+      router.push("/regiones-personalizadas");
+      return;
+    }
+    if (option === "Mapa") {
+      const lastMapView = localStorage.getItem("lastMapView");
+      if (lastMapView === "Barrios") {
+        router.push("/barrios");
+      } else {
+        router.push("/");
+      }
+      return;
+    }
+
     if (onAdminTabChange) {
       onAdminTabChange(option);
     } else {
@@ -490,7 +507,7 @@ export function Sidebar({
                 </div>
               </div>
 
-              {categoryMode === "EVACUACION" ? (
+              {categoryMode === "EVACUACION" && onNavigateToNearest ? (
                 <button
                   onClick={onNavigateToNearest}
                   disabled={isNavigatingNearest}
@@ -503,7 +520,8 @@ export function Sidebar({
                   )}
                   {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
                 </button>
-              ) : (
+              ) : categoryMode === "SALUD" &&
+                onNavigateToNearestHealthCenter ? (
                 <button
                   onClick={onNavigateToNearestHealthCenter}
                   disabled={isNavigatingNearestHealthCenter}
@@ -518,7 +536,7 @@ export function Sidebar({
                     ? "Calculando…"
                     : "Ir al más cercano"}
                 </button>
-              )}
+              ) : null}
             </div>
 
             <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">

@@ -6,7 +6,6 @@ import { Report } from "@/types/report";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { User } from "@supabase/supabase-js";
 import { Sidebar } from "../dashboard/Sidebar";
-import { LiquidGlassSegmentedBar } from "../dashboard/LiquidGlassSegmentedBar";
 import { AuthWidget, LoginModal } from "../dashboard/AuthWidget";
 import { RegionsMap } from "./RegionsMap";
 import { RegionNamePopup } from "./RegionNamePopup";
@@ -30,7 +29,8 @@ export function RegionsDashboard({
   user,
 }: RegionsDashboardProps) {
   const router = useRouter();
-  const [regiones, setRegiones] = useState<RegionPersonalizada[]>(initialRegiones);
+  const [regiones, setRegiones] =
+    useState<RegionPersonalizada[]>(initialRegiones);
   const [allReports] = useState<Report[]>(
     initialAllReports.length > 0 ? initialAllReports : initialReports
   );
@@ -72,13 +72,19 @@ export function RegionsDashboard({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshData();
   }, [refreshData]);
 
   // Manejo de navegación en menú lateral
   const handleAdminTabChange = (tab: string) => {
     if (tab === "Mapa") {
-      router.push("/");
+      const lastMapView = localStorage.getItem("lastMapView");
+      if (lastMapView === "Barrios") {
+        router.push("/barrios");
+      } else {
+        router.push("/");
+      }
     } else {
       setActiveAdminTab(tab);
     }
@@ -157,9 +163,6 @@ export function RegionsDashboard({
     setActiveAdminTab("Mapa"); // Ir a la vista de mapa enfocada
   };
 
-  // Pestañas dinámicas para el header bar
-  const headerTabs = ["Todo", "Barrios", ...listas.map((l) => l.nombre)];
-
   // 1. Filtrado de polígonos en el mapa:
   // - "Todo": solo mapa de calor con reclamos normal, SIN polígonos.
   // - "Barrios": opción vacía por ahora.
@@ -176,21 +179,11 @@ export function RegionsDashboard({
   }, [regiones, activeHeaderTab]);
 
   // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa
-  const isMapVisible = activeAdminTab !== "Regiones" || isDrawing || showNamePopup;
+  const isMapVisible =
+    activeAdminTab !== "Regiones" || isDrawing || showNamePopup;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-zinc-100 font-sans">
-      {/* Barra superior Header LiquidGlassSegmentedBar */}
-      <LiquidGlassSegmentedBar
-        tabs={headerTabs}
-        activeTab={activeHeaderTab}
-        onTabChange={(tab) => {
-          setActiveHeaderTab(tab);
-        }}
-        onAddList={() => setShowNewListModal(true)}
-        isHidden={isDrawing || showNamePopup}
-      />
-
       {/* Botón flotante para abrir sidebar si está colapsado */}
       {sidebarCollapsed && !isDrawing && !showNamePopup && (
         <button
@@ -292,9 +285,7 @@ export function RegionsDashboard({
       {showNamePopup && (
         <RegionNamePopup
           listas={listas}
-          selectedListId={
-            listas.find((l) => l.nombre === activeHeaderTab)?.id
-          }
+          selectedListId={listas.find((l) => l.nombre === activeHeaderTab)?.id}
           onConfirm={handleConfirmName}
           onCancel={handleCancelDrawing}
         />
