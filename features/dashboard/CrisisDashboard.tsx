@@ -17,6 +17,7 @@ import { SafeZoneDetailSidebar } from "@/features/mapa/SafeZoneDetailSidebar";
 import { CustomPointDetailSidebar } from "@/features/mapa/CustomPointDetailSidebar";
 import { LayerControls } from "@/features/mapa/LayerControls";
 import { LiquidGlassSegmentedBar } from "@/features/dashboard/LiquidGlassSegmentedBar";
+import { NewListModal } from "@/features/dashboard/NewListModal";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter, HealthCenterType } from "@/types/healthCenter";
@@ -71,9 +72,11 @@ export function CrisisDashboard({
   // Layer Toggles for Admin
   const [showEvacuationCenters, setShowEvacuationCenters] = useState(true);
   const [showMedicalCenters, setShowMedicalCenters] = useState(true);
+  const [listTabs, setListTabs] = useState<string[]>(["Todo", "Barrios"]);
   const [activeListTab, setActiveListTab] = useState(
     showBarrios ? "Barrios" : "Todo"
   );
+  const [isAddListModalOpen, setIsAddListModalOpen] = useState(false);
 
   useEffect(() => {
     if (activeListTab === "Barrios") {
@@ -82,6 +85,15 @@ export function CrisisDashboard({
       localStorage.setItem("lastMapView", "Todo");
     }
   }, [activeListTab]);
+
+  const handleAddList = (newListName: string) => {
+    const trimmed = newListName.trim();
+    if (!trimmed) return;
+    if (!listTabs.includes(trimmed)) {
+      setListTabs((prev) => [...prev, trimmed]);
+    }
+    setActiveListTab(trimmed);
+  };
 
   const { initialReportId, initialSafeZoneId, syncUrl } = useUrlSelection();
 
@@ -464,7 +476,7 @@ export function CrisisDashboard({
 
       {isAdmin && (
         <LiquidGlassSegmentedBar
-          tabs={["Todo", "Barrios", "Mi lista 1"]}
+          tabs={listTabs}
           activeTab={activeListTab}
           onTabChange={(tab) => {
             setActiveListTab(tab);
@@ -478,13 +490,7 @@ export function CrisisDashboard({
               window.history.pushState(null, "", `/${window.location.search}`);
             }
           }}
-          onAddList={() => {
-            const listName = prompt("Nombre de la nueva lista:");
-            if (listName) {
-              setActiveListTab(listName);
-              window.history.pushState(null, "", `/${window.location.search}`);
-            }
-          }}
+          onAddList={() => setIsAddListModalOpen(true)}
           isHidden={hideMainUI}
         />
       )}
@@ -780,6 +786,13 @@ export function CrisisDashboard({
           routingState.status === "loading" &&
           navigatingTargetId === selectedHealthCenter?.id
         }
+      />
+
+      {/* New List Modal */}
+      <NewListModal
+        isOpen={isAddListModalOpen}
+        onClose={() => setIsAddListModalOpen(false)}
+        onConfirm={handleAddList}
       />
     </>
   );
