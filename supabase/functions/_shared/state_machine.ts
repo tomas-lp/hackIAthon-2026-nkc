@@ -175,7 +175,7 @@ export async function processMessage(
     session.intentos_fallidos = 0;
     await saveDBSession(session);
     await adapter.sendMessage(
-      "❌ Proceso cancelado.\nRecuerda que Inú está siempre disponible ante emergencias o consultas climáticas.\nPuedes escribir *hola* en cualquier momento para volver al menú principal."
+      "❌ Proceso cancelado.\nRecuerda que Inu está siempre disponible ante emergencias o consultas climáticas.\nPuedes escribir *hola* en cualquier momento para volver al menú principal."
     );
     return;
   }
@@ -188,7 +188,7 @@ export async function processMessage(
   switch (session.state) {
     case "IDLE": {
       const welcomeMsg =
-        "¡Hola! Soy Inú, tu asistente frente a las inundaciones.\nPuedes reportar una emergencia climática o consultar cómo está tu zona eligiendo una opción del menú debajo.\n\n💡 *Recuerda:* Puedes cancelar cualquier proceso en cualquier momento escribiendo 'cancelar'.";
+        "¡Hola! Soy Inu, tu asistente frente a las inundaciones.\nPuedes reportar una emergencia climática o consultar cómo está tu zona eligiendo una opción del menú debajo.\n\n💡 *Recuerda:* Puedes cancelar cualquier proceso en cualquier momento escribiendo 'cancelar'.";
 
       const sendWelcomeMenu = async () => {
         if (adapter.sendMenu) {
