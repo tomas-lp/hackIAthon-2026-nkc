@@ -25,6 +25,7 @@ Alias `@/*` → `src/*` (ver `tsconfig.json`).
 
 | Doc                                  | Descripción                                                                                               |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| [Frontend](docs/frontend.md)         | Estructura y convenciones generales del frontend. Dónde poner cada cosa                                   |
 | [Arquitectura](docs/architecture.md) | Visión general, DB Supabase (user_sessions, reports), Edge Functions `_shared`                            |
 | [Bot](docs/bot.md)                   | Extracción calles RAG/Fuzzy, máquina estados, catálogo respuestas, lecciones IA (incluye diagrama FLUJOS) |
 | [Scoring](docs/scoring.md)           | Sistema puntos v2.1, gravedad, foto, clima, decay temporal, heatmap config                                |
