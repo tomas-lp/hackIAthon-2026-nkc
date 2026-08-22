@@ -342,12 +342,7 @@ export function Sidebar({
       return;
     }
     if (option === "Mapa") {
-      const lastMapView = localStorage.getItem("lastMapView");
-      if (lastMapView === "Barrios") {
-        router.push("/barrios");
-      } else {
-        router.push("/");
-      }
+      router.push("/");
       return;
     }
   };

@@ -79,12 +79,7 @@ export function RegionsDashboard({
   // Manejo de navegación en menú lateral
   const handleAdminTabChange = (tab: string) => {
     if (tab === "Mapa") {
-      const lastMapView = localStorage.getItem("lastMapView");
-      if (lastMapView === "Barrios") {
-        router.push("/barrios");
-      } else {
-        router.push("/");
-      }
+      router.push("/");
     } else {
       setActiveAdminTab(tab);
     }

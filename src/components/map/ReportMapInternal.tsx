@@ -659,7 +659,7 @@ export default function ReportMapInternal({
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        {/* Capa de polígonos de barrios — solo en vista /barrios */}
+        {/* Capa de polígonos de barrios — solo cuando Barrios está activo (variante interna) */}
         {showBarrios && barriosGeoJson && (
           <BarriosLayer data={barriosGeoJson} />
         )}

@@ -32,13 +32,11 @@ import { User } from "@supabase/supabase-js";
 interface CrisisDashboardProps {
   initialReports: Report[];
   user?: User | null;
-  showBarrios?: boolean;
 }
 
 export function CrisisDashboard({
   initialReports,
   user: initialUser,
-  showBarrios = false,
 }: CrisisDashboardProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(
     initialUser ?? null
@@ -73,17 +71,24 @@ export function CrisisDashboard({
   const [showEvacuationCenters, setShowEvacuationCenters] = useState(true);
   const [showMedicalCenters, setShowMedicalCenters] = useState(true);
   const [listTabs, setListTabs] = useState<string[]>(["Todo", "Barrios"]);
-  const [activeListTab, setActiveListTab] = useState(
-    showBarrios ? "Barrios" : "Todo"
-  );
+  const [activeListTab, setActiveListTab] = useState<string>("Todo");
   const [isAddListModalOpen, setIsAddListModalOpen] = useState(false);
 
+  // Restaurar última vista guardada (Barrios como variante interna, sin ruta /barrios)
   useEffect(() => {
-    if (activeListTab === "Barrios") {
-      localStorage.setItem("lastMapView", "Barrios");
-    } else if (activeListTab === "Todo") {
-      localStorage.setItem("lastMapView", "Todo");
+    const saved = localStorage.getItem("lastMapView");
+    if (
+      saved &&
+      (saved === "Todo" || saved === "Barrios" || listTabs.includes(saved))
+    ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveListTab(saved);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("lastMapView", activeListTab);
   }, [activeListTab]);
 
   const handleAddList = (newListName: string) => {
@@ -480,15 +485,6 @@ export function CrisisDashboard({
           activeTab={activeListTab}
           onTabChange={(tab) => {
             setActiveListTab(tab);
-            if (tab === "Barrios") {
-              window.history.pushState(
-                null,
-                "",
-                `/barrios${window.location.search}`
-              );
-            } else {
-              window.history.pushState(null, "", `/${window.location.search}`);
-            }
           }}
           onAddList={() => setIsAddListModalOpen(true)}
           isHidden={hideMainUI}
