@@ -1,5 +1,5 @@
 import { reportService } from "@/services/reportService";
-import { CrisisDashboard } from "@/features/dashboard/CrisisDashboard";
+import { CrisisDashboard } from "@/components/home/CrisisDashboard";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 

@@ -16,7 +16,7 @@ import "leaflet/dist/leaflet.css";
 import { Report } from "@/types/report";
 import { RegionPersonalizada } from "@/types/region";
 import { buildHeatPoints } from "@/lib/heatmap";
-import { HeatLayer } from "../mapa/HeatLayer";
+import { HeatLayer } from "@/components/map/HeatLayer";
 import { isPointInPolygon } from "@/lib/geometry";
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];

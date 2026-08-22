@@ -1,6 +1,6 @@
 import { reportService } from "@/services/reportService";
 import { regionService } from "@/services/regionService";
-import { RegionsDashboard } from "@/features/regiones/RegionsDashboard";
+import { RegionsDashboard } from "@/components/regions/RegionsDashboard";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
