@@ -1,5 +1,5 @@
 import { reportService } from "@/services/reportService";
-import { CrisisDashboard } from "@/components/home/CrisisDashboard";
+import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
@@ -16,7 +16,7 @@ export default async function CrisisGraphPage() {
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
-      <CrisisDashboard initialReports={reports} user={user} />
+      <HomeDashboard initialReports={reports} user={user} />
     </main>
   );
 }
