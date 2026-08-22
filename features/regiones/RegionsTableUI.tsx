@@ -353,11 +353,26 @@ export function RegionsTableUI({
     }
   };
 
-  const typeOptions = [
-    { id: "TODOS", label: "Todas las listas" },
-    { id: "Barrios", label: "Barrios (API)" },
-    ...listas.map((l) => ({ id: l.nombre, label: l.nombre })),
-  ];
+  const typeOptions = useMemo(() => {
+    const baseOptions = [
+      { id: "TODOS", label: "Todas las listas" },
+      { id: "Barrios", label: "Barrios (API)" },
+    ];
+    const seen = new Set<string>();
+    seen.add("TODOS");
+    seen.add("Barrios");
+
+    const listOpts: { id: string; label: string }[] = [];
+    for (const l of listas) {
+      const key = l.id || l.nombre;
+      if (!seen.has(key) && !seen.has(l.nombre)) {
+        seen.add(key);
+        seen.add(l.nombre);
+        listOpts.push({ id: l.id || l.nombre, label: l.nombre });
+      }
+    }
+    return [...baseOptions, ...listOpts];
+  }, [listas]);
 
   const currentTypeLabel =
     typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
@@ -388,28 +403,32 @@ export function RegionsTableUI({
 
               {isTypeDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                  {typeOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => {
-                        setSelectedType(opt.id);
-                        setIsTypeDropdownOpen(false);
-                        onListFilterChange(
-                          opt.id === "TODOS" ? "Todo" : opt.label
-                        );
-                      }}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
-                        selectedType === opt.id
-                          ? "bg-zinc-100 font-bold text-zinc-900"
-                          : "text-zinc-700 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {selectedType === opt.id && (
-                        <Check className="h-3.5 w-3.5 text-zinc-900" />
-                      )}
-                    </button>
-                  ))}
+                  {typeOptions.map((opt, idx) => {
+                    const isSelected =
+                      selectedType === opt.id || selectedType === opt.label;
+                    return (
+                      <button
+                        key={`${opt.id}-${idx}`}
+                        onClick={() => {
+                          setSelectedType(opt.id);
+                          setIsTypeDropdownOpen(false);
+                          onListFilterChange(
+                            opt.id === "TODOS" ? "Todo" : opt.label
+                          );
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-zinc-100 font-bold text-zinc-900"
+                            : "text-zinc-700 hover:bg-zinc-50"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && (
+                          <Check className="h-3.5 w-3.5 text-zinc-900" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

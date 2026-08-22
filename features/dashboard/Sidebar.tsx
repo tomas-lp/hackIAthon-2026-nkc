@@ -330,6 +330,12 @@ export function Sidebar({
   const activeAdminTab = activeAdminTabProp ?? internalActiveAdminTab;
 
   const handleAdminTabClick = (option: string) => {
+    if (onAdminTabChange) {
+      onAdminTabChange(option);
+    } else {
+      setInternalActiveAdminTab(option);
+    }
+
     if (option === "Regiones") {
       router.push("/regiones-personalizadas");
       return;
@@ -342,12 +348,6 @@ export function Sidebar({
         router.push("/");
       }
       return;
-    }
-
-    if (onAdminTabChange) {
-      onAdminTabChange(option);
-    } else {
-      setInternalActiveAdminTab(option);
     }
   };
 
