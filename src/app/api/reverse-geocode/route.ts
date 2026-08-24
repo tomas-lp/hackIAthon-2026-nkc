@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
     upstreamUrl.searchParams.set("lat", lat);
     upstreamUrl.searchParams.set("lon", lon);
     upstreamUrl.searchParams.set("addressdetails", "1");
+    upstreamUrl.searchParams.set("zoom", "18");
 
     const response = await fetch(upstreamUrl, {
       headers: {
         Accept: "application/json",
         "Accept-Language": lang,
-        "User-Agent": "hakIA-grupo-11/1.0",
+        "User-Agent": "INU-Corrientes-App/1.0 (info@inu.corrientes.gob.ar)",
       },
     });
 

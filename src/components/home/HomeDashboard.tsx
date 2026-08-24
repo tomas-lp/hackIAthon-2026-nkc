@@ -18,7 +18,7 @@ import { NewListModal } from "@/components/ui/NewListModal";
 import { DeleteListModal } from "@/components/ui/DeleteListModal";
 import { RegionNamePopup } from "@/components/regions/RegionNamePopup";
 import { Report } from "@/types/report";
-import { SafeZone } from "@/types/safeZone";
+import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { RegionPersonalizada } from "@/types/region";
 import { regionService } from "@/services/regionService";
 import { ChevronRight } from "lucide-react";
@@ -466,8 +466,14 @@ export function HomeDashboard({
           activeRoute={!isAdmin ? mapRouting.displayRoute : null}
           isClosingRoute={mapRouting.isClosingRoute}
           isAdmin={isAdmin}
-          showEvacuationCenters={showEvacuationCenters}
-          showMedicalCenters={showMedicalCenters}
+          showEvacuationCenters={
+            isAdmin && activeListTab === "Barrios"
+              ? false
+              : showEvacuationCenters
+          }
+          showMedicalCenters={
+            isAdmin && activeListTab === "Barrios" ? false : showMedicalCenters
+          }
           showBarrios={isAdmin ? activeListTab === "Barrios" : false}
           regiones={regiones}
           newlyAddedDraftZones={newlyAddedDraftZones}
@@ -493,7 +499,7 @@ export function HomeDashboard({
             safeZoneSel.setIsCreatingSafeZone(true)
           }
           onCreateMedicalCenter={() => safeZoneSel.setIsCreatingSafeZone(true)}
-          isHidden={hideMainUI}
+          isHidden={hideMainUI || activeListTab === "Barrios"}
         />
       )}
 
@@ -579,6 +585,11 @@ export function HomeDashboard({
           title="Editar Centro de Evacuación"
           initialData={{
             nombre: safeZoneSel.selectedSafeZone.nombre,
+            tipo: safeZoneSel.selectedSafeZone.tipo as SafeZoneType,
+            capacidad_maxima: safeZoneSel.selectedSafeZone.capacidad_maxima,
+            direccion: safeZoneSel.selectedSafeZone.direccion,
+            localidad: safeZoneSel.selectedSafeZone.localidad,
+            departamento: safeZoneSel.selectedSafeZone.departamento,
             descripcion: safeZoneSel.selectedSafeZone.descripcion,
           }}
           onClose={() => safeZoneSel.setIsEditingSingleSafeZone(false)}

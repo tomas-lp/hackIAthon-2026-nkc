@@ -109,6 +109,12 @@ path.leaflet-interactive:focus {
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.custom-health-center-marker.is-selected .marker-inner {
+  transform: scale(1.33);
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8)) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .custom-safe-zone-marker.is-selected .marker-inner svg {
   stroke-width: 1.25 !important;
 }
@@ -125,13 +131,16 @@ path.leaflet-interactive:focus {
 
 /* Hover for UNSELECTED markers only */
 .custom-report-marker:not(.is-selected):hover .marker-inner,
-.custom-safe-zone-marker:not(.is-selected):hover .marker-inner {
-  transform: scale(1.15);
+.custom-safe-zone-marker:not(.is-selected):hover .marker-inner,
+.custom-health-center-marker:not(.is-selected):hover .marker-inner {
+  transform: scale(1.22) translateY(-2px) !important;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 /* Active for UNSELECTED markers only */
 .custom-report-marker:not(.is-selected):active .marker-inner,
-.custom-safe-zone-marker:not(.is-selected):active .marker-inner {
+.custom-safe-zone-marker:not(.is-selected):active .marker-inner,
+.custom-health-center-marker:not(.is-selected):active .marker-inner {
   transform: scale(0.95);
   transition: all 0.1s ease-out;
 }

@@ -224,7 +224,7 @@ function SafeZoneCard({
             </span>
             <span
               className="text-xs font-medium text-black/80"
-              title={address ?? safeZone.descripcion}
+              title={address ?? safeZone.descripcion ?? undefined}
             >
               {address ?? "Dirección no disponible"}
             </span>
@@ -340,6 +340,10 @@ export function Sidebar({
 
     if (option === "Regiones") {
       router.push("/regiones-personalizadas");
+      return;
+    }
+    if (option === "Marcadores") {
+      router.push("/marcadores");
       return;
     }
     if (option === "Mapa") {
