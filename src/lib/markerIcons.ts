@@ -36,7 +36,7 @@ export function createHealthCenterIcon(
   return L.divIcon({
     className: `custom-health-center-marker ${isVisible ? "is-visible" : "is-hidden"}`,
     html: `
-      <div class="marker-inner transition-all duration-300 ease-out" style="
+      <div class="marker-inner" style="
         background-color: #ef4444;
         width: ${size}px;
         height: ${size}px;
@@ -48,7 +48,6 @@ export function createHealthCenterIcon(
         justify-content: center;
         color: #ffffff;
         opacity: ${isVisible ? 1 : 0};
-        transform: scale(${isVisible ? 1 : 0.4});
         pointer-events: ${isVisible ? "auto" : "none"};
       ">
         <svg width="${size * 0.65}" height="${size * 0.65}" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">

@@ -40,7 +40,15 @@ export function useSafeZoneSelection() {
   const handleSaveSafeZone = useCallback(
     async (dto: Omit<CreateSafeZoneDto, "latitud" | "longitud">) => {
       if (isEditingSingleSafeZone && selectedSafeZone) {
-        await safeZoneService.updateSafeZone(selectedSafeZone.id, dto);
+        const updated = await safeZoneService.updateSafeZone(
+          selectedSafeZone.id,
+          dto
+        );
+        if (updated) {
+          setSelectedSafeZone(updated);
+        } else {
+          setSelectedSafeZone({ ...selectedSafeZone, ...dto });
+        }
         setIsEditingSingleSafeZone(false);
       } else if (draftLocation) {
         let direccion = dto.direccion;
@@ -75,7 +83,13 @@ export function useSafeZoneSelection() {
       }
       refreshSafeZones();
     },
-    [isEditingSingleSafeZone, selectedSafeZone, draftLocation, refreshSafeZones]
+    [
+      isEditingSingleSafeZone,
+      selectedSafeZone,
+      draftLocation,
+      refreshSafeZones,
+      setSelectedSafeZone,
+    ]
   );
 
   const handleDeleteSafeZone = useCallback(async () => {

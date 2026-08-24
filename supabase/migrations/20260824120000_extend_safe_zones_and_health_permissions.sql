@@ -47,3 +47,11 @@ BEGIN
       WITH CHECK (true);
   END IF;
 END $$;
+
+-- 4. Actualizar restricción de tipos permitidos en health_centers para incluir CLINICA, SANATORIO, POLICONSULTORIO
+ALTER TABLE public.health_centers 
+  DROP CONSTRAINT IF EXISTS health_centers_tipo_check;
+
+ALTER TABLE public.health_centers
+  ADD CONSTRAINT health_centers_tipo_check 
+  CHECK (tipo IN ('SAPS', 'CAPS', 'HOSPITAL', 'CLINICA', 'SANATORIO', 'POLICONSULTORIO'));

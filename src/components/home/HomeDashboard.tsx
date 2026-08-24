@@ -15,7 +15,7 @@ import { CustomPointDetailSidebar } from "@/components/map/CustomPointDetailSide
 import { LayerControls } from "@/components/map/LayerControls";
 import { NewListModal } from "@/components/ui/NewListModal";
 import { Report } from "@/types/report";
-import { SafeZone } from "@/types/safeZone";
+import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { ChevronRight } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 
@@ -339,6 +339,11 @@ export function HomeDashboard({
           title="Editar Centro de Evacuación"
           initialData={{
             nombre: safeZoneSel.selectedSafeZone.nombre,
+            tipo: safeZoneSel.selectedSafeZone.tipo as SafeZoneType,
+            capacidad_maxima: safeZoneSel.selectedSafeZone.capacidad_maxima,
+            direccion: safeZoneSel.selectedSafeZone.direccion,
+            localidad: safeZoneSel.selectedSafeZone.localidad,
+            departamento: safeZoneSel.selectedSafeZone.departamento,
             descripcion: safeZoneSel.selectedSafeZone.descripcion,
           }}
           onClose={() => safeZoneSel.setIsEditingSingleSafeZone(false)}

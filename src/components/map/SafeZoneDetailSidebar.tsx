@@ -76,6 +76,16 @@ export function SafeZoneDetailSidebar({
       return;
     }
 
+    const hasValidDireccion =
+      activeSafeZone.direccion &&
+      !activeSafeZone.direccion.toLowerCase().startsWith("lat ");
+
+    if (hasValidDireccion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAsyncAddress(null);
+      return;
+    }
+
     if (activeSafeZone.latitud && activeSafeZone.longitud) {
       resolveAddress(activeSafeZone.latitud, activeSafeZone.longitud)
         .then((resolved) => {
@@ -97,7 +107,9 @@ export function SafeZoneDetailSidebar({
     activeSafeZone.direccion &&
     activeSafeZone.direccion.toLowerCase().startsWith("lat ");
 
-  const cleanDireccion = isCoordDireccion ? null : activeSafeZone.direccion;
+  const cleanDireccion = isCoordDireccion
+    ? null
+    : activeSafeZone.direccion?.trim();
 
   const fullLocation = [
     cleanDireccion,
@@ -105,11 +117,11 @@ export function SafeZoneDetailSidebar({
     activeSafeZone.departamento,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
 
   const displayAddress =
-    asyncAddress ||
     fullLocation ||
+    asyncAddress ||
     `${activeSafeZone.localidad || "Corrientes"}, ${activeSafeZone.departamento || "Capital"}`;
 
   const tipoLabel =
