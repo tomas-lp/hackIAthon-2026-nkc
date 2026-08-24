@@ -43,7 +43,7 @@ export function RegionsDashboard({
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<BarriosFeatureCollection | null>(null);
   const [activeAdminTab, setActiveAdminTab] = useState<string>("Regiones");
-  const [activeHeaderTab, setActiveHeaderTab] = useState<string>("Todo");
+  const [activeHeaderTab, setActiveHeaderTab] = useState<string>("Barrios");
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -173,17 +173,30 @@ export function RegionsDashboard({
     setIsFocusedRegionView(false);
   };
 
+  const isSelectedBarrio = useMemo(() => {
+    if (!selectedRegionId || !barriosGeoJson?.features) return false;
+    return barriosGeoJson.features.some(
+      (f) => f.properties?.id === selectedRegionId
+    );
+  }, [selectedRegionId, barriosGeoJson]);
+
   // 1. Filtrado de polígonos en el mapa:
   const displayedMapRegiones = useMemo(() => {
-    if (activeHeaderTab === "Todo" || activeHeaderTab === "Barrios") {
+    if (activeHeaderTab === "Barrios") {
       return [];
+    }
+    if (isFocusedRegionView && isSelectedBarrio) {
+      return [];
+    }
+    if (activeHeaderTab === "Todo" || activeHeaderTab === "Mapa de calor") {
+      return regiones;
     }
 
     return regiones.filter((r) => {
       const rListName = r.lista_nombre || "Lista 1";
       return rListName === activeHeaderTab || r.lista_id === activeHeaderTab;
     });
-  }, [regiones, activeHeaderTab]);
+  }, [regiones, activeHeaderTab, isFocusedRegionView, isSelectedBarrio]);
 
   // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa o se clickeó una región/barrio
   const isMapVisible =
@@ -312,7 +325,11 @@ export function RegionsDashboard({
             onCancelDrawing={handleCancelDrawing}
             selectedRegionId={selectedRegionId}
             hideHeatmap={isFocusedRegionView}
-            showAllBarrios={isFocusedRegionView}
+            showAllBarrios={
+              activeHeaderTab === "Barrios" ||
+              (isFocusedRegionView && isSelectedBarrio)
+            }
+            listas={listas}
           />
         </section>
       )}

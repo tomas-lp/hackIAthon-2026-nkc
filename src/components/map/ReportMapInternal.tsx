@@ -9,6 +9,7 @@ import {
   useMapEvents,
   GeoJSON,
   useMap,
+  Polygon,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -17,6 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
+import { RegionPersonalizada } from "@/types/region";
 import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
@@ -24,6 +26,12 @@ import { LocateButton } from "./LocateButton";
 import { SafeRoute } from "./SafeRoute";
 import { Flame, ShieldCheck, PlusSquare } from "lucide-react";
 import { RouteResult } from "@/lib/routing";
+import {
+  DrawingOverlay,
+  DraftMarkers,
+  RegionShape,
+  DraftFitter,
+} from "./PolygonDrawingOverlay";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -47,6 +55,17 @@ interface ReportMapInternalProps {
   showEvacuationCenters?: boolean;
   showMedicalCenters?: boolean;
   showBarrios?: boolean;
+  regiones?: RegionPersonalizada[];
+  newlyAddedDraftZones?: RegionPersonalizada[];
+  activeHeaderTab?: string;
+  isDrawing?: boolean;
+  draftPoints?: [number, number][];
+  onAddDraftPoint?: (pt: [number, number]) => void;
+  onFinishDrawing?: () => void;
+  onCancelDrawing?: () => void;
+  showNamePopup?: boolean;
+  isEditingRegions?: boolean;
+  onDeleteRegion?: (regionId: string) => void;
 }
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
@@ -451,6 +470,16 @@ export default function ReportMapInternal({
   showEvacuationCenters = true,
   showMedicalCenters = true,
   showBarrios = false,
+  regiones = [],
+  newlyAddedDraftZones = [],
+  activeHeaderTab,
+  isDrawing = false,
+  draftPoints = [],
+  onAddDraftPoint,
+  onFinishDrawing,
+  showNamePopup = false,
+  isEditingRegions = false,
+  onDeleteRegion,
 }: ReportMapInternalProps) {
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
@@ -459,6 +488,22 @@ export default function ReportMapInternal({
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<GeoJSON.FeatureCollection | null>(null);
   const supabase = createClient();
+
+  const displayedRegiones = useMemo(() => {
+    if (!regiones || regiones.length === 0) return [];
+    if (
+      !activeHeaderTab ||
+      activeHeaderTab === "Mapa de calor" ||
+      activeHeaderTab === "Todo" ||
+      activeHeaderTab === "Barrios"
+    ) {
+      return [];
+    }
+    return regiones.filter((r) => {
+      const rListName = r.lista_nombre || "Lista 1";
+      return rListName === activeHeaderTab || r.lista_id === activeHeaderTab;
+    });
+  }, [regiones, activeHeaderTab]);
 
   // Carga los polígonos de barrios dinámicamente desde PostGIS
   useEffect(() => {
@@ -701,7 +746,6 @@ export default function ReportMapInternal({
         })}
 
         {showEvacuationCenters &&
-          !showBarrios &&
           validSafeZones.map((sz) => {
             const isSelected = selectedSafeZone?.id === sz.id;
             return (
@@ -731,7 +775,6 @@ export default function ReportMapInternal({
           })}
 
         {showMedicalCenters &&
-          !showBarrios &&
           validHealthCenters.map((hc) => {
             const isSelected = selectedHealthCenter?.id === hc.id;
             const isVisible = currentZoom >= 11 || isSelected;
@@ -801,6 +844,60 @@ export default function ReportMapInternal({
         {/* Ruta segura activa — solo visible en modo usuario */}
         {activeRoute && (
           <SafeRoute route={activeRoute} isClosing={isClosingRoute} />
+        )}
+
+        {/* Regiones guardadas en la lista activa */}
+        {displayedRegiones.map((region) => (
+          <RegionShape
+            key={region.id}
+            region={region}
+            reports={validReports}
+            isEditingRegions={isEditingRegions}
+            onDeleteRegion={onDeleteRegion}
+          />
+        ))}
+
+        {/* Regiones borrador recién creadas en la sesión actual */}
+        {newlyAddedDraftZones.map((region) => (
+          <RegionShape
+            key={region.id}
+            region={region}
+            reports={validReports}
+            color="#3b82f6"
+            isEditingRegions={isEditingRegions}
+            onDeleteRegion={onDeleteRegion}
+          />
+        ))}
+
+        {/* Capa de dibujo activa de polígonos */}
+        {isDrawing && (
+          <>
+            <DrawingOverlay
+              isDrawing={true}
+              draftPoints={draftPoints}
+              onAddPoint={onAddDraftPoint || (() => {})}
+              onFinish={onFinishDrawing || (() => {})}
+            />
+            <DraftMarkers isDrawing={true} draftPoints={draftPoints} />
+          </>
+        )}
+
+        {/* Polígono borrador mientras se completa el nombre en el popup */}
+        {showNamePopup && draftPoints.length > 2 && (
+          <Polygon
+            positions={draftPoints}
+            pathOptions={{
+              color: "#3b82f6",
+              fillColor: "#3b82f6",
+              fillOpacity: 0.25,
+              weight: 2,
+              dashArray: "6 4",
+            }}
+          />
+        )}
+
+        {showNamePopup && (
+          <DraftFitter draftPoints={draftPoints} active={true} />
         )}
       </MapContainer>
 

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Report } from "@/types/report";
-import { RegionPersonalizada } from "@/types/region";
+import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { Loader2 } from "lucide-react";
 
 import { BarriosFeatureCollection } from "@/services/barrioService";
@@ -24,6 +24,7 @@ const RegionsMapInternal = dynamic(() => import("./RegionsMapInternal"), {
 export function RegionsMap({
   reports,
   regiones,
+  listas,
   barriosGeoJson,
   activeHeaderTab,
   isDrawing,
@@ -37,6 +38,7 @@ export function RegionsMap({
 }: {
   reports: Report[];
   regiones: RegionPersonalizada[];
+  listas?: RegionLista[];
   barriosGeoJson?: BarriosFeatureCollection | null;
   activeHeaderTab?: string;
   isDrawing: boolean;
@@ -52,6 +54,7 @@ export function RegionsMap({
     <RegionsMapInternal
       reports={reports}
       regiones={regiones}
+      listas={listas}
       barriosGeoJson={barriosGeoJson}
       activeHeaderTab={activeHeaderTab}
       isDrawing={isDrawing}
