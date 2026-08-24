@@ -466,14 +466,8 @@ export function HomeDashboard({
           activeRoute={!isAdmin ? mapRouting.displayRoute : null}
           isClosingRoute={mapRouting.isClosingRoute}
           isAdmin={isAdmin}
-          showEvacuationCenters={
-            isAdmin && activeListTab === "Barrios"
-              ? false
-              : showEvacuationCenters
-          }
-          showMedicalCenters={
-            isAdmin && activeListTab === "Barrios" ? false : showMedicalCenters
-          }
+          showEvacuationCenters={showEvacuationCenters}
+          showMedicalCenters={showMedicalCenters}
           showBarrios={isAdmin ? activeListTab === "Barrios" : false}
           regiones={regiones}
           newlyAddedDraftZones={newlyAddedDraftZones}
@@ -499,7 +493,7 @@ export function HomeDashboard({
             safeZoneSel.setIsCreatingSafeZone(true)
           }
           onCreateMedicalCenter={() => safeZoneSel.setIsCreatingSafeZone(true)}
-          isHidden={hideMainUI || activeListTab === "Barrios"}
+          isHidden={hideMainUI}
         />
       )}
 
