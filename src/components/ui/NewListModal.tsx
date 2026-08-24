@@ -65,8 +65,6 @@ export function NewListModal({
     }
   };
 
-  const showX = !!onSave;
-
   return (
     <div
       className="fixed inset-0 z-[2500] flex items-center justify-center bg-black/25 backdrop-blur-xs p-4 animate-in fade-in duration-200"
@@ -76,19 +74,17 @@ export function NewListModal({
         className="relative w-full max-w-sm rounded-3xl bg-white/95 backdrop-blur-md p-6 shadow-2xl border border-gray-200/80 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-zinc-900">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-base font-bold text-zinc-900 leading-snug pt-0.5">
             {onSave ? "Nueva lista" : "Nombre de la nueva lista"}
           </h3>
-          {showX ? (
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer shrink-0 -mt-2 -mr-2"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -113,26 +109,18 @@ export function NewListModal({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 mt-1">
+          <div className="flex items-center justify-center gap-3 mt-1">
             <button
               type="button"
               onClick={handleClose}
-              className={
-                onSave
-                  ? "rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-zinc-800 transition hover:bg-gray-50 active:scale-95 cursor-pointer"
-                  : "px-5 py-2 rounded-full bg-[#4a4a4a] hover:bg-[#666666] text-white font-medium text-xs transition-colors duration-200 cursor-pointer active:scale-95 select-none"
-              }
+              className="rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-zinc-800 transition hover:bg-gray-50 active:scale-95 cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={!name.trim() || isSubmitting}
-              className={
-                onSave
-                  ? "rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-zinc-800 transition hover:bg-gray-50 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  : "px-5 py-2 rounded-full bg-[#4a4a4a] hover:bg-[#666666] text-white font-medium text-xs transition-colors duration-200 cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed select-none"
-              }
+              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 text-sm font-medium transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {isSubmitting ? "Guardando..." : onSave ? "Guardar" : "Aceptar"}
             </button>

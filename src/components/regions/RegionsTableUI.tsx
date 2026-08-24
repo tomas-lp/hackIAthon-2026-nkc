@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { Report } from "@/types/report";
 import { isPointInPolygon, isPointInGeoJSONGeometry } from "@/lib/geometry";
-import { formatDate, formatTitleCase } from "@/lib/format";
+import { formatTitleCase } from "@/lib/format";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import {
@@ -97,13 +97,30 @@ export function RegionsTableUI({
   selectedRegionId,
 }: RegionsTableUIProps) {
   const [selectedType, setSelectedType] = useState<string>(
-    activeListFilter === "Todo" ? "TODOS" : activeListFilter
+    activeListFilter === "Todo" || !activeListFilter
+      ? "Barrios"
+      : activeListFilter
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        typeDropdownRef.current &&
+        !typeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsTypeDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [activeRowMenuId, setActiveRowMenuId] = useState<string | null>(null);
   const [resolvedLocalities, setResolvedLocalities] = useState<
     Record<string, string>
@@ -120,7 +137,6 @@ export function RegionsTableUI({
       activeListFilter === "Barrios" ||
       activeListFilter === "Barrios (API)"
     ) {
-       
       setSelectedType("Barrios");
     } else {
       setSelectedType(activeListFilter);
@@ -532,12 +548,8 @@ export function RegionsTableUI({
   };
 
   const typeOptions = useMemo(() => {
-    const baseOptions = [
-      { id: "TODOS", label: "Todas las listas" },
-      { id: "Barrios", label: "Barrios (API)" },
-    ];
+    const baseOptions = [{ id: "Barrios", label: "Barrios (API)" }];
     const seen = new Set<string>();
-    seen.add("TODOS");
     seen.add("Barrios");
 
     const listOpts: { id: string; label: string }[] = [];
@@ -556,7 +568,7 @@ export function RegionsTableUI({
     if (isBarriosSelected) return "Barrios (API)";
     return (
       typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
-        ?.label || "Todas las listas"
+        ?.label || "Barrios (API)"
     );
   }, [isBarriosSelected, typeOptions, selectedType]);
 
@@ -573,7 +585,7 @@ export function RegionsTableUI({
           {/* Lado Izquierdo: Filtro Tipo */}
           <div className="flex items-center gap-2 relative">
             <span className="text-sm font-semibold text-zinc-900">Tipo</span>
-            <div className="relative">
+            <div ref={typeDropdownRef} className="relative">
               <button
                 type="button"
                 onClick={() => setIsTypeDropdownOpen((prev) => !prev)}
@@ -599,11 +611,7 @@ export function RegionsTableUI({
                           setSelectedType(targetId);
                           setIsTypeDropdownOpen(false);
                           onListFilterChange(
-                            opt.id === "TODOS"
-                              ? "Todo"
-                              : opt.id === "Barrios"
-                                ? "Barrios"
-                                : opt.label
+                            opt.id === "Barrios" ? "Barrios" : opt.label
                           );
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
