@@ -71,12 +71,14 @@ export function LayerControls({
               {/* Toggle Switch */}
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setShowEvacuationCenters((prev) => !prev)}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   showEvacuationCenters ? "bg-emerald-500" : "bg-zinc-300"
                 }`}
               >
                 <span
+                  suppressHydrationWarning
                   className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
                     showEvacuationCenters ? "translate-x-4" : "translate-x-0"
                   }`}
@@ -123,12 +125,14 @@ export function LayerControls({
               {/* Toggle Switch */}
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setShowMedicalCenters((prev) => !prev)}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   showMedicalCenters ? "bg-red-500" : "bg-zinc-300"
                 }`}
               >
                 <span
+                  suppressHydrationWarning
                   className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
                     showMedicalCenters ? "translate-x-4" : "translate-x-0"
                   }`}

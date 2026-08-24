@@ -46,23 +46,21 @@ export function HomeDashboard({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showEvacuationCenters, setShowEvacuationCentersState] =
-    useState<boolean>(() => {
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("layer_evacuation_centers");
-        if (saved !== null) return saved === "true";
-      }
-      return true;
-    });
+    useState<boolean>(true);
+  const [showMedicalCenters, setShowMedicalCentersState] =
+    useState<boolean>(true);
 
-  const [showMedicalCenters, setShowMedicalCentersState] = useState<boolean>(
-    () => {
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("layer_medical_centers");
-        if (saved !== null) return saved === "true";
-      }
-      return true;
+  useEffect(() => {
+    const savedEvac = localStorage.getItem("layer_evacuation_centers");
+    if (savedEvac !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowEvacuationCentersState(savedEvac === "true");
     }
-  );
+    const savedMed = localStorage.getItem("layer_medical_centers");
+    if (savedMed !== null) {
+      setShowMedicalCentersState(savedMed === "true");
+    }
+  }, []);
 
   const setShowEvacuationCenters = (
     val: boolean | ((prev: boolean) => boolean)
