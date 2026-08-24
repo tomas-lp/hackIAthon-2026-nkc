@@ -93,7 +93,7 @@ export function MarcadoresTableUI({
   // Opciones de tipos de marcadores
   const typeOptions = useMemo(() => {
     return [
-      { id: "TODOS", label: "Todas las listas" },
+      { id: "TODOS", label: "Todos los marcadores" },
       { id: "EVACUACION", label: "Centros de evacuación" },
       { id: "SALUD", label: "Centros de salud" },
     ];
@@ -102,7 +102,7 @@ export function MarcadoresTableUI({
   const currentTypeLabel = useMemo(() => {
     return (
       typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
-        ?.label || "Todas las listas"
+        ?.label || "Todos los marcadores"
     );
   }, [typeOptions, selectedType]);
 

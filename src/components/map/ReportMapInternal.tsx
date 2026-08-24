@@ -701,6 +701,7 @@ export default function ReportMapInternal({
         })}
 
         {showEvacuationCenters &&
+          !showBarrios &&
           validSafeZones.map((sz) => {
             const isSelected = selectedSafeZone?.id === sz.id;
             return (
@@ -723,6 +724,7 @@ export default function ReportMapInternal({
           })}
 
         {showMedicalCenters &&
+          !showBarrios &&
           validHealthCenters.map((hc) => {
             const isSelected = selectedHealthCenter?.id === hc.id;
             const isVisible = currentZoom >= 11 || isSelected;

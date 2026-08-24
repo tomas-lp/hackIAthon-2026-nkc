@@ -231,8 +231,14 @@ export function HomeDashboard({
           activeRoute={!isAdmin ? mapRouting.displayRoute : null}
           isClosingRoute={mapRouting.isClosingRoute}
           isAdmin={isAdmin}
-          showEvacuationCenters={showEvacuationCenters}
-          showMedicalCenters={showMedicalCenters}
+          showEvacuationCenters={
+            isAdmin && activeListTab === "Barrios"
+              ? false
+              : showEvacuationCenters
+          }
+          showMedicalCenters={
+            isAdmin && activeListTab === "Barrios" ? false : showMedicalCenters
+          }
           showBarrios={isAdmin ? activeListTab === "Barrios" : false}
         />
       </section>
@@ -247,7 +253,7 @@ export function HomeDashboard({
             safeZoneSel.setIsCreatingSafeZone(true)
           }
           onCreateMedicalCenter={() => safeZoneSel.setIsCreatingSafeZone(true)}
-          isHidden={hideMainUI}
+          isHidden={hideMainUI || activeListTab === "Barrios"}
         />
       )}
 

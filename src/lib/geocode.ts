@@ -74,10 +74,10 @@ export async function resolveLocationDetails(
 
     if (!response.ok) {
       return {
-        direccion: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,
+        direccion: "Corrientes Capital",
         localidad: "Corrientes",
         departamento: "Capital",
-        fullAddress: `Corrientes (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+        fullAddress: "Corrientes, Capital, Argentina",
       };
     }
 
@@ -90,19 +90,43 @@ export async function resolveLocationDetails(
       address.path ||
       address.footway ||
       address.street ||
+      address.avenue ||
+      address.highway ||
+      address.residential ||
       "";
     const houseNumber = address.house_number || "";
-    const suburb = address.neighbourhood || address.suburb || "";
+    const placeName =
+      address.amenity ||
+      address.building ||
+      address.school ||
+      address.hospital ||
+      address.leisure ||
+      address.shop ||
+      address.tourism ||
+      "";
+    const neighborhood =
+      address.neighbourhood ||
+      address.suburb ||
+      address.quarter ||
+      address.city_district ||
+      "";
 
     let direccion = "";
     if (street && houseNumber) {
       direccion = `${street} ${houseNumber}`;
+    } else if (street && placeName) {
+      direccion = `${placeName}, ${street}`;
     } else if (street) {
       direccion = street;
-    } else if (suburb) {
-      direccion = `Barrio ${suburb}`;
+    } else if (placeName) {
+      direccion = placeName;
+    } else if (neighborhood) {
+      direccion = `Barrio ${neighborhood}`;
+    } else if (data.display_name) {
+      const parts = data.display_name.split(",").map((p: string) => p.trim());
+      direccion = parts.slice(0, 2).join(", ");
     } else {
-      direccion = `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`;
+      direccion = "Corrientes";
     }
 
     const locality =
@@ -110,15 +134,15 @@ export async function resolveLocationDetails(
       address.town ||
       address.village ||
       address.municipality ||
-      suburb ||
-      "Corrientes";
+      (neighborhood ? `Corrientes (${neighborhood})` : "Corrientes");
+
     const departamento =
       address.county ||
       address.state_district ||
-      (locality.toLowerCase().includes("corrientes") ? "Capital" : "");
+      (locality.toLowerCase().includes("corrientes") ? "Capital" : "Capital");
 
     const parts = [direccion, locality, departamento].filter(Boolean);
-    const fullAddress = parts.join(", ");
+    const fullAddress = data.display_name || parts.join(", ");
 
     return {
       direccion,
@@ -128,10 +152,10 @@ export async function resolveLocationDetails(
     };
   } catch {
     return {
-      direccion: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,
+      direccion: "Corrientes Capital",
       localidad: "Corrientes",
       departamento: "Capital",
-      fullAddress: `Corrientes (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+      fullAddress: "Corrientes, Capital, Argentina",
     };
   }
 }

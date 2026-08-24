@@ -93,8 +93,14 @@ export function SafeZoneDetailSidebar({
 
   if (!activeSafeZone) return null;
 
+  const isCoordDireccion =
+    activeSafeZone.direccion &&
+    activeSafeZone.direccion.toLowerCase().startsWith("lat ");
+
+  const cleanDireccion = isCoordDireccion ? null : activeSafeZone.direccion;
+
   const fullLocation = [
-    activeSafeZone.direccion,
+    cleanDireccion,
     activeSafeZone.localidad,
     activeSafeZone.departamento,
   ]
@@ -104,7 +110,7 @@ export function SafeZoneDetailSidebar({
   const displayAddress =
     asyncAddress ||
     fullLocation ||
-    `Lat ${activeSafeZone.latitud.toFixed(4)}, Lng ${activeSafeZone.longitud.toFixed(4)}`;
+    `${activeSafeZone.localidad || "Corrientes"}, ${activeSafeZone.departamento || "Capital"}`;
 
   const tipoLabel =
     typeText ||

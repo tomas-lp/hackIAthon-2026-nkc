@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { Report } from "@/types/report";
 import { isPointInPolygon, isPointInGeoJSONGeometry } from "@/lib/geometry";
-import { formatDate, formatTitleCase } from "@/lib/format";
+import { formatTitleCase } from "@/lib/format";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import {
@@ -120,7 +120,6 @@ export function RegionsTableUI({
       activeListFilter === "Barrios" ||
       activeListFilter === "Barrios (API)"
     ) {
-       
       setSelectedType("Barrios");
     } else {
       setSelectedType(activeListFilter);

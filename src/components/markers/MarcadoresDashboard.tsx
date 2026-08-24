@@ -182,7 +182,6 @@ export function MarcadoresDashboard({
       fullAddress: loc.fullAddress,
     });
     setShowCreationModal(true);
-    setIsCreating(false);
   };
 
   // Guardar nuevo marcador
@@ -219,6 +218,7 @@ export function MarcadoresDashboard({
       await refreshData();
       setShowCreationModal(false);
       setDraftLocation(null);
+      setIsCreating(true);
     } catch (err) {
       console.error("Error al guardar marcador:", err);
       alert("Error al guardar el marcador.");
@@ -345,6 +345,7 @@ export function MarcadoresDashboard({
         onClose={() => {
           setShowCreationModal(false);
           setDraftLocation(null);
+          setIsCreating(true);
         }}
         onSave={handleSaveMarker}
         initialCategory={creatingCategory}

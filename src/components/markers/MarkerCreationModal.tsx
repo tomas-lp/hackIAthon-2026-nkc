@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Loader2, ShieldCheck, PlusSquare, MapPin } from "lucide-react";
+import {
+  X,
+  Loader2,
+  ShieldCheck,
+  PlusSquare,
+  MapPin,
+  Pencil,
+} from "lucide-react";
 import { SafeZoneType } from "@/types/safeZone";
 import { HealthCenterType } from "@/types/healthCenter";
 import {
@@ -65,6 +72,10 @@ export function MarkerCreationModal({
   const [tipoSalud, setTipoSalud] = useState<HealthCenterType>("HOSPITAL");
   const [descripcion, setDescripcion] = useState("");
   const [capacidadMaxima, setCapacidadMaxima] = useState("");
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [customDireccion, setCustomDireccion] = useState("");
+  const [customLocalidad, setCustomLocalidad] = useState("");
+  const [customDepartamento, setCustomDepartamento] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -76,6 +87,10 @@ export function MarkerCreationModal({
       setTipoSalud("HOSPITAL");
       setDescripcion("");
       setCapacidadMaxima("");
+      setIsEditingLocation(false);
+      setCustomDireccion(initialLocation?.direccion || "");
+      setCustomLocalidad(initialLocation?.localidad || "Corrientes");
+      setCustomDepartamento(initialLocation?.departamento || "Capital");
     }
   }, [isOpen, initialCategory, initialLocation]);
 
@@ -92,9 +107,14 @@ export function MarkerCreationModal({
         nombre: nombre.trim(),
         tipoEvacuacion,
         tipoSalud,
-        direccion: initialLocation?.direccion || "",
-        localidad: initialLocation?.localidad || "Corrientes",
-        departamento: initialLocation?.departamento || "Capital",
+        direccion:
+          customDireccion.trim() || initialLocation?.direccion || "Corrientes",
+        localidad:
+          customLocalidad.trim() || initialLocation?.localidad || "Corrientes",
+        departamento:
+          customDepartamento.trim() ||
+          initialLocation?.departamento ||
+          "Capital",
         descripcion: descripcion.trim(),
         capacidadMaxima: capacidadMaxima.trim(),
       });
@@ -105,6 +125,7 @@ export function MarkerCreationModal({
   };
 
   const detectedLocationText =
+    customDireccion ||
     initialLocation?.direccion ||
     initialLocation?.fullAddress ||
     (initialLocation
@@ -112,8 +133,8 @@ export function MarkerCreationModal({
       : "Ubicación seleccionada en el mapa");
 
   const detectedLocalityText = [
-    initialLocation?.localidad,
-    initialLocation?.departamento,
+    customLocalidad || initialLocation?.localidad,
+    customDepartamento || initialLocation?.departamento,
   ]
     .filter(Boolean)
     .join(", ");
@@ -255,23 +276,95 @@ export function MarkerCreationModal({
             </div>
           )}
 
-          {/* Ubicación calculada automáticamente */}
+          {/* Ubicación calculada automáticamente con botón para editar */}
           {initialLocation && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs">
-              <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
-              <div className="flex flex-col gap-0.5">
-                <span className="font-semibold text-zinc-800">
-                  {detectedLocationText}
-                </span>
-                {detectedLocalityText && (
-                  <span className="text-[11px] text-zinc-500">
-                    {detectedLocalityText}
-                  </span>
-                )}
-                <span className="text-[10px] text-zinc-400 mt-0.5">
-                  Ubicación calculada automáticamente según las coordenadas
-                </span>
-              </div>
+            <div className="flex flex-col gap-2">
+              {!isEditingLocation ? (
+                <div className="flex items-start justify-between gap-2.5 p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-semibold text-zinc-800 truncate">
+                        {detectedLocationText}
+                      </span>
+                      {detectedLocalityText && (
+                        <span className="text-[11px] text-zinc-500">
+                          {detectedLocalityText}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-zinc-400 mt-0.5">
+                        Ubicación calculada automáticamente según las
+                        coordenadas
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingLocation(true)}
+                    className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-100 hover:text-zinc-900 transition-colors cursor-pointer shrink-0 mt-0.5"
+                    title="Editar ubicación manualmente"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    <span>Editar</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between border-b border-zinc-200/70 pb-1.5">
+                    <div className="flex items-center gap-1.5 font-semibold text-zinc-800">
+                      <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+                      <span>Editar dirección manualmente</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingLocation(false)}
+                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                    >
+                      Listo
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-medium text-zinc-600">
+                      Dirección / Calle y altura
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Rafael Obligado 1200"
+                      value={customDireccion}
+                      onChange={(e) => setCustomDireccion(e.target.value)}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-zinc-600">
+                        Localidad
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Corrientes"
+                        value={customLocalidad}
+                        onChange={(e) => setCustomLocalidad(e.target.value)}
+                        className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-zinc-600">
+                        Departamento
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Capital"
+                        value={customDepartamento}
+                        onChange={(e) => setCustomDepartamento(e.target.value)}
+                        className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
