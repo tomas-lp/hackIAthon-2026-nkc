@@ -349,6 +349,13 @@ export function Sidebar({
       router.push("/");
       return;
     }
+    if (
+      option === "Panel de Administración" ||
+      option === "Panel de Estadísticas"
+    ) {
+      router.push("/estadisticas");
+      return;
+    }
   };
 
   const [categoryMode, setCategoryMode] = useState<"EVACUACION" | "SALUD">(
