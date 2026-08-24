@@ -7,17 +7,24 @@ import {
   Polygon,
   Polyline,
   Tooltip,
+  GeoJSON,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+import { formatTitleCase } from "@/lib/format";
 import { Report } from "@/types/report";
 import { RegionPersonalizada } from "@/types/region";
 import { buildHeatPoints } from "@/lib/heatmap";
 import { HeatLayer } from "@/components/map/HeatLayer";
-import { isPointInPolygon } from "@/lib/geometry";
+import {
+  extractGeoJSONPoints,
+  isPointInPolygon,
+  isPointInGeoJSONGeometry,
+} from "@/lib/geometry";
+import { BarriosFeatureCollection } from "@/services/barrioService";
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
 const INITIAL_ZOOM = 12;
@@ -25,31 +32,55 @@ const INITIAL_ZOOM = 12;
 interface RegionsMapInternalProps {
   reports: Report[];
   regiones: RegionPersonalizada[];
+  barriosGeoJson?: BarriosFeatureCollection | null;
+  activeHeaderTab?: string;
   isDrawing: boolean;
   draftPoints: [number, number][];
   onAddDraftPoint: (point: [number, number]) => void;
   onFinishDrawing: () => void;
   onCancelDrawing: () => void;
   selectedRegionId: string | null;
+  hideHeatmap?: boolean;
+  showAllBarrios?: boolean;
 }
 
-// --- Subcomponente: vuela al bounds de la región seleccionada desde el sidebar ---
+// --- Subcomponente: vuela al bounds de la región o barrio seleccionado ---
 function RegionFocuser({
   regiones,
+  barriosGeoJson,
   selectedRegionId,
 }: {
   regiones: RegionPersonalizada[];
+  barriosGeoJson?: BarriosFeatureCollection | null;
   selectedRegionId: string | null;
 }) {
   const map = useMap();
 
   useEffect(() => {
     if (!selectedRegionId) return;
+
+    // Buscar entre regiones personalizadas
     const region = regiones.find((r) => r.id === selectedRegionId);
-    if (!region || region.points.length < 3) return;
-    const bounds = L.latLngBounds(region.points);
-    map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 });
-  }, [selectedRegionId, regiones, map]);
+    if (region && region.points.length >= 3) {
+      const bounds = L.latLngBounds(region.points);
+      map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 });
+      return;
+    }
+
+    // Buscar entre barrios de la API
+    if (barriosGeoJson?.features) {
+      const barrioFeature = barriosGeoJson.features.find(
+        (f) => f.properties?.id === selectedRegionId
+      );
+      if (barrioFeature?.geometry) {
+        const points = extractGeoJSONPoints(barrioFeature.geometry);
+        if (points.length > 0) {
+          const bounds = L.latLngBounds(points);
+          map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 });
+        }
+      }
+    }
+  }, [selectedRegionId, regiones, barriosGeoJson, map]);
 
   return null;
 }
@@ -317,6 +348,8 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
   const {
     reports,
     regiones,
+    barriosGeoJson,
+    activeHeaderTab,
     isDrawing,
     draftPoints,
     onAddDraftPoint,
@@ -336,8 +369,48 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
     [validReports]
   );
 
+  // Mapa de cantidad de reclamos por barrio
+  const barrioReportsCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!barriosGeoJson?.features || validReports.length === 0) return map;
+
+    for (const feature of barriosGeoJson.features) {
+      const barrioId = feature.properties?.id;
+      if (!barrioId || !feature.geometry) continue;
+
+      let count = 0;
+      for (const report of validReports) {
+        if (
+          isPointInGeoJSONGeometry(
+            [report.latitud, report.longitud],
+            feature.geometry
+          )
+        ) {
+          count++;
+        }
+      }
+      map.set(barrioId, count);
+    }
+
+    return map;
+  }, [barriosGeoJson, validReports]);
+
   // showNamePopup está activo cuando isDrawing=false pero aún hay draftPoints
   const showingNamePopup = !isDrawing && draftPoints.length > 2;
+
+  // Determinar si debemos mostrar la capa GeoJSON de barrios en el mapa
+  const isSelectedBarrio = useMemo(() => {
+    if (!selectedRegionId || !barriosGeoJson?.features) return false;
+    return barriosGeoJson.features.some(
+      (f) => f.properties?.id === selectedRegionId
+    );
+  }, [selectedRegionId, barriosGeoJson]);
+
+  const showBarriosLayer =
+    props.showAllBarrios ||
+    activeHeaderTab === "Barrios" ||
+    activeHeaderTab === "Barrios (API)" ||
+    isSelectedBarrio;
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
@@ -353,7 +426,52 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        <HeatLayer points={heatPoints} />
+        {!props.hideHeatmap && <HeatLayer points={heatPoints} />}
+
+        {/* Polígonos de barrios de la API PostGIS con resaltado y cantidad de reclamos */}
+        {showBarriosLayer && barriosGeoJson && (
+          <GeoJSON
+            key="barrios-layer-regiones"
+            data={barriosGeoJson as unknown as GeoJSON.GeoJsonObject}
+            style={(feature) => {
+              const isSelected = feature?.properties?.id === selectedRegionId;
+              return {
+                color: isSelected ? "#1d4ed8" : "#2563eb",
+                weight: isSelected ? 3.5 : 1.5,
+                opacity: isSelected ? 0.95 : 0.7,
+                fillColor: isSelected ? "#2563eb" : "#3b82f6",
+                fillOpacity: isSelected ? 0.35 : 0.12,
+              };
+            }}
+            onEachFeature={(feature, layer) => {
+              const rawName = feature.properties?.nombre;
+              if (rawName) {
+                const nombre = formatTitleCase(rawName);
+                const barrioId = feature.properties?.id;
+                const count = barrioId
+                  ? barrioReportsCountMap.get(barrioId) || 0
+                  : 0;
+                const countText =
+                  count === 1
+                    ? "1 reclamo en esta zona"
+                    : `${count} reclamos en esta zona`;
+
+                const htmlContent = `
+                  <div class="flex flex-col gap-0.5 font-sans p-0.5">
+                    <span class="font-bold text-sm text-zinc-900 leading-tight">${nombre}</span>
+                    <span class="text-xs font-medium text-zinc-600 leading-tight">${countText}</span>
+                  </div>
+                `;
+
+                layer.bindTooltip(htmlContent, {
+                  sticky: true,
+                  className:
+                    "custom-tooltip font-sans rounded-xl border border-gray-200 bg-white/95 backdrop-blur-xs shadow-xl px-3 py-2 text-zinc-800",
+                });
+              }
+            }}
+          />
+        )}
 
         {/* Regiones guardadas — siempre visibles (incluso durante el popup de nombre) */}
         {regiones.map((region) => (
@@ -388,9 +506,10 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
         {/* Fly-to al confirmar el polígono (cuando aparece el popup de nombre) */}
         <DraftFitter draftPoints={draftPoints} active={showingNamePopup} />
 
-        {/* Fly-to al hacer click en una región del sidebar */}
+        {/* Fly-to al hacer click en una región o barrio del listado */}
         <RegionFocuser
           regiones={regiones}
+          barriosGeoJson={barriosGeoJson}
           selectedRegionId={selectedRegionId}
         />
       </MapContainer>
