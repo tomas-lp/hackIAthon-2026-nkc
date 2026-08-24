@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { Report } from "@/types/report";
-import { isPointInPolygon } from "@/lib/geometry";
+import { isPointInPolygon, isPointInGeoJSONGeometry } from "@/lib/geometry";
+import { formatDate, formatTitleCase } from "@/lib/format";
+import { BarriosFeatureCollection } from "@/services/barrioService";
+import { TooltipSign } from "@/components/ui/TooltipSign";
 import {
   Search,
   Plus,
@@ -14,13 +17,26 @@ import {
   X,
   MapPin,
   Check,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
 } from "lucide-react";
+
+export type SortField =
+  | "nombre"
+  | "localidad"
+  | "cantidadReclamos"
+  | "ultimaAyuda"
+  | "reclamosActivos";
+
+export type SortOrder = "asc" | "desc";
 
 interface RegionsTableUIProps {
   regiones: RegionPersonalizada[];
   listas: RegionLista[];
   reports: Report[]; // Reportes activos
   allReports: Report[]; // Todos los reportes (de siempre)
+  barriosGeoJson?: BarriosFeatureCollection | null;
   activeListFilter: string;
   onListFilterChange: (listName: string) => void;
   onSelectRegion: (id: string) => void;
@@ -72,6 +88,7 @@ export function RegionsTableUI({
   listas,
   reports,
   allReports,
+  barriosGeoJson,
   activeListFilter,
   onListFilterChange,
   onSelectRegion,
@@ -91,16 +108,37 @@ export function RegionsTableUI({
   const [resolvedLocalities, setResolvedLocalities] = useState<
     Record<string, string>
   >({});
+  const [sortField, setSortField] = useState<SortField>("nombre");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   // Mantener sincronizado selectedType si cambia activeListFilter desde el header
   useEffect(() => {
     if (activeListFilter === "Todo") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedType("TODOS");
+    } else if (
+      activeListFilter === "Barrios" ||
+      activeListFilter === "Barrios (API)"
+    ) {
+       
+      setSelectedType("Barrios");
     } else {
       setSelectedType(activeListFilter);
     }
   }, [activeListFilter]);
+
+  // Mantener scroll sincronizado en el elemento seleccionado
+  useEffect(() => {
+    if (selectedRegionId) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`region-row-${selectedRegionId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedRegionId]);
 
   // Resolver localidades asíncronamente para cada región usando geocodificación inversa del centroide
   useEffect(() => {
@@ -187,11 +225,11 @@ export function RegionsTableUI({
     };
   }, [regiones, allReports]);
 
-  // Calcular estadísticas reales por polígono
+  // Calcular estadísticas reales por región personalizada
   const regionesConStats = useMemo(() => {
     return regiones.map((region) => {
-      // 2.b: Cantidad total de reclamos (históricos / de siempre) dentro del polígono
       let totalReclamos = 0;
+
       for (const r of allReports) {
         if (
           Number.isFinite(r.latitud) &&
@@ -202,7 +240,6 @@ export function RegionsTableUI({
         }
       }
 
-      // 2.d: Cantidad de reclamos activos dentro del polígono
       let reclamosActivos = 0;
       for (const r of reports) {
         if (
@@ -216,25 +253,95 @@ export function RegionsTableUI({
 
       const [cLat, cLon] = calculateCentroid(region.points);
       const defaultLoc = getFallbackLocalityFromCoords(cLat, cLon);
-      const localidad = resolvedLocalities[region.id] || defaultLoc;
+      const rawLoc = resolvedLocalities[region.id] || defaultLoc;
 
       return {
         ...region,
-        localidad,
+        nombre: formatTitleCase(region.nombre),
+        localidad: formatTitleCase(rawLoc),
         cantidadReclamos: totalReclamos,
-        ultimaAyuda: null as string | null, // 2.c: null por ahora
+        ultimaAyuda: null as string | null, // Sistema de ayuda no implementado aún
         reclamosActivos,
       };
     });
   }, [regiones, allReports, reports, resolvedLocalities]);
 
+  // Calcular estadísticas reales para los barrios de la API PostGIS
+  const barriosConStats = useMemo(() => {
+    if (!barriosGeoJson?.features) return [];
+
+    return barriosGeoJson.features.map((feature, idx) => {
+      const props = feature.properties || {};
+      const id = props.id || `barrio-${idx}`;
+      const rawNombre = props.nombre || `Barrio ${idx + 1}`;
+      const rawLocalidad = props.ciudad || "Corrientes Capital";
+
+      let totalReclamos = 0;
+      let reclamosActivos = 0;
+
+      if (feature.geometry) {
+        for (const r of allReports) {
+          if (
+            Number.isFinite(r.latitud) &&
+            Number.isFinite(r.longitud) &&
+            isPointInGeoJSONGeometry([r.latitud, r.longitud], feature.geometry)
+          ) {
+            totalReclamos++;
+          }
+        }
+
+        for (const r of reports) {
+          if (
+            Number.isFinite(r.latitud) &&
+            Number.isFinite(r.longitud) &&
+            isPointInGeoJSONGeometry([r.latitud, r.longitud], feature.geometry)
+          ) {
+            reclamosActivos++;
+          }
+        }
+      }
+
+      return {
+        id,
+        user_id: "system",
+        nombre: formatTitleCase(rawNombre),
+        lista_id: "barrios-api",
+        lista_nombre: "Barrios (API)",
+        points: [] as [number, number][],
+        created_at: new Date().toISOString(),
+        localidad: formatTitleCase(rawLocalidad),
+        cantidadReclamos: totalReclamos,
+        ultimaAyuda: null as string | null, // Sistema de ayuda no implementado aún
+        reclamosActivos,
+      };
+    });
+  }, [barriosGeoJson, allReports, reports]);
+
+  // Estado auxiliar para saber si la vista activa es Barrios (API)
+  const isBarriosSelected = useMemo(() => {
+    return (
+      selectedType === "Barrios" ||
+      selectedType === "Barrios (API)" ||
+      activeListFilter === "Barrios" ||
+      activeListFilter === "Barrios (API)"
+    );
+  }, [selectedType, activeListFilter]);
+
   // Filtrado por Tipo/Lista y Buscador
   const filteredRegiones = useMemo(() => {
+    if (isBarriosSelected) {
+      return barriosConStats.filter((item) => {
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase().trim();
+          return item.nombre.toLowerCase().includes(query);
+        }
+        return true;
+      });
+    }
+
     return regionesConStats.filter((item) => {
       if (selectedType !== "TODOS") {
-        if (selectedType === "Barrios") {
-          return false;
-        } else if (
+        if (
           item.lista_id !== selectedType &&
           item.lista_nombre !== selectedType
         ) {
@@ -251,18 +358,83 @@ export function RegionsTableUI({
 
       return true;
     });
-  }, [regionesConStats, selectedType, searchQuery]);
+  }, [
+    regionesConStats,
+    barriosConStats,
+    selectedType,
+    searchQuery,
+    isBarriosSelected,
+  ]);
+
+  // Manejo de ordenamiento dinámico con ciclo de 3 estados (1° orden primario, 2° orden secundario, 3° reset a Nombre A-Z por defecto)
+  const handleSort = (field: SortField) => {
+    if (field === "nombre") {
+      if (sortField === "nombre") {
+        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+      } else {
+        setSortField("nombre");
+        setSortOrder("asc");
+      }
+      return;
+    }
+
+    if (sortField === field) {
+      const primaryOrder: SortOrder = field === "localidad" ? "asc" : "desc";
+      if (sortOrder === primaryOrder) {
+        // 2° click: cambiar a orden secundario
+        setSortOrder(primaryOrder === "asc" ? "desc" : "asc");
+      } else {
+        // 3° click: RESETEAR a estado por defecto (Nombre A-Z)
+        setSortField("nombre");
+        setSortOrder("asc");
+      }
+    } else {
+      // 1° click: activar esta columna en su orden primario
+      setSortField(field);
+      setSortOrder(field === "localidad" ? "asc" : "desc");
+    }
+  };
+
+  const sortedRegiones = useMemo(() => {
+    return [...filteredRegiones].sort((a, b) => {
+      const valA = a[sortField];
+      const valB = b[sortField];
+
+      // Valores nulos al final
+      if (valA === null || valA === undefined) return 1;
+      if (valB === null || valB === undefined) return -1;
+
+      if (typeof valA === "string" && typeof valB === "string") {
+        const cmp = valA.localeCompare(valB, "es", { sensitivity: "base" });
+        return sortOrder === "asc" ? cmp : -cmp;
+      }
+
+      if (typeof valA === "number" && typeof valB === "number") {
+        return sortOrder === "asc" ? valA - valB : valB - valA;
+      }
+
+      const dateA = new Date(valA).getTime();
+      const dateB = new Date(valB).getTime();
+      if (!isNaN(dateA) && !isNaN(dateB)) {
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+      }
+
+      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredRegiones, sortField, sortOrder]);
 
   // Manejo de checkboxes
   const isAllSelected =
-    filteredRegiones.length > 0 &&
-    filteredRegiones.every((r) => selectedRowIds.has(r.id));
+    sortedRegiones.length > 0 &&
+    sortedRegiones.every((r) => selectedRowIds.has(r.id));
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedRowIds(new Set());
     } else {
-      setSelectedRowIds(new Set(filteredRegiones.map((r) => r.id)));
+      setSelectedRowIds(new Set(sortedRegiones.map((r) => r.id)));
     }
   };
 
@@ -277,6 +449,12 @@ export function RegionsTableUI({
 
   // Botón Basura: activa modo selección o abre confirmación de borrado
   const handleTrashButtonClick = () => {
+    if (isBarriosSelected) {
+      alert(
+        "Los barrios provienen de la API del sistema y no se pueden eliminar."
+      );
+      return;
+    }
     if (!isDeleteMode) {
       setIsDeleteMode(true);
       setSelectedRowIds(new Set());
@@ -296,7 +474,7 @@ export function RegionsTableUI({
 
   // Exportar a Excel (CSV con UTF-8 BOM y datos reales)
   const handleExportExcel = () => {
-    if (filteredRegiones.length === 0) {
+    if (sortedRegiones.length === 0) {
       alert("No hay regiones para exportar.");
       return;
     }
@@ -311,7 +489,7 @@ export function RegionsTableUI({
       "Fecha de creación",
     ];
 
-    const rows = filteredRegiones.map((r) => [
+    const rows = sortedRegiones.map((r) => [
       `"${r.nombre.replace(/"/g, '""')}"`,
       `"${r.localidad}"`,
       r.cantidadReclamos,
@@ -374,14 +552,18 @@ export function RegionsTableUI({
     return [...baseOptions, ...listOpts];
   }, [listas]);
 
-  const currentTypeLabel =
-    typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
-      ?.label || "Todas las listas";
+  const currentTypeLabel = useMemo(() => {
+    if (isBarriosSelected) return "Barrios (API)";
+    return (
+      typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
+        ?.label || "Todas las listas"
+    );
+  }, [isBarriosSelected, typeOptions, selectedType]);
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans">
+    <div className="flex flex-col h-full min-h-0 gap-6 w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans">
       {/* Encabezado: Título y Controles */}
-      <div className="flex flex-col gap-4">
+      <div className="flex-shrink-0 flex flex-col gap-4">
         <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
           Regiones
         </h1>
@@ -405,15 +587,23 @@ export function RegionsTableUI({
                 <div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
                   {typeOptions.map((opt, idx) => {
                     const isSelected =
-                      selectedType === opt.id || selectedType === opt.label;
+                      opt.id === "Barrios"
+                        ? isBarriosSelected
+                        : selectedType === opt.id || selectedType === opt.label;
                     return (
                       <button
                         key={`${opt.id}-${idx}`}
                         onClick={() => {
-                          setSelectedType(opt.id);
+                          const targetId =
+                            opt.id === "Barrios" ? "Barrios" : opt.id;
+                          setSelectedType(targetId);
                           setIsTypeDropdownOpen(false);
                           onListFilterChange(
-                            opt.id === "TODOS" ? "Todo" : opt.label
+                            opt.id === "TODOS"
+                              ? "Todo"
+                              : opt.id === "Barrios"
+                                ? "Barrios"
+                                : opt.label
                           );
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
@@ -454,38 +644,44 @@ export function RegionsTableUI({
             </div>
 
             {/* Botón + Crear nueva región en mapa */}
-            <button
-              type="button"
-              onClick={onCreateRegion}
-              title="Crear nueva región en mapa"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer shrink-0"
+            <TooltipSign
+              label="Añadir nueva región en el mapa"
+              position="top"
+              delayMs={500}
             >
-              <Plus className="h-4 w-4" />
-            </button>
+              <button
+                type="button"
+                onClick={onCreateRegion}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </TooltipSign>
 
             {/* Botón Basura con estados y animaciones */}
             <div className="flex items-center gap-1.5 transition-all duration-200">
-              <button
-                type="button"
-                onClick={handleTrashButtonClick}
-                title={
-                  isDeleteMode
-                    ? "Confirmar eliminación de seleccionados"
-                    : "Modo eliminar regiones"
-                }
-                className={`flex h-9 items-center justify-center rounded-full border px-3 transition-all duration-200 cursor-pointer shadow-xs ${
-                  isDeleteMode
-                    ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
-                    : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50"
-                }`}
+              <TooltipSign
+                label="Eliminar una region"
+                position="top"
+                delayMs={500}
               >
-                <Trash2 className="h-4 w-4" />
-                {isDeleteMode && selectedRowIds.size > 0 && (
-                  <span className="ml-1.5 text-xs font-bold animate-in fade-in duration-150">
-                    {selectedRowIds.size}
-                  </span>
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={handleTrashButtonClick}
+                  className={`flex h-9 items-center justify-center rounded-full border px-3 transition-all duration-200 cursor-pointer shadow-xs ${
+                    isDeleteMode
+                      ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                      : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50"
+                  }`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isDeleteMode && selectedRowIds.size > 0 && (
+                    <span className="ml-1.5 text-xs font-bold animate-in fade-in duration-150">
+                      {selectedRowIds.size}
+                    </span>
+                  )}
+                </button>
+              </TooltipSign>
 
               {isDeleteMode && (
                 <button
@@ -511,12 +707,15 @@ export function RegionsTableUI({
         </div>
       </div>
 
-      {/* Tabla de Regiones */}
-      <div className="w-full overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-white">
+      {/* Tabla de Regiones (Caja contenedor que llena el espacio vertical) */}
+      <div
+        id="regiones-table-card"
+        className="flex-1 min-h-0 w-full rounded-3xl border border-gray-200 bg-white shadow-xs overflow-hidden flex flex-col"
+      >
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
+          <table className="w-full text-left text-sm relative border-collapse">
+            <thead className="sticky top-0 z-20 bg-white shadow-xs">
+              <tr className="border-b border-gray-200 bg-white select-none">
                 {isDeleteMode && (
                   <th className="w-12 px-4 py-3.5 text-center animate-in fade-in duration-200">
                     <input
@@ -527,141 +726,283 @@ export function RegionsTableUI({
                     />
                   </th>
                 )}
-                <th className="px-6 py-3.5 font-bold text-zinc-900">Nombre</th>
-                <th className="px-6 py-3.5 font-bold text-zinc-900">
-                  Localidad
+                {/* Nombre */}
+                <th
+                  onClick={() => handleSort("nombre")}
+                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                    sortField === "nombre"
+                      ? "text-zinc-900"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="leading-snug">Nombre</span>
+                    {sortField === "nombre" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
-                <th className="px-6 py-3.5 font-bold text-zinc-900">
-                  Cantidad de reclamos
+
+                {/* Localidad */}
+                <th
+                  onClick={() => handleSort("localidad")}
+                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                    sortField === "localidad"
+                      ? "text-zinc-900"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="leading-snug">Localidad</span>
+                    {sortField === "localidad" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
-                <th className="px-6 py-3.5 font-bold text-zinc-900">
-                  Última ayuda
+
+                {/* Cantidad de reclamos (Centrado, 2 líneas) */}
+                <th
+                  onClick={() => handleSort("cantidadReclamos")}
+                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                    sortField === "cantidadReclamos"
+                      ? "text-zinc-900"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="leading-snug text-center">
+                      Cantidad de
+                      <br />
+                      reclamos
+                    </span>
+                    {sortField === "cantidadReclamos" ? (
+                      sortOrder === "desc" ? (
+                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
-                <th className="px-6 py-3.5 font-bold text-zinc-900">
-                  Reclamos activos
+
+                {/* Última ayuda (Centrado, 2 líneas) */}
+                <th
+                  onClick={() => handleSort("ultimaAyuda")}
+                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                    sortField === "ultimaAyuda"
+                      ? "text-zinc-900"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="leading-snug text-center">
+                      Última
+                      <br />
+                      ayuda
+                    </span>
+                    {sortField === "ultimaAyuda" ? (
+                      sortOrder === "desc" ? (
+                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
+
+                {/* Reclamos activos (Centrado, 2 líneas) */}
+                <th
+                  onClick={() => handleSort("reclamosActivos")}
+                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                    sortField === "reclamosActivos"
+                      ? "text-zinc-900"
+                      : "text-zinc-700 hover:text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="leading-snug text-center">
+                      Reclamos
+                      <br />
+                      activos
+                    </span>
+                    {sortField === "reclamosActivos" ? (
+                      sortOrder === "desc" ? (
+                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
+                </th>
+
                 <th className="w-12 px-4 py-3.5 text-center"></th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-gray-200">
-              {filteredRegiones.length === 0 ? (
+              {sortedRegiones.length === 0 ? (
                 <tr>
                   <td
                     colSpan={isDeleteMode ? 7 : 6}
                     className="px-6 py-12 text-center text-zinc-400"
                   >
-                    No se encontraron regiones creadas.
+                    {isBarriosSelected && !barriosGeoJson
+                      ? "Cargando barrios..."
+                      : "No se encontraron regiones creadas."}
                   </td>
                 </tr>
               ) : (
-                filteredRegiones.map((region) => {
-                  const isChecked = selectedRowIds.has(region.id);
-                  const isSelected = selectedRegionId === region.id;
+                <>
+                  {sortedRegiones.map((region, index) => {
+                    const isChecked = selectedRowIds.has(region.id);
+                    const isSelected = selectedRegionId === region.id;
+                    const isLast = index === sortedRegiones.length - 1;
 
-                  return (
-                    <tr
-                      key={region.id}
-                      onClick={() => {
-                        if (isDeleteMode) {
-                          toggleSelectRow(region.id);
-                        } else {
-                          onSelectRegion(region.id);
-                        }
-                      }}
-                      className={`group transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-zinc-100"
-                          : isChecked
-                            ? "bg-red-50/60"
-                            : "hover:bg-zinc-50/80"
-                      }`}
-                    >
-                      {/* Checkbox (solo visible en modo eliminación) */}
-                      {isDeleteMode && (
+                    return (
+                      <tr
+                        key={region.id}
+                        id={`region-row-${region.id}`}
+                        onClick={() => {
+                          if (isDeleteMode) {
+                            toggleSelectRow(region.id);
+                          } else {
+                            onSelectRegion(region.id);
+                          }
+                        }}
+                        className={`group transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-zinc-100"
+                            : isChecked
+                              ? "bg-red-50/60"
+                              : "hover:bg-zinc-50/80"
+                        }`}
+                      >
+                        {/* Checkbox (solo visible en modo eliminación) */}
+                        {isDeleteMode && (
+                          <td
+                            className={`px-4 text-center animate-in fade-in duration-200 ${
+                              isLast ? "pt-4 pb-6" : "py-4"
+                            }`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleSelectRow(region.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                            />
+                          </td>
+                        )}
+
+                        {/* Nombre */}
                         <td
-                          className="px-4 py-4 text-center animate-in fade-in duration-200"
+                          className={`px-6 font-medium text-zinc-800 ${
+                            isLast ? "pt-4 pb-6" : "py-4"
+                          }`}
+                        >
+                          {region.nombre}
+                        </td>
+
+                        {/* Localidad */}
+                        <td
+                          className={`px-6 text-zinc-700 ${
+                            isLast ? "pt-4 pb-6" : "py-4"
+                          }`}
+                        >
+                          {region.localidad}
+                        </td>
+
+                        {/* Cantidad de reclamos (históricos de siempre, centrado) */}
+                        <td
+                          className={`px-6 text-zinc-700 text-center font-medium ${
+                            isLast ? "pt-4 pb-6" : "py-4"
+                          }`}
+                        >
+                          {region.cantidadReclamos}
+                        </td>
+
+                        {/* Última ayuda (centrado, siempre null / -) */}
+                        <td
+                          className={`px-6 text-zinc-400 text-center ${
+                            isLast ? "pt-4 pb-6" : "py-4"
+                          }`}
+                        >
+                          {region.ultimaAyuda ?? "-"}
+                        </td>
+
+                        {/* Reclamos activos (cantidad numérica, centrado) */}
+                        <td
+                          className={`px-6 text-zinc-700 font-medium text-center ${
+                            isLast ? "pt-4 pb-6" : "py-4"
+                          }`}
+                        >
+                          {region.reclamosActivos}
+                        </td>
+
+                        {/* Opciones ... */}
+                        <td
+                          className="px-4 py-4 text-center relative"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleSelectRow(region.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveRowMenuId((prev) =>
+                                prev === region.id ? null : region.id
+                              )
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-gray-200 hover:text-zinc-800 transition-colors cursor-pointer mx-auto"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+
+                          {activeRowMenuId === region.id && (
+                            <div className="absolute right-4 top-full mt-1 z-50 w-36 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                              <button
+                                onClick={() => {
+                                  onSelectRegion(region.id);
+                                  setActiveRowMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+                              >
+                                <MapPin className="h-3.5 w-3.5" />
+                                Ver en mapa
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setActiveRowMenuId(null);
+                                  await onDeleteRegions([region.id]);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
                         </td>
-                      )}
-
-                      {/* Nombre */}
-                      <td className="px-6 py-4 font-medium text-zinc-800">
-                        {region.nombre}
-                      </td>
-
-                      {/* Localidad */}
-                      <td className="px-6 py-4 text-zinc-700">
-                        {region.localidad}
-                      </td>
-
-                      {/* Cantidad de reclamos (históricos de siempre) */}
-                      <td className="px-6 py-4 text-zinc-700">
-                        {region.cantidadReclamos}
-                      </td>
-
-                      {/* Última ayuda (null) */}
-                      <td className="px-6 py-4 text-zinc-400">
-                        {region.ultimaAyuda ?? "-"}
-                      </td>
-
-                      {/* Reclamos activos (cantidad numérica de reclamos activos) */}
-                      <td className="px-6 py-4 text-zinc-700 font-medium">
-                        {region.reclamosActivos}
-                      </td>
-
-                      {/* Opciones ... */}
-                      <td
-                        className="px-4 py-4 text-center relative"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActiveRowMenuId((prev) =>
-                              prev === region.id ? null : region.id
-                            )
-                          }
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-gray-200 hover:text-zinc-800 transition-colors cursor-pointer mx-auto"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-
-                        {activeRowMenuId === region.id && (
-                          <div className="absolute right-4 top-full mt-1 z-50 w-36 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                            <button
-                              onClick={() => {
-                                onSelectRegion(region.id);
-                                setActiveRowMenuId(null);
-                              }}
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 cursor-pointer"
-                            >
-                              <MapPin className="h-3.5 w-3.5" />
-                              Ver en mapa
-                            </button>
-                            <button
-                              onClick={async () => {
-                                setActiveRowMenuId(null);
-                                await onDeleteRegions([region.id]);
-                              }}
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Eliminar
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
+                      </tr>
+                    );
+                  })}
+                </>
               )}
             </tbody>
           </table>

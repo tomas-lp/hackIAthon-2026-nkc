@@ -26,3 +26,56 @@ export function isPointInPolygon(
 
   return inside;
 }
+
+/**
+ * Evalúa si un punto [lat, lng] cae dentro de una geometría GeoJSON (Polygon o MultiPolygon).
+ */
+export function isPointInGeoJSONGeometry(
+  point: [number, number],
+  geometry: GeoJSON.Geometry
+): boolean {
+  if (!geometry) return false;
+
+  if (geometry.type === "Polygon") {
+    const ring = geometry.coordinates[0] || [];
+    const vs: [number, number][] = ring.map(([lng, lat]) => [lat, lng]);
+    return isPointInPolygon(point, vs);
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    for (const poly of geometry.coordinates) {
+      const ring = poly[0] || [];
+      const vs: [number, number][] = ring.map(([lng, lat]) => [lat, lng]);
+      if (isPointInPolygon(point, vs)) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Obtiene todos los puntos [lat, lng] de una geometría GeoJSON (Polygon o MultiPolygon)
+ * para calcular centroides o bounding box.
+ */
+export function extractGeoJSONPoints(
+  geometry: GeoJSON.Geometry
+): [number, number][] {
+  const points: [number, number][] = [];
+  if (!geometry) return points;
+
+  if (geometry.type === "Polygon") {
+    const ring = geometry.coordinates[0] || [];
+    for (const [lng, lat] of ring) {
+      points.push([lat, lng]);
+    }
+  } else if (geometry.type === "MultiPolygon") {
+    for (const poly of geometry.coordinates) {
+      const ring = poly[0] || [];
+      for (const [lng, lat] of ring) {
+        points.push([lat, lng]);
+      }
+    }
+  }
+
+  return points;
+}

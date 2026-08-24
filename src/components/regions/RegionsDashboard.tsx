@@ -12,7 +12,12 @@ import { RegionNamePopup } from "./RegionNamePopup";
 import { NewListModal } from "@/components/ui/NewListModal";
 import { RegionsTableUI } from "./RegionsTableUI";
 import { regionService } from "@/services/regionService";
-import { ChevronRight } from "lucide-react";
+import {
+  barrioService,
+  BarriosFeatureCollection,
+} from "@/services/barrioService";
+import { ChevronRight, ArrowLeft } from "lucide-react";
+import { TooltipSign } from "@/components/ui/TooltipSign";
 import { useReports } from "@/hooks/useReports";
 
 interface RegionsDashboardProps {
@@ -35,6 +40,8 @@ export function RegionsDashboard({
     initialAllReports.length > 0 ? initialAllReports : initialReports
   );
   const [listas, setListas] = useState<RegionLista[]>([]);
+  const [barriosGeoJson, setBarriosGeoJson] =
+    useState<BarriosFeatureCollection | null>(null);
   const [activeAdminTab, setActiveAdminTab] = useState<string>("Regiones");
   const [activeHeaderTab, setActiveHeaderTab] = useState<string>("Todo");
 
@@ -44,6 +51,7 @@ export function RegionsDashboard({
   const [showNamePopup, setShowNamePopup] = useState(false);
   const [showNewListModal, setShowNewListModal] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [isFocusedRegionView, setIsFocusedRegionView] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const {
@@ -57,15 +65,18 @@ export function RegionsDashboard({
     resetFilters,
   } = useReports(initialReports);
 
-  // Cargar regiones y listas al montar
+  // Cargar regiones, listas y barrios al montar
   const refreshData = useCallback(async () => {
     try {
-      const [fetchedRegiones, fetchedListas] = await Promise.all([
-        regionService.getRegions(),
-        regionService.getLists(),
-      ]);
+      const [fetchedRegiones, fetchedListas, fetchedBarrios] =
+        await Promise.all([
+          regionService.getRegions(),
+          regionService.getLists(),
+          barrioService.getBarriosGeoJson(),
+        ]);
       setRegiones(fetchedRegiones);
       setListas(fetchedListas);
+      setBarriosGeoJson(fetchedBarrios);
     } catch (err) {
       console.error("Error refreshing regions data:", err);
     }
@@ -155,13 +166,14 @@ export function RegionsDashboard({
 
   const handleSelectRegion = (id: string) => {
     setSelectedRegionId(id);
-    setActiveAdminTab("Mapa"); // Ir a la vista de mapa enfocada
+    setIsFocusedRegionView(true);
+  };
+
+  const handleBackToList = () => {
+    setIsFocusedRegionView(false);
   };
 
   // 1. Filtrado de polígonos en el mapa:
-  // - "Todo": solo mapa de calor con reclamos normal, SIN polígonos.
-  // - "Barrios": opción vacía por ahora.
-  // - "Lista X": muestra ÚNICAMENTE los polígonos pertenecientes a esa lista.
   const displayedMapRegiones = useMemo(() => {
     if (activeHeaderTab === "Todo" || activeHeaderTab === "Barrios") {
       return [];
@@ -173,29 +185,53 @@ export function RegionsDashboard({
     });
   }, [regiones, activeHeaderTab]);
 
-  // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa
+  // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa o se clickeó una región/barrio
   const isMapVisible =
-    activeAdminTab !== "Regiones" || isDrawing || showNamePopup;
+    isFocusedRegionView ||
+    activeAdminTab !== "Regiones" ||
+    isDrawing ||
+    showNamePopup;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-zinc-100 font-sans">
-      {/* Botón flotante para abrir sidebar si está colapsado */}
-      {sidebarCollapsed && !isDrawing && !showNamePopup && (
-        <button
-          onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
-          title="Mostrar panel"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+      {/* Botón Volver a la lista de regiones (arriba a la izquierda en vista de mapa enfocada) */}
+      {isFocusedRegionView && (
+        <div className="absolute top-6 left-6 z-[100]">
+          <TooltipSign label="Volver a la lista de regiones" position="right">
+            <button
+              onClick={handleBackToList}
+              className="flex items-center justify-center h-11 w-11 rounded-2xl border border-gray-200 bg-white text-zinc-700 shadow-md hover:bg-gray-50 hover:text-zinc-900 transition-all active:scale-95 cursor-pointer"
+              aria-label="Volver a la lista"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          </TooltipSign>
+        </div>
       )}
+
+      {/* Botón flotante para abrir sidebar si está colapsado */}
+      {sidebarCollapsed &&
+        !isDrawing &&
+        !showNamePopup &&
+        !isFocusedRegionView && (
+          <button
+            onClick={() => setSidebarCollapsed(false)}
+            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            title="Mostrar panel"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
 
       {/* Menú lateral izquierdo (Sidebar de Home) */}
       <div
         className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
         style={{
           transform:
-            sidebarCollapsed || isDrawing || showNamePopup
+            sidebarCollapsed ||
+            isDrawing ||
+            showNamePopup ||
+            isFocusedRegionView
               ? "translateX(-110%)"
               : "translateX(0)",
         }}
@@ -241,10 +277,10 @@ export function RegionsDashboard({
         onSave={handleCreateNewList}
       />
 
-      {/* Contenido Principal: Tabla de Regiones o Mapa */}
+      {/* Contenido Principal: Tabla de Regiones o Mapa Limpio Enfolcado */}
       {!isMapVisible ? (
         <main
-          className={`absolute inset-0 pt-20 pb-8 px-4 overflow-y-auto z-10 flex justify-center transition-all duration-300 ease-in-out ${
+          className={`absolute inset-0 pt-20 pb-6 px-4 z-10 flex justify-center transition-all duration-300 ease-in-out ${
             sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
           }`}
         >
@@ -253,6 +289,7 @@ export function RegionsDashboard({
             listas={listas}
             reports={reports}
             allReports={allReports}
+            barriosGeoJson={barriosGeoJson}
             activeListFilter={activeHeaderTab}
             onListFilterChange={(listName) => setActiveHeaderTab(listName)}
             onSelectRegion={handleSelectRegion}
@@ -266,12 +303,16 @@ export function RegionsDashboard({
           <RegionsMap
             reports={reports}
             regiones={displayedMapRegiones}
+            barriosGeoJson={barriosGeoJson}
+            activeHeaderTab={activeHeaderTab}
             isDrawing={isDrawing}
             draftPoints={draftPoints}
             onAddDraftPoint={handleAddDraftPoint}
             onFinishDrawing={handleFinishDrawing}
             onCancelDrawing={handleCancelDrawing}
             selectedRegionId={selectedRegionId}
+            hideHeatmap={isFocusedRegionView}
+            showAllBarrios={isFocusedRegionView}
           />
         </section>
       )}

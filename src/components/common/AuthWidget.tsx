@@ -3,6 +3,7 @@
 import { User, LogOut, X, Loader2, Sun, Moon } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { loginWithCredentials } from "@/app/auth/actions";
+import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface AuthWidgetProps {
   isAdmin: boolean;
@@ -75,41 +76,49 @@ export function AuthWidget({
             </button>
 
             {/* Circular User Profile Button */}
-            <button
-              onClick={() => setShowUserMenu((prev) => !prev)}
-              title="Menú de usuario"
-              className={`flex items-center justify-center rounded-full border border-white/40 p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
-                showUserMenu
-                  ? "bg-zinc-800 text-white border-zinc-700"
-                  : "bg-white/70 text-zinc-700 hover:bg-white/90"
-              }`}
-            >
-              <User className="h-5 w-5" />
-            </button>
+            <TooltipSign label="Menú de usuario" position="left" delayMs={500}>
+              <button
+                onClick={() => setShowUserMenu((prev) => !prev)}
+                className={`flex items-center justify-center rounded-full border border-white/40 p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
+                  showUserMenu
+                    ? "bg-zinc-800 text-white border-zinc-700"
+                    : "bg-white/70 text-zinc-700 hover:bg-white/90"
+                }`}
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </TooltipSign>
           </div>
 
           {/* Theme Toggle Button (Moon / Sun) */}
-          <button
-            onClick={toggleDarkMode}
-            title={
+          <TooltipSign
+            label={
               isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
             }
-            className="flex items-center justify-center rounded-full border border-white/40 bg-white/70 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
+            position="left"
+            delayMs={500}
           >
-            {isDarkMode ? (
-              <Sun className="h-5 w-5 text-amber-500" />
-            ) : (
-              <Moon className="h-5 w-5 text-indigo-600" />
-            )}
-          </button>
+            <button
+              onClick={toggleDarkMode}
+              className="flex items-center justify-center rounded-full border border-white/40 bg-white/70 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
+            >
+              {isDarkMode ? (
+                <Sun className="h-5 w-5 text-amber-500" />
+              ) : (
+                <Moon className="h-5 w-5 text-indigo-600" />
+              )}
+            </button>
+          </TooltipSign>
         </>
       ) : (
-        <button
-          onClick={onLoginClick}
-          className="flex items-center justify-center rounded-full border border-white/40 bg-white/60 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
-        >
-          <User className="h-5 w-5" />
-        </button>
+        <TooltipSign label="Menú de usuario" position="left" delayMs={500}>
+          <button
+            onClick={onLoginClick}
+            className="flex items-center justify-center rounded-full border border-white/40 bg-white/60 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
+          >
+            <User className="h-5 w-5" />
+          </button>
+        </TooltipSign>
       )}
     </div>
   );

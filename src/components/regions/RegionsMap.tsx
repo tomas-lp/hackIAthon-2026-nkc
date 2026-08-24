@@ -5,6 +5,8 @@ import { Report } from "@/types/report";
 import { RegionPersonalizada } from "@/types/region";
 import { Loader2 } from "lucide-react";
 
+import { BarriosFeatureCollection } from "@/services/barrioService";
+
 const RegionsMapInternal = dynamic(() => import("./RegionsMapInternal"), {
   ssr: false,
   loading: () => (
@@ -22,32 +24,44 @@ const RegionsMapInternal = dynamic(() => import("./RegionsMapInternal"), {
 export function RegionsMap({
   reports,
   regiones,
+  barriosGeoJson,
+  activeHeaderTab,
   isDrawing,
   draftPoints,
   onAddDraftPoint,
   onFinishDrawing,
   onCancelDrawing,
   selectedRegionId,
+  hideHeatmap,
+  showAllBarrios,
 }: {
   reports: Report[];
   regiones: RegionPersonalizada[];
+  barriosGeoJson?: BarriosFeatureCollection | null;
+  activeHeaderTab?: string;
   isDrawing: boolean;
   draftPoints: [number, number][];
   onAddDraftPoint: (pt: [number, number]) => void;
   onFinishDrawing: () => void;
   onCancelDrawing: () => void;
   selectedRegionId: string | null;
+  hideHeatmap?: boolean;
+  showAllBarrios?: boolean;
 }) {
   return (
     <RegionsMapInternal
       reports={reports}
       regiones={regiones}
+      barriosGeoJson={barriosGeoJson}
+      activeHeaderTab={activeHeaderTab}
       isDrawing={isDrawing}
       draftPoints={draftPoints}
       onAddDraftPoint={onAddDraftPoint}
       onFinishDrawing={onFinishDrawing}
       onCancelDrawing={onCancelDrawing}
       selectedRegionId={selectedRegionId}
+      hideHeatmap={hideHeatmap}
+      showAllBarrios={showAllBarrios}
     />
   );
 }
