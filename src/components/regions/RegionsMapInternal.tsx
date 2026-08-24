@@ -51,6 +51,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
     draftPoints,
     onAddDraftPoint,
     onFinishDrawing,
+    onCancelDrawing,
     selectedRegionId,
   } = props;
   const validReports = useMemo(
@@ -187,6 +188,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
           draftPoints={draftPoints}
           onAddPoint={onAddDraftPoint}
           onFinish={onFinishDrawing}
+          onCancel={onCancelDrawing}
         />
 
         {/* Marcadores de puntos del borrador */}

@@ -477,6 +477,7 @@ export default function ReportMapInternal({
   draftPoints = [],
   onAddDraftPoint,
   onFinishDrawing,
+  onCancelDrawing,
   showNamePopup = false,
   isEditingRegions = false,
   onDeleteRegion,
@@ -877,6 +878,7 @@ export default function ReportMapInternal({
               draftPoints={draftPoints}
               onAddPoint={onAddDraftPoint || (() => {})}
               onFinish={onFinishDrawing || (() => {})}
+              onCancel={onCancelDrawing}
             />
             <DraftMarkers isDrawing={true} draftPoints={draftPoints} />
           </>

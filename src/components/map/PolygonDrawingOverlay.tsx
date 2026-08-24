@@ -89,15 +89,32 @@ export function DrawingOverlay({
   draftPoints,
   onAddPoint,
   onFinish,
+  onCancel,
 }: {
   isDrawing: boolean;
   draftPoints: [number, number][];
   onAddPoint: (pt: [number, number]) => void;
   onFinish: () => void;
+  onCancel?: () => void;
 }) {
   const map = useMap();
   const [mousePos, setMousePos] = useState<[number, number] | null>(null);
   const [isSnapping, setIsSnapping] = useState(false);
+
+  useEffect(() => {
+    if (!isDrawing) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel?.();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isDrawing, onCancel]);
 
   useEffect(() => {
     if (isDrawing) {

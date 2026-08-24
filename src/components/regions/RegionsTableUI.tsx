@@ -645,14 +645,23 @@ export function RegionsTableUI({
 
             {/* Botón + Crear nueva región en mapa */}
             <TooltipSign
-              label="Añadir nueva región en el mapa"
+              label={
+                isBarriosSelected
+                  ? "No se pueden añadir barrios"
+                  : "Añadir nueva región en el mapa"
+              }
               position="top"
               delayMs={500}
             >
               <button
                 type="button"
+                disabled={isBarriosSelected}
                 onClick={onCreateRegion}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer shrink-0"
+                className={`flex h-9 w-9 items-center justify-center rounded-full border shadow-xs transition-colors shrink-0 ${
+                  isBarriosSelected
+                    ? "border-gray-200 bg-white text-zinc-300 cursor-not-allowed pointer-events-none"
+                    : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50 cursor-pointer"
+                }`}
               >
                 <Plus className="h-4 w-4" />
               </button>
