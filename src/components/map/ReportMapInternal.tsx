@@ -5,6 +5,7 @@ import {
   MapContainer,
   TileLayer,
   Marker,
+  Tooltip,
   useMapEvents,
   GeoJSON,
   useMap,
@@ -21,7 +22,7 @@ import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { LocateButton } from "./LocateButton";
 import { SafeRoute } from "./SafeRoute";
-import { Flame } from "lucide-react";
+import { Flame, ShieldCheck, PlusSquare } from "lucide-react";
 import { RouteResult } from "@/lib/routing";
 
 interface ReportMapInternalProps {
@@ -155,7 +156,7 @@ function createHealthCenterIcon(zoom: number, isVisible: boolean = true) {
   return L.divIcon({
     className: `custom-health-center-marker ${isVisible ? "is-visible" : "is-hidden"}`,
     html: `
-      <div class="marker-inner transition-all duration-300 ease-out" style="
+      <div class="marker-inner" style="
         background-color: #ef4444;
         width: ${size}px;
         height: ${size}px;
@@ -167,7 +168,6 @@ function createHealthCenterIcon(zoom: number, isVisible: boolean = true) {
         justify-content: center;
         color: #ffffff;
         opacity: ${isVisible ? 1 : 0};
-        transform: scale(${isVisible ? 1 : 0.4});
         pointer-events: ${isVisible ? "auto" : "none"};
       ">
         <svg width="${size * 0.65}" height="${size * 0.65}" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
@@ -701,6 +701,7 @@ export default function ReportMapInternal({
         })}
 
         {showEvacuationCenters &&
+          !showBarrios &&
           validSafeZones.map((sz) => {
             const isSelected = selectedSafeZone?.id === sz.id;
             return (
@@ -717,12 +718,20 @@ export default function ReportMapInternal({
                       ? onSelectSafeZone?.(sz)
                       : onSelectSafeZone?.(sz),
                 }}
-                zIndexOffset={1000}
-              />
+                zIndexOffset={isSelected ? 1100 : 1000}
+              >
+                <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
+                  <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>{sz.nombre}</span>
+                  </div>
+                </Tooltip>
+              </Marker>
             );
           })}
 
         {showMedicalCenters &&
+          !showBarrios &&
           validHealthCenters.map((hc) => {
             const isSelected = selectedHealthCenter?.id === hc.id;
             const isVisible = currentZoom >= 11 || isSelected;
@@ -741,7 +750,14 @@ export default function ReportMapInternal({
                       : onSelectHealthCenter?.(hc),
                 }}
                 zIndexOffset={isSelected ? 1100 : 1000}
-              />
+              >
+                <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                  <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                    <PlusSquare className="h-3.5 w-3.5 text-red-600" />
+                    <span>{hc.nombre}</span>
+                  </div>
+                </Tooltip>
+              </Marker>
             );
           })}
 

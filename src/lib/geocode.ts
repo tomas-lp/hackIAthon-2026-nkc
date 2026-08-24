@@ -56,6 +56,110 @@ async function fetchAddress(lat: number, lon: number): Promise<string> {
   );
 }
 
+export interface ResolvedLocationDetails {
+  direccion: string;
+  localidad: string;
+  departamento: string;
+  fullAddress: string;
+}
+
+export async function resolveLocationDetails(
+  lat: number,
+  lon: number
+): Promise<ResolvedLocationDetails> {
+  try {
+    const response = await fetch(
+      `/api/reverse-geocode?lat=${lat}&lon=${lon}&lang=es`
+    );
+
+    if (!response.ok) {
+      return {
+        direccion: "Corrientes Capital",
+        localidad: "Corrientes",
+        departamento: "Capital",
+        fullAddress: "Corrientes, Capital, Argentina",
+      };
+    }
+
+    const data = await response.json();
+    const address = data.address ?? {};
+
+    const street =
+      address.road ||
+      address.pedestrian ||
+      address.path ||
+      address.footway ||
+      address.street ||
+      address.avenue ||
+      address.highway ||
+      address.residential ||
+      "";
+    const houseNumber = address.house_number || "";
+    const placeName =
+      address.amenity ||
+      address.building ||
+      address.school ||
+      address.hospital ||
+      address.leisure ||
+      address.shop ||
+      address.tourism ||
+      "";
+    const neighborhood =
+      address.neighbourhood ||
+      address.suburb ||
+      address.quarter ||
+      address.city_district ||
+      "";
+
+    let direccion = "";
+    if (street && houseNumber) {
+      direccion = `${street} ${houseNumber}`;
+    } else if (street && placeName) {
+      direccion = `${placeName}, ${street}`;
+    } else if (street) {
+      direccion = street;
+    } else if (placeName) {
+      direccion = placeName;
+    } else if (neighborhood) {
+      direccion = `Barrio ${neighborhood}`;
+    } else if (data.display_name) {
+      const parts = data.display_name.split(",").map((p: string) => p.trim());
+      direccion = parts.slice(0, 2).join(", ");
+    } else {
+      direccion = "Corrientes";
+    }
+
+    const locality =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      (neighborhood ? `Corrientes (${neighborhood})` : "Corrientes");
+
+    const departamento =
+      address.county ||
+      address.state_district ||
+      (locality.toLowerCase().includes("corrientes") ? "Capital" : "Capital");
+
+    const parts = [direccion, locality, departamento].filter(Boolean);
+    const fullAddress = data.display_name || parts.join(", ");
+
+    return {
+      direccion,
+      localidad: locality,
+      departamento,
+      fullAddress,
+    };
+  } catch {
+    return {
+      direccion: "Corrientes Capital",
+      localidad: "Corrientes",
+      departamento: "Capital",
+      fullAddress: "Corrientes, Capital, Argentina",
+    };
+  }
+}
+
 export async function resolveAddress(
   lat: number,
   lon: number

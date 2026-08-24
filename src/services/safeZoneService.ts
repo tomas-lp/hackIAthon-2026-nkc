@@ -71,6 +71,21 @@ export class SafeZoneService {
 
     return true;
   }
+
+  async deleteSafeZones(ids: string[]): Promise<boolean> {
+    if (!ids || ids.length === 0) return true;
+    const { error } = await this.supabase
+      .from("safe_zones")
+      .delete()
+      .in("id", ids);
+
+    if (error) {
+      console.error("Error bulk deleting safe zones:", error.message);
+      return false;
+    }
+
+    return true;
+  }
 }
 
 export const safeZoneService = new SafeZoneService();

@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSafeZones } from "@/hooks/useSafeZones";
-import { SafeZone } from "@/types/safeZone";
+import { CreateSafeZoneDto, SafeZone } from "@/types/safeZone";
 import { safeZoneService } from "@/services/safeZoneService";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
+import { resolveLocationDetails } from "@/lib/geocode";
 
 export function useSafeZoneSelection() {
   const { safeZones, refresh: refreshSafeZones } = useSafeZones();
@@ -37,13 +38,42 @@ export function useSafeZoneSelection() {
   const [showSafeZoneModal, setShowSafeZoneModal] = useState(false);
 
   const handleSaveSafeZone = useCallback(
-    async (dto: { nombre: string; descripcion: string }) => {
+    async (dto: Omit<CreateSafeZoneDto, "latitud" | "longitud">) => {
       if (isEditingSingleSafeZone && selectedSafeZone) {
-        await safeZoneService.updateSafeZone(selectedSafeZone.id, dto);
+        const updated = await safeZoneService.updateSafeZone(
+          selectedSafeZone.id,
+          dto
+        );
+        if (updated) {
+          setSelectedSafeZone(updated);
+        } else {
+          setSelectedSafeZone({ ...selectedSafeZone, ...dto });
+        }
         setIsEditingSingleSafeZone(false);
       } else if (draftLocation) {
+        let direccion = dto.direccion;
+        let localidad = dto.localidad;
+        let departamento = dto.departamento;
+
+        if (!direccion || !localidad) {
+          try {
+            const loc = await resolveLocationDetails(
+              draftLocation.lat,
+              draftLocation.lng
+            );
+            direccion = direccion || loc.direccion;
+            localidad = localidad || loc.localidad;
+            departamento = departamento || loc.departamento;
+          } catch {
+            // Ignorar fallback
+          }
+        }
+
         await safeZoneService.createSafeZone({
           ...dto,
+          direccion: direccion || null,
+          localidad: localidad || null,
+          departamento: departamento || null,
           latitud: draftLocation.lat,
           longitud: draftLocation.lng,
         });
@@ -53,7 +83,13 @@ export function useSafeZoneSelection() {
       }
       refreshSafeZones();
     },
-    [isEditingSingleSafeZone, selectedSafeZone, draftLocation, refreshSafeZones]
+    [
+      isEditingSingleSafeZone,
+      selectedSafeZone,
+      draftLocation,
+      refreshSafeZones,
+      setSelectedSafeZone,
+    ]
   );
 
   const handleDeleteSafeZone = useCallback(async () => {
