@@ -1,6 +1,7 @@
 "use client";
 
-import { SafeZone } from "@/types/safeZone";
+import { SafeZone, SafeZoneType } from "@/types/safeZone";
+import { SAFE_ZONE_TYPE_LABELS } from "@/types/marker";
 import {
   X,
   MapPin,
@@ -92,22 +93,25 @@ export function SafeZoneDetailSidebar({
 
   if (!activeSafeZone) return null;
 
-  const isDescSameAsName =
-    activeSafeZone.descripcion &&
-    activeSafeZone.nombre &&
-    activeSafeZone.descripcion.trim().toLowerCase() ===
-      activeSafeZone.nombre.trim().toLowerCase();
+  const fullLocation = [
+    activeSafeZone.direccion,
+    activeSafeZone.localidad,
+    activeSafeZone.departamento,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const displayAddress =
     asyncAddress ||
-    (!isDescSameAsName && activeSafeZone.descripcion) ||
+    fullLocation ||
     `Lat ${activeSafeZone.latitud.toFixed(4)}, Lng ${activeSafeZone.longitud.toFixed(4)}`;
 
-  const showDescription =
-    !typeText &&
-    activeSafeZone.descripcion &&
-    activeSafeZone.descripcion !== displayAddress &&
-    !isDescSameAsName;
+  const tipoLabel =
+    typeText ||
+    (activeSafeZone.tipo &&
+    (activeSafeZone.tipo as SafeZoneType) in SAFE_ZONE_TYPE_LABELS
+      ? SAFE_ZONE_TYPE_LABELS[activeSafeZone.tipo as SafeZoneType]
+      : activeSafeZone.tipo?.replace("_", " "));
 
   return (
     <aside
@@ -130,13 +134,13 @@ export function SafeZoneDetailSidebar({
         </div>
         <button
           onClick={handleClose}
-          className="rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200/50 hover:text-zinc-800"
+          className="rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200/50 hover:text-zinc-800 cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="flex flex-col rounded-[14px] border border-gray-200 bg-white p-3.5 gap-4">
+      <div className="flex flex-col rounded-[14px] border border-gray-200 bg-white p-3.5 gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-[16px] font-bold text-zinc-900 leading-snug">
             {activeSafeZone.nombre}
@@ -146,27 +150,36 @@ export function SafeZoneDetailSidebar({
           </span>
         </div>
 
-        {typeText && (
+        {tipoLabel && (
           <div className="flex items-center gap-2.5 text-xs p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
             <Building2 className="h-4 w-4 text-zinc-400 shrink-0" />
-            <span className="font-medium text-zinc-600 leading-relaxed">
-              Tipo: {typeText}
+            <span className="font-medium text-zinc-700 leading-relaxed">
+              Tipo: {tipoLabel}
             </span>
           </div>
         )}
 
+        {activeSafeZone.capacidad_maxima !== null &&
+          activeSafeZone.capacidad_maxima !== undefined && (
+            <div className="flex items-center gap-2.5 text-xs p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl text-emerald-800">
+              <span className="font-semibold">
+                Capacidad máxima: {activeSafeZone.capacidad_maxima} personas
+              </span>
+            </div>
+          )}
+
         <div className="flex items-start gap-2.5 text-xs p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
           <MapPin className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
-          <span className="font-medium text-zinc-600 leading-relaxed">
+          <span className="font-medium text-zinc-700 leading-relaxed">
             {displayAddress}
           </span>
         </div>
 
-        {showDescription && (
-          <div className="flex items-start gap-2.5 text-xs px-1">
+        {activeSafeZone.descripcion && (
+          <div className="flex items-start gap-2.5 text-xs p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
             <AlignLeft className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
-            <span className="font-medium text-zinc-600 leading-relaxed italic">
-              &quot;{activeSafeZone.descripcion}&quot;
+            <span className="font-medium text-zinc-600 leading-relaxed">
+              {activeSafeZone.descripcion}
             </span>
           </div>
         )}

@@ -130,6 +130,32 @@ export const healthCenterService = {
     return data as HealthCenter;
   },
 
+  async createHealthCenter(dto: {
+    nombre: string;
+    tipo: HealthCenterType;
+    lat: number;
+    lon: number;
+    localidad?: string | null;
+    departamento?: string | null;
+    direccion?: string | null;
+    codigo_postal?: string | null;
+    sitio_web?: string | null;
+  }): Promise<HealthCenter | null> {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("health_centers")
+      .insert([dto])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error al crear centro de salud:", error.message);
+      return null;
+    }
+
+    return data as HealthCenter;
+  },
+
   async deleteHealthCenter(id: string): Promise<boolean> {
     const supabase = createClient();
     const { error } = await supabase
@@ -139,6 +165,25 @@ export const healthCenterService = {
 
     if (error) {
       console.error("Error al eliminar centro de salud:", error.message);
+      return false;
+    }
+
+    return true;
+  },
+
+  async deleteHealthCenters(ids: string[]): Promise<boolean> {
+    if (!ids || ids.length === 0) return true;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("health_centers")
+      .delete()
+      .in("id", ids);
+
+    if (error) {
+      console.error(
+        "Error al eliminar centros de salud masivamente:",
+        error.message
+      );
       return false;
     }
 

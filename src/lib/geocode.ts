@@ -56,6 +56,86 @@ async function fetchAddress(lat: number, lon: number): Promise<string> {
   );
 }
 
+export interface ResolvedLocationDetails {
+  direccion: string;
+  localidad: string;
+  departamento: string;
+  fullAddress: string;
+}
+
+export async function resolveLocationDetails(
+  lat: number,
+  lon: number
+): Promise<ResolvedLocationDetails> {
+  try {
+    const response = await fetch(
+      `/api/reverse-geocode?lat=${lat}&lon=${lon}&lang=es`
+    );
+
+    if (!response.ok) {
+      return {
+        direccion: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,
+        localidad: "Corrientes",
+        departamento: "Capital",
+        fullAddress: `Corrientes (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+      };
+    }
+
+    const data = await response.json();
+    const address = data.address ?? {};
+
+    const street =
+      address.road ||
+      address.pedestrian ||
+      address.path ||
+      address.footway ||
+      address.street ||
+      "";
+    const houseNumber = address.house_number || "";
+    const suburb = address.neighbourhood || address.suburb || "";
+
+    let direccion = "";
+    if (street && houseNumber) {
+      direccion = `${street} ${houseNumber}`;
+    } else if (street) {
+      direccion = street;
+    } else if (suburb) {
+      direccion = `Barrio ${suburb}`;
+    } else {
+      direccion = `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`;
+    }
+
+    const locality =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      suburb ||
+      "Corrientes";
+    const departamento =
+      address.county ||
+      address.state_district ||
+      (locality.toLowerCase().includes("corrientes") ? "Capital" : "");
+
+    const parts = [direccion, locality, departamento].filter(Boolean);
+    const fullAddress = parts.join(", ");
+
+    return {
+      direccion,
+      localidad: locality,
+      departamento,
+      fullAddress,
+    };
+  } catch {
+    return {
+      direccion: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,
+      localidad: "Corrientes",
+      departamento: "Capital",
+      fullAddress: `Corrientes (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+    };
+  }
+}
+
 export async function resolveAddress(
   lat: number,
   lon: number
