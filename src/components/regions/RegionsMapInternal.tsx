@@ -104,10 +104,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
   }, [selectedRegionId, barriosGeoJson]);
 
   const showBarriosLayer =
-    props.showAllBarrios ||
-    activeHeaderTab === "Barrios" ||
-    activeHeaderTab === "Barrios (API)" ||
-    isSelectedBarrio;
+    props.showAllBarrios || activeHeaderTab === "Barrios" || isSelectedBarrio;
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">

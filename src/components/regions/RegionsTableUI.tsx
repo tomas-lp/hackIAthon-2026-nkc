@@ -133,10 +133,7 @@ export function RegionsTableUI({
     if (activeListFilter === "Todo") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedType("TODOS");
-    } else if (
-      activeListFilter === "Barrios" ||
-      activeListFilter === "Barrios (API)"
-    ) {
+    } else if (activeListFilter === "Barrios") {
       setSelectedType("Barrios");
     } else {
       setSelectedType(activeListFilter);
@@ -322,7 +319,7 @@ export function RegionsTableUI({
         user_id: "system",
         nombre: formatTitleCase(rawNombre),
         lista_id: "barrios-api",
-        lista_nombre: "Barrios (API)",
+        lista_nombre: "Barrios",
         points: [] as [number, number][],
         created_at: new Date().toISOString(),
         localidad: formatTitleCase(rawLocalidad),
@@ -333,14 +330,9 @@ export function RegionsTableUI({
     });
   }, [barriosGeoJson, allReports, reports]);
 
-  // Estado auxiliar para saber si la vista activa es Barrios (API)
+  // Estado auxiliar para saber si la vista activa es Barrios
   const isBarriosSelected = useMemo(() => {
-    return (
-      selectedType === "Barrios" ||
-      selectedType === "Barrios (API)" ||
-      activeListFilter === "Barrios" ||
-      activeListFilter === "Barrios (API)"
-    );
+    return selectedType === "Barrios" || activeListFilter === "Barrios";
   }, [selectedType, activeListFilter]);
 
   // Filtrado por Tipo/Lista y Buscador
@@ -548,7 +540,7 @@ export function RegionsTableUI({
   };
 
   const typeOptions = useMemo(() => {
-    const baseOptions = [{ id: "Barrios", label: "Barrios (API)" }];
+    const baseOptions = [{ id: "Barrios", label: "Barrios" }];
     const seen = new Set<string>();
     seen.add("Barrios");
 
@@ -565,10 +557,10 @@ export function RegionsTableUI({
   }, [listas]);
 
   const currentTypeLabel = useMemo(() => {
-    if (isBarriosSelected) return "Barrios (API)";
+    if (isBarriosSelected) return "Barrios";
     return (
       typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
-        ?.label || "Barrios (API)"
+        ?.label || "Barrios"
     );
   }, [isBarriosSelected, typeOptions, selectedType]);
 
@@ -669,17 +661,26 @@ export function RegionsTableUI({
             {/* Botón Basura con estados y animaciones */}
             <div className="flex items-center gap-1.5 transition-all duration-200">
               <TooltipSign
-                label="Eliminar una region"
+                label={
+                  isBarriosSelected
+                    ? "Los barrios no se pueden eliminar"
+                    : isDeleteMode
+                      ? "Cancelar modo eliminación"
+                      : "Eliminar una región"
+                }
                 position="top"
                 delayMs={500}
               >
                 <button
                   type="button"
+                  disabled={isBarriosSelected}
                   onClick={handleTrashButtonClick}
-                  className={`flex h-9 items-center justify-center rounded-full border px-3 transition-all duration-200 cursor-pointer shadow-xs ${
-                    isDeleteMode
-                      ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
-                      : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50"
+                  className={`flex h-9 items-center justify-center rounded-full border px-3 transition-all duration-200 shadow-xs ${
+                    isBarriosSelected
+                      ? "border-gray-200 bg-white text-zinc-300 cursor-not-allowed pointer-events-none"
+                      : isDeleteMode
+                        ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                        : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50 cursor-pointer"
                   }`}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -691,7 +692,7 @@ export function RegionsTableUI({
                 </button>
               </TooltipSign>
 
-              {isDeleteMode && (
+              {isDeleteMode && !isBarriosSelected && (
                 <button
                   type="button"
                   onClick={handleCancelDeleteMode}
@@ -994,16 +995,18 @@ export function RegionsTableUI({
                                 <MapPin className="h-3.5 w-3.5" />
                                 Ver en mapa
                               </button>
-                              <button
-                                onClick={async () => {
-                                  setActiveRowMenuId(null);
-                                  await onDeleteRegions([region.id]);
-                                }}
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Eliminar
-                              </button>
+                              {!isBarriosSelected && (
+                                <button
+                                  onClick={async () => {
+                                    setActiveRowMenuId(null);
+                                    await onDeleteRegions([region.id]);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  Eliminar
+                                </button>
+                              )}
                             </div>
                           )}
                         </td>

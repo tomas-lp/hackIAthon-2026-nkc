@@ -315,23 +315,22 @@ export function RegionShape({
     >
       <Tooltip
         sticky
-        opacity={isEditingRegions ? 0 : 1}
-        className={`custom-tooltip font-sans text-sm rounded-xl border border-gray-200 shadow-xl px-3 py-2 ${
-          isEditingRegions ? "!hidden opacity-0 pointer-events-none" : ""
-        }`}
+        className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 shadow-xl px-3 py-2"
       >
         <div className="flex flex-col gap-1">
           <span className="font-bold text-gray-800">{region.nombre}</span>
           <span className="text-zinc-600 text-xs">
-            {pointsCount} reclamos activos en esta zona
+            {isEditingRegions
+              ? "Clickeá para opciones"
+              : `${pointsCount} reclamos activos en esta zona`}
           </span>
         </div>
       </Tooltip>
 
       {isEditingRegions && onDeleteRegion && (
         <Popup className="custom-popup rounded-2xl p-1 shadow-xl">
-          <div className="flex flex-col items-center gap-2 p-1.5 min-w-[120px]">
-            <span className="text-xs font-bold text-zinc-900">
+          <div className="flex flex-col items-center gap-2 p-2 pt-2.5 min-w-[130px]">
+            <span className="text-xs font-bold text-zinc-900 pr-3">
               {region.nombre}
             </span>
             <button
