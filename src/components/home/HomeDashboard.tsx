@@ -218,20 +218,25 @@ export function HomeDashboard({
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         if (showRegionNamePopup) {
+          e.preventDefault();
+          e.stopPropagation();
           setShowRegionNamePopup(false);
           setDraftRegionPoints([]);
           setIsDrawingRegions(true);
           return;
         }
         if (draftRegionPoints.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
           setDraftRegionPoints([]);
+          setIsDrawingRegions(true);
           return;
         }
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [isEditingRegions, showRegionNamePopup, draftRegionPoints]);
 
   const handleDeleteSingleRegion = useCallback(

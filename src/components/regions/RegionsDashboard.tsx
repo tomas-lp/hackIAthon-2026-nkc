@@ -121,12 +121,27 @@ export function RegionsDashboard({
     });
   }, []);
 
-  const handleCancelDrawing = () => {
+  const handleCancelDrawing = useCallback(() => {
     setIsDrawing(false);
     setDraftPoints([]);
     setShowNamePopup(false);
     setSidebarCollapsed(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isDrawing && !showNamePopup && draftPoints.length === 0) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCancelDrawing();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isDrawing, showNamePopup, draftPoints.length, handleCancelDrawing]);
 
   // Confirmar nombre y lista para la nueva región
   const handleConfirmName = async (name: string, listaId?: string) => {

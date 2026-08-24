@@ -51,6 +51,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
     draftPoints,
     onAddDraftPoint,
     onFinishDrawing,
+    onCancelDrawing,
     selectedRegionId,
   } = props;
   const validReports = useMemo(
@@ -104,10 +105,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
   }, [selectedRegionId, barriosGeoJson]);
 
   const showBarriosLayer =
-    props.showAllBarrios ||
-    activeHeaderTab === "Barrios" ||
-    activeHeaderTab === "Barrios (API)" ||
-    isSelectedBarrio;
+    props.showAllBarrios || activeHeaderTab === "Barrios" || isSelectedBarrio;
 
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
@@ -190,6 +188,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
           draftPoints={draftPoints}
           onAddPoint={onAddDraftPoint}
           onFinish={onFinishDrawing}
+          onCancel={onCancelDrawing}
         />
 
         {/* Marcadores de puntos del borrador */}
