@@ -317,6 +317,7 @@ export function MarcadoresDashboard({
           isAdmin={true}
           activeAdminTab={activeAdminTab}
           onAdminTabChange={handleAdminTabChange}
+          fullHeight={true}
           onCollapse={() => setSidebarCollapsed(true)}
         />
       </div>

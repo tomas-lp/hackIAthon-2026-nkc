@@ -263,10 +263,15 @@ export function HomeDashboard({
     if (!targetList) return;
 
     try {
+      const remainingLists = listas.filter((l) => l.id !== targetList.id);
       await regionService.deleteList(targetList.id);
       await refreshLists();
       await refreshRegiones();
-      setActiveListTab("Mapa de calor");
+      if (remainingLists.length > 0) {
+        setActiveListTab(remainingLists[0].nombre);
+      } else {
+        setActiveListTab("Mapa de calor");
+      }
       setSidebarCollapsed(false);
     } catch (err) {
       console.error("Error eliminando lista:", err);
