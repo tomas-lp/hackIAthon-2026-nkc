@@ -537,9 +537,9 @@ export function MinimapInternal({
                   <p className="font-bold text-zinc-900">
                     {formatReportType(r.tipo)}
                   </p>
-                  {r.titulo && (
+                  {r.descripcion && (
                     <p className="text-zinc-600 text-[11px] font-medium line-clamp-1">
-                      {r.titulo}
+                      {r.descripcion}
                     </p>
                   )}
                   <p className="text-zinc-500 text-[10px]">
