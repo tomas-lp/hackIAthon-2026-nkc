@@ -194,7 +194,9 @@ export function MarcadoresTableUI({
     }
 
     if (sortField === field) {
-      const primaryOrder: SortOrder = field === "localidad" ? "asc" : "desc";
+      // Solo capacidad_maxima arranca desc (mayor primero); el resto arranca asc (A→Z)
+      const primaryOrder: SortOrder =
+        field === "capacidad_maxima" ? "desc" : "asc";
       if (sortOrder === primaryOrder) {
         setSortOrder(primaryOrder === "asc" ? "desc" : "asc");
       } else {
@@ -203,7 +205,7 @@ export function MarcadoresTableUI({
       }
     } else {
       setSortField(field);
-      setSortOrder(field === "localidad" ? "asc" : "desc");
+      setSortOrder(field === "capacidad_maxima" ? "desc" : "asc");
     }
   };
 

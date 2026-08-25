@@ -486,7 +486,7 @@ export function HomeDashboard({
         />
       </section>
 
-      {isAdmin && (
+      {isAdmin && activeListTab === "Mapa de calor" && (
         <LayerControls
           showEvacuationCenters={showEvacuationCenters}
           setShowEvacuationCenters={setShowEvacuationCenters}

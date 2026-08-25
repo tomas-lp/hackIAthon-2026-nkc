@@ -15,6 +15,7 @@ export interface SafeZone {
   descripcion?: string | null;
   localidad?: string | null;
   departamento?: string | null;
+  provincia?: string | null;
   direccion?: string | null;
   capacidad_maxima?: number | null;
   latitud: number;

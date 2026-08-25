@@ -1,4 +1,4 @@
-﻿import {
+import {
   classifyIntent,
   validateDescription,
   analyzePhoto,
@@ -275,9 +275,15 @@ export async function processMessage(
 
         if (coords) {
           message.location = { latitude: coords.lat, longitude: coords.lon };
-          if (coords.barrio) {
-            session.datos_temporales.barrio = coords.barrio;
-          }
+          if (coords.barrio) session.datos_temporales.barrio = coords.barrio;
+          if (coords.localidad)
+            session.datos_temporales.localidad = coords.localidad;
+          if (coords.provincia)
+            session.datos_temporales.provincia = coords.provincia;
+          if (coords.departamento)
+            session.datos_temporales.departamento = coords.departamento;
+          if (coords.direccion)
+            session.datos_temporales.direccion = coords.direccion;
           session.state = "ESPERANDO_UBICACION_REPORTE";
 
           await adapter.sendMessage(
@@ -314,6 +320,11 @@ export async function processMessage(
               lluvia_mm: precipMm,
               clima_fuente: climaFuente,
               tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
+              barrio: session.datos_temporales.barrio || null,
+              localidad: session.datos_temporales.localidad || null,
+              departamento: session.datos_temporales.departamento || null,
+              provincia: session.datos_temporales.provincia || null,
+              direccion: session.datos_temporales.direccion || null,
               puntaje_base: puntajeTotal,
               puntaje_descripcion: puntajeDescripcion,
               puntaje_foto: 5,
@@ -363,13 +374,18 @@ export async function processMessage(
         session.datos_temporales.lat = message.location.latitude;
         session.datos_temporales.lon = message.location.longitude;
 
-        // Intentar obtener el barrio mediante reverse geocoding
+        // Intentar obtener datos geográficos mediante reverse geocoding
         const rg = await reverseGeocodeAddress(
           message.location.latitude,
           message.location.longitude
         );
-        if (rg && rg.barrio) {
-          session.datos_temporales.barrio = rg.barrio;
+        if (rg) {
+          if (rg.barrio) session.datos_temporales.barrio = rg.barrio;
+          if (rg.localidad) session.datos_temporales.localidad = rg.localidad;
+          if (rg.provincia) session.datos_temporales.provincia = rg.provincia;
+          if (rg.departamento)
+            session.datos_temporales.departamento = rg.departamento;
+          if (rg.direccion) session.datos_temporales.direccion = rg.direccion;
         }
 
         const weather = await fetchCurrentWeather(
@@ -403,6 +419,11 @@ export async function processMessage(
             lluvia_mm: precipMm,
             clima_fuente: climaFuente,
             tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
+            barrio: session.datos_temporales.barrio || null,
+            localidad: session.datos_temporales.localidad || null,
+            departamento: session.datos_temporales.departamento || null,
+            provincia: session.datos_temporales.provincia || null,
+            direccion: session.datos_temporales.direccion || null,
             puntaje_base: puntajeTotal,
             puntaje_descripcion: puntajeDescripcion,
             puntaje_foto: 5,
@@ -526,6 +547,10 @@ export async function processMessage(
         clima_fuente: session.datos_temporales.clima_fuente as string,
         tipo: session.datos_temporales.tipo || "INUNDACION_URBANA",
         barrio: session.datos_temporales.barrio || null,
+        localidad: session.datos_temporales.localidad || null,
+        departamento: session.datos_temporales.departamento || null,
+        provincia: session.datos_temporales.provincia || null,
+        direccion: session.datos_temporales.direccion || null,
         puntaje_base: puntajeTotal,
         puntaje_descripcion: puntajeDescripcion,
         puntaje_foto: puntajeFoto,

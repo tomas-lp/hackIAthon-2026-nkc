@@ -137,6 +137,7 @@ export const healthCenterService = {
     lon: number;
     localidad?: string | null;
     departamento?: string | null;
+    provincia?: string | null;
     direccion?: string | null;
     codigo_postal?: string | null;
     sitio_web?: string | null;

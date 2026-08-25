@@ -8,6 +8,7 @@ export interface HealthCenter {
   tipo: HealthCenterType;
   localidad: string | null;
   departamento: string | null;
+  provincia: string | null;
   direccion: string | null;
   lat: number | null;
   lon: number | null;

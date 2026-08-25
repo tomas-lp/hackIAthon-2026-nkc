@@ -48,6 +48,10 @@ type ReportDbRow = {
   telegram_username?: string;
   chat_id?: number | string;
   localidad?: string;
+  departamento?: string;
+  provincia?: string;
+  direccion?: string;
+  barrio?: string;
   ubicacion?: string;
   lluvia_mm?: number;
   puntaje_descripcion?: number;
@@ -141,6 +145,10 @@ export class SupabaseReportService implements IReportService {
         row.chat_id?.toString?.() ??
         "",
       localidad: row.localidad ?? row.ubicacion ?? null,
+      departamento: row.departamento ?? null,
+      provincia: row.provincia ?? null,
+      direccion: row.direccion ?? null,
+      barrio: row.barrio ?? null,
       puntajeBase,
       puntajeDescripcion: Number(row.puntaje_descripcion ?? 0),
       puntajeFoto: Number(row.puntaje_foto ?? 0),
@@ -168,7 +176,10 @@ export class SupabaseReportService implements IReportService {
         (r) =>
           r.descripcion.toLowerCase().includes(q) ||
           r.usuario.toLowerCase().includes(q) ||
-          (r.localidad && r.localidad.toLowerCase().includes(q))
+          (r.localidad && r.localidad.toLowerCase().includes(q)) ||
+          (r.departamento && r.departamento.toLowerCase().includes(q)) ||
+          (r.barrio && r.barrio.toLowerCase().includes(q)) ||
+          (r.direccion && r.direccion.toLowerCase().includes(q))
       );
     }
 
