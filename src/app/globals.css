@@ -211,3 +211,85 @@ path.leaflet-interactive:focus {
 .safe-zone-tooltip::before {
   border-top-color: #10b981 !important;
 }
+
+/* Fade in animation for KPI metric numeric values */
+@keyframes fade-in-val {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-kpi {
+  animation: fade-in-val 0.55s ease-out forwards;
+}
+
+/* Bounce animation for chart legend: subtle & strictly vertical */
+@keyframes legend-bounce-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-legend-bounce {
+  animation: legend-bounce-down 0.28s cubic-bezier(0.25, 1.25, 0.5, 1) forwards;
+}
+
+/* Smooth map displacement animations */
+@keyframes map-slide-expand {
+  0% {
+    opacity: 0.82;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes map-slide-contract {
+  0% {
+    opacity: 0.82;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-map-expand {
+  animation: map-slide-expand 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-map-contract {
+  animation: map-slide-contract 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes list-slide-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-list-slide-left {
+  animation: list-slide-left 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
