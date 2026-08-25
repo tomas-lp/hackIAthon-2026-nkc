@@ -406,12 +406,45 @@ export function Sidebar({
     "Panel de Administración",
   ];
 
+  const [isExpanded, setIsExpanded] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      if (!fullHeight && sessionStorage.getItem("sidebar_was_expanded") === "true") {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (fullHeight) {
+      sessionStorage.setItem("sidebar_was_expanded", "true");
+      const timer = requestAnimationFrame(() => {
+        setIsExpanded(true);
+      });
+      return () => cancelAnimationFrame(timer);
+    } else {
+      const wasExpanded =
+        sessionStorage.getItem("sidebar_was_expanded") === "true";
+      if (wasExpanded) {
+        sessionStorage.removeItem("sidebar_was_expanded");
+        const timer = requestAnimationFrame(() => {
+          setIsExpanded(false);
+        });
+        return () => cancelAnimationFrame(timer);
+      } else {
+        setIsExpanded(false);
+      }
+    }
+  }, [fullHeight]);
+
   return (
     <aside
-      className={`flex flex-col gap-3 z-100 w-72 max-w-72 border-r border-gray-200/80 bg-white/95 p-3.5 backdrop-blur-xs transition-all duration-300 ${
-        fullHeight
-          ? "h-screen rounded-none m-0 border-y-0 border-l-0 shadow-md"
-          : "m-4 rounded-2xl border bg-white/60 max-h-[85vh]"
+      className={`flex flex-col gap-3 z-100 transition-all duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        isExpanded
+          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white border-r border-gray-200/80 shadow-md"
+          : "w-72 max-w-72 m-4 rounded-2xl border border-gray-200/80 bg-white/95 p-3.5 backdrop-blur-xs max-h-[85vh]"
       }`}
     >
       <div className="flex items-center justify-between gap-2">

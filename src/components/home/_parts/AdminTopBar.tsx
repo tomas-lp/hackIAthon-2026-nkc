@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/Switch";
-import { Pencil, X, Check, Trash2 } from "lucide-react";
+import { Pencil, X, Check, Trash2, ChevronDown } from "lucide-react";
 
 interface AdminTopBarProps {
   tabs: string[];
@@ -30,6 +31,48 @@ export function AdminTopBar({
   onConfirmEditing,
   onDeleteList,
 }: AdminTopBarProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Separar las pestañas fijas ("Mapa de calor", "Barrios") de las listas personalizadas
+  const fixedTabs = ["Mapa de calor", "Barrios"];
+  const customTabs = tabs.filter((tab) => !fixedTabs.includes(tab));
+
+  // Determinar la lista personalizada activa o seleccionada
+  const activeCustomTab = customTabs.includes(activeTab)
+    ? activeTab
+    : customTabs[0] ?? "";
+
+  const hasDropdown = customTabs.length >= 2;
+
+  // Manejo del click en la pestaña de lista personalizada
+  const handleCustomTabClick = () => {
+    if (customTabs.includes(activeTab)) {
+      // Si la pestaña ya está activa, el click conmuta abrir/cerrar el menú desplegable (si hay 2 o más opciones)
+      if (hasDropdown) {
+        setIsDropdownOpen((prev) => !prev);
+      }
+    } else {
+      // Si se viene de "Mapa de calor" o "Barrios", el 1er click solo activa la lista SIN desplegar el menú
+      onTabChange(activeCustomTab);
+      setIsDropdownOpen(false);
+    }
+  };
+
+  // Cerrar dropdown al hacer click fuera del contenedor principal
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div
       className={`absolute top-4 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-2 transition-all duration-300 ease-in-out ${
@@ -38,24 +81,77 @@ export function AdminTopBar({
           : "translate-y-0 opacity-100"
       }`}
     >
-      <Switch value={activeTab} onValueChange={onTabChange}>
-        {tabs.map((tab) => (
-          <Switch.Option key={tab} value={tab}>
-            {tab}
-          </Switch.Option>
-        ))}
-        <div className="h-3.5 w-px bg-zinc-400/30 mx-0.5 z-10" />
-        <button
-          onClick={onAddList}
-          className="relative z-10 h-7 px-3.5 text-xs font-semibold text-zinc-700 hover:text-zinc-950 transition-colors duration-200 cursor-pointer whitespace-nowrap flex items-center justify-center"
-        >
-          Nueva +
-        </button>
-      </Switch>
+      <div ref={containerRef} className="relative">
+        <Switch value={activeTab} onValueChange={onTabChange}>
+          {fixedTabs
+            .filter((t) => tabs.includes(t))
+            .map((tab) => (
+              <Switch.Option key={tab} value={tab}>
+                {tab}
+              </Switch.Option>
+            ))}
 
-      {/* Botones de acción normal (Editar y Eliminar) con animación sliding + bounce sin deformación */}
+          {/* Si hay listas personalizadas creadas, mostrar la pestaña de lista personalizada */}
+          {customTabs.length > 0 && (
+            <Switch.Option
+              value={activeCustomTab}
+              onClick={handleCustomTabClick}
+            >
+              <span className="flex items-center gap-1">
+                <span>{activeCustomTab}</span>
+                {hasDropdown && (
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </span>
+            </Switch.Option>
+          )}
+
+          <div className="h-3.5 w-px bg-zinc-400/30 mx-0.5 z-10" />
+          <button
+            onClick={onAddList}
+            className="relative z-10 h-7 px-3.5 text-xs font-semibold text-zinc-700 hover:text-zinc-950 transition-colors duration-200 cursor-pointer whitespace-nowrap flex items-center justify-center"
+          >
+            Nueva +
+          </button>
+        </Switch>
+
+        {/* Menú desplegable flotante (SOLO cuando hay 2 o más listas y se presiona por 2da vez) */}
+        {hasDropdown && isDropdownOpen && (
+          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 flex flex-col rounded-2xl border border-gray-200/60 bg-white/90 backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5">
+            {customTabs.map((tab) => {
+              const isSelected = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    onTabChange(tab);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
+                    isSelected
+                      ? "bg-white font-bold text-zinc-950 shadow-xs"
+                      : "text-zinc-700 hover:bg-white/60 hover:text-zinc-950 font-medium"
+                  }`}
+                >
+                  <span>{tab}</span>
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Botones de acción normal (Editar y Eliminar) con animación sliding + bounce (800ms) */}
       <div
-        className={`flex items-center gap-2 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left ${
+        className={`flex items-center gap-2 transition-all duration-800 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left ${
           showEditButton && !isEditingRegions
             ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
             : "translate-x-6 opacity-0 scale-90 pointer-events-none w-0 overflow-hidden"
@@ -80,9 +176,9 @@ export function AdminTopBar({
         </button>
       </div>
 
-      {/* Botones de confirmación/cancelación durante el modo edición con animación sliding + bounce */}
+      {/* Botones de confirmación/cancelación durante el modo edición con animación sliding + bounce (800ms) */}
       <div
-        className={`flex items-center gap-2 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left ${
+        className={`flex items-center gap-2 transition-all duration-800 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left ${
           isEditingRegions
             ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
             : "-translate-x-4 opacity-0 scale-90 pointer-events-none w-0 overflow-hidden"

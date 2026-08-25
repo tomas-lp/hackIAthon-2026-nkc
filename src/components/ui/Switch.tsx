@@ -74,9 +74,15 @@ interface SwitchOptionProps {
   value: string;
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
-function SwitchOption({ value, children, className }: SwitchOptionProps) {
+function SwitchOption({
+  value,
+  children,
+  className,
+  onClick,
+}: SwitchOptionProps) {
   const ctx = useContext(SwitchContext);
   if (!ctx) throw new Error("Switch.Option must be used within Switch");
 
@@ -85,7 +91,10 @@ function SwitchOption({ value, children, className }: SwitchOptionProps) {
   return (
     <button
       ref={(el) => ctx.register(value, el)}
-      onClick={() => ctx.onValueChange(value)}
+      onClick={() => {
+        ctx.onValueChange(value);
+        if (onClick) onClick();
+      }}
       className={
         className ??
         "relative z-10 h-7 px-3.5 text-xs cursor-pointer select-none whitespace-nowrap flex items-center justify-center transition-colors duration-200"

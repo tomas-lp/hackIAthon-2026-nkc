@@ -115,61 +115,63 @@ export function EstadisticasDashboard({
         <ChevronRight className="h-4 w-4" />
       </button>
 
-      {/* Área Principal con Padding Generoso (Más separado de los bordes) */}
+      {/* Área Principal con la misma estructura y espaciado que Regiones y Marcadores */}
       <div
-        className={`flex-1 flex flex-col h-full overflow-y-auto pt-24 pb-16 transition-all duration-300 ease-in-out ${
-          sidebarCollapsed ? "pl-16 pr-12" : "pl-92 pr-12"
+        className={`flex-1 flex flex-col h-full overflow-y-auto pt-20 pb-16 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
         }`}
       >
-        {/* Encabezado Superior (Sin subtítulo) */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-black text-zinc-900 tracking-tight">
-              Panel de Administración
-            </h1>
+        <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans flex flex-col gap-6">
+          {/* Encabezado Superior */}
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                Panel de Administración
+              </h1>
+            </div>
+
+            <AuthWidget
+              isAdmin={true}
+              onLoginClick={() => {}}
+              onLogoutClick={async () => {
+                const { logoutFromSession } = await import("@/app/auth/actions");
+                await logoutFromSession();
+                window.location.reload();
+              }}
+            />
           </div>
 
-          <AuthWidget
-            isAdmin={true}
-            onLoginClick={() => {}}
-            onLogoutClick={async () => {
-              const { logoutFromSession } = await import("@/app/auth/actions");
-              await logoutFromSession();
-              window.location.reload();
-            }}
-          />
-        </div>
+          {/* Contenido Dashboard */}
+          <div className="flex flex-col gap-6 pb-12">
+            {/* 1. Tarjetas de Métricas */}
+            <MetricCards
+              reports={filteredReports}
+              barriosGeoJson={barriosGeoJson}
+              period={period}
+              onPeriodChange={setPeriod}
+              startDate={startDate}
+              endDate={endDate}
+              onDateChange={(s, e) => {
+                setStartDate(s);
+                setEndDate(e);
+              }}
+              selectedType={selectedType}
+              onTypeChange={setSelectedType}
+            />
 
-        {/* Contenido Dashboard */}
-        <div className="flex flex-col gap-6 pb-12">
-          {/* 1. Tarjetas de Métricas */}
-          <MetricCards
-            reports={filteredReports}
-            barriosGeoJson={barriosGeoJson}
-            period={period}
-            onPeriodChange={setPeriod}
-            startDate={startDate}
-            endDate={endDate}
-            onDateChange={(s, e) => {
-              setStartDate(s);
-              setEndDate(e);
-            }}
-            selectedType={selectedType}
-            onTypeChange={setSelectedType}
-          />
+            {/* 2. Análisis por región (Afectado por los filtros de arriba) */}
+            <RegionAnalysis
+              reports={filteredReports}
+              barriosGeoJson={barriosGeoJson}
+              regionLists={regionLists}
+              customRegions={customRegions}
+              selectedZoneFilter={selectedZoneFilter}
+              onZoneFilterChange={setSelectedZoneFilter}
+            />
 
-          {/* 2. Análisis por región (Afectado por los filtros de arriba) */}
-          <RegionAnalysis
-            reports={filteredReports}
-            barriosGeoJson={barriosGeoJson}
-            regionLists={regionLists}
-            customRegions={customRegions}
-            selectedZoneFilter={selectedZoneFilter}
-            onZoneFilterChange={setSelectedZoneFilter}
-          />
-
-          {/* 3. Tendencia de Reclamos */}
-          <TendenciaChart reports={allReports} />
+            {/* 3. Tendencia de Reclamos */}
+            <TendenciaChart reports={allReports} />
+          </div>
         </div>
       </div>
     </div>
