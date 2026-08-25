@@ -719,91 +719,97 @@ export default function ReportMapInternal({
           selectedSafeZone={selectedSafeZone}
         />
 
-        <HeatLayer points={heatPoints} />
+        {/* Capa de calor y marcadores — solo visibles en la vista "Mapa de calor" */}
+        {(!isAdmin || activeHeaderTab === "Mapa de calor") && (
+          <>
+            <HeatLayer points={heatPoints} />
 
-        {validReports.map((report) => {
-          const isSelected = selectedReport?.id === report.id;
-          const isNew = nowTimestamp - new Date(report.fecha).getTime() < 10000;
-          return (
-            <Marker
-              key={report.id}
-              ref={(marker) => {
-                markerRefs.current[report.id] = marker;
-              }}
-              position={[report.latitud, report.longitud]}
-              icon={isNew ? newDefaultIcon : defaultIcon}
-              eventHandlers={{
-                click: (e) => {
-                  e.originalEvent?.stopPropagation();
-                  if (isSelected) {
-                    onSelectReport(null);
-                  } else {
-                    onSelectReport(report);
-                  }
-                },
-              }}
-            ></Marker>
-          );
-        })}
+            {validReports.map((report) => {
+              const isSelected = selectedReport?.id === report.id;
+              const isNew =
+                nowTimestamp - new Date(report.fecha).getTime() < 10000;
+              return (
+                <Marker
+                  key={report.id}
+                  ref={(marker) => {
+                    markerRefs.current[report.id] = marker;
+                  }}
+                  position={[report.latitud, report.longitud]}
+                  icon={isNew ? newDefaultIcon : defaultIcon}
+                  eventHandlers={{
+                    click: (e) => {
+                      e.originalEvent?.stopPropagation();
+                      if (isSelected) {
+                        onSelectReport(null);
+                      } else {
+                        onSelectReport(report);
+                      }
+                    },
+                  }}
+                ></Marker>
+              );
+            })}
 
-        {showEvacuationCenters &&
-          validSafeZones.map((sz) => {
-            const isSelected = selectedSafeZone?.id === sz.id;
-            return (
-              <Marker
-                key={sz.id}
-                ref={(marker) => {
-                  szMarkerRefs.current[sz.id] = marker;
-                }}
-                position={[sz.latitud, sz.longitud]}
-                icon={defaultSzIcon}
-                eventHandlers={{
-                  click: () =>
-                    isSelected
-                      ? onSelectSafeZone?.(sz)
-                      : onSelectSafeZone?.(sz),
-                }}
-                zIndexOffset={isSelected ? 1100 : 1000}
-              >
-                <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
-                  <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>{sz.nombre}</span>
-                  </div>
-                </Tooltip>
-              </Marker>
-            );
-          })}
+            {showEvacuationCenters &&
+              validSafeZones.map((sz) => {
+                const isSelected = selectedSafeZone?.id === sz.id;
+                return (
+                  <Marker
+                    key={sz.id}
+                    ref={(marker) => {
+                      szMarkerRefs.current[sz.id] = marker;
+                    }}
+                    position={[sz.latitud, sz.longitud]}
+                    icon={defaultSzIcon}
+                    eventHandlers={{
+                      click: () =>
+                        isSelected
+                          ? onSelectSafeZone?.(sz)
+                          : onSelectSafeZone?.(sz),
+                    }}
+                    zIndexOffset={isSelected ? 1100 : 1000}
+                  >
+                    <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
+                      <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>{sz.nombre}</span>
+                      </div>
+                    </Tooltip>
+                  </Marker>
+                );
+              })}
 
-        {showMedicalCenters &&
-          validHealthCenters.map((hc) => {
-            const isSelected = selectedHealthCenter?.id === hc.id;
-            const isVisible = currentZoom >= 11 || isSelected;
-            return (
-              <Marker
-                key={`hc-${hc.id}`}
-                ref={(marker) => {
-                  hcMarkerRefs.current[hc.id] = marker;
-                }}
-                position={[hc.lat!, hc.lon!]}
-                icon={isVisible ? hcIconVisible : hcIconHidden}
-                eventHandlers={{
-                  click: () =>
-                    isSelected
-                      ? onSelectHealthCenter?.(null)
-                      : onSelectHealthCenter?.(hc),
-                }}
-                zIndexOffset={isSelected ? 1100 : 1000}
-              >
-                <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
-                  <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
-                    <PlusSquare className="h-3.5 w-3.5 text-red-600" />
-                    <span>{hc.nombre}</span>
-                  </div>
-                </Tooltip>
-              </Marker>
-            );
-          })}
+            {showMedicalCenters &&
+              validHealthCenters.map((hc) => {
+                const isSelected = selectedHealthCenter?.id === hc.id;
+                const isVisible = currentZoom >= 11 || isSelected;
+                return (
+                  <Marker
+                    key={`hc-${hc.id}`}
+                    ref={(marker) => {
+                      hcMarkerRefs.current[hc.id] = marker;
+                    }}
+                    position={[hc.lat!, hc.lon!]}
+                    icon={isVisible ? hcIconVisible : hcIconHidden}
+                    eventHandlers={{
+                      click: () =>
+                        isSelected
+                          ? onSelectHealthCenter?.(null)
+                          : onSelectHealthCenter?.(hc),
+                    }}
+                    zIndexOffset={isSelected ? 1100 : 1000}
+                  >
+                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                      <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                        <PlusSquare className="h-3.5 w-3.5 text-red-600" />
+                        <span>{hc.nombre}</span>
+                      </div>
+                    </Tooltip>
+                  </Marker>
+                );
+              })}
+          </>
+        )}
 
         {isCreatingSafeZone && draftLocation && (
           <Marker
