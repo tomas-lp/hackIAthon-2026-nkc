@@ -425,17 +425,13 @@ export function Sidebar({
       });
       return () => cancelAnimationFrame(timer);
     } else {
-      const wasExpanded =
-        sessionStorage.getItem("sidebar_was_expanded") === "true";
-      if (wasExpanded) {
+      if (sessionStorage.getItem("sidebar_was_expanded") === "true") {
         sessionStorage.removeItem("sidebar_was_expanded");
-        const timer = requestAnimationFrame(() => {
-          setIsExpanded(false);
-        });
-        return () => cancelAnimationFrame(timer);
-      } else {
-        setIsExpanded(false);
       }
+      const timer = requestAnimationFrame(() => {
+        setIsExpanded(false);
+      });
+      return () => cancelAnimationFrame(timer);
     }
   }, [fullHeight]);
 
