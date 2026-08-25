@@ -137,7 +137,10 @@ export function MetricCards({
             Total de reclamos
           </span>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-4xl font-extrabold text-zinc-900 tracking-tight">
+            <span
+              key={`val-total-${totalReclamos}-${period}-${selectedType}-${startDate}-${endDate}`}
+              className="text-4xl font-extrabold text-zinc-900 tracking-tight animate-fade-kpi inline-block"
+            >
               {totalReclamos.toLocaleString("es-AR")}
             </span>
             <span className="text-xs font-medium text-zinc-400">
@@ -152,7 +155,10 @@ export function MetricCards({
             Porcentaje de la ciudad afectada
           </span>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-4xl font-extrabold text-zinc-900 tracking-tight">
+            <span
+              key={`val-porcentaje-${porcentajeAfectado}-${period}-${selectedType}-${startDate}-${endDate}`}
+              className="text-4xl font-extrabold text-zinc-900 tracking-tight animate-fade-kpi inline-block"
+            >
               {porcentajeAfectado}%
             </span>
             <span className="text-xs font-medium text-zinc-400">
@@ -167,7 +173,10 @@ export function MetricCards({
             Lluvia acumulada
           </span>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-4xl font-extrabold text-zinc-900 tracking-tight">
+            <span
+              key={`val-lluvia-${lluviaAcumulada}-${period}-${selectedType}-${startDate}-${endDate}`}
+              className="text-4xl font-extrabold text-zinc-900 tracking-tight animate-fade-kpi inline-block"
+            >
               {lluviaAcumulada}
             </span>
             <span className="text-sm font-bold text-zinc-600">mm</span>

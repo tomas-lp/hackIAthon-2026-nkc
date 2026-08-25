@@ -48,8 +48,6 @@ export function heatmapRadiusAt(
 
   const px = metersToPixels(radiusMeters, latitud, zoom);
 
-  // Clamped to a minimum of 12px radius and 8px blur to prevent width/height from becoming 0
-  // while keeping the circles smaller as requested by the user, and capped to 150px/100px.
   const r = Math.max(12, Math.min(150, Math.round(px)));
   const b = Math.max(8, Math.min(100, Math.round(px * (blur / radius))));
 
@@ -116,14 +114,18 @@ export function heatColor(
 interface BuildHeatPointsOptions {
   ahora?: Date;
   maxIntensidad?: number;
+  ignoreAgeMultiplier?: boolean;
 }
 
 export function buildHeatPoints(
   reports: Report[],
   options: BuildHeatPointsOptions = {}
 ): HeatPoint[] {
-  const { ahora = new Date(), maxIntensidad = HEATMAP_CONFIG.maxIntensity } =
-    options;
+  const {
+    ahora = new Date(),
+    maxIntensidad = HEATMAP_CONFIG.maxIntensity,
+    ignoreAgeMultiplier = false,
+  } = options;
 
   const points: HeatPoint[] = [];
   for (const report of reports) {
@@ -131,12 +133,17 @@ export function buildHeatPoints(
       continue;
     }
 
-    const horas =
-      (ahora.getTime() - new Date(report.fecha).getTime()) / 3600000;
-    const multiplicador = ageMultiplier(horas);
-    if (multiplicador === null) continue;
+    let multiplicador = 1;
+    if (!ignoreAgeMultiplier) {
+      const horas =
+        (ahora.getTime() - new Date(report.fecha).getTime()) / 3600000;
+      const m = ageMultiplier(horas);
+      if (m === null) continue;
+      multiplicador = m;
+    }
 
-    const intensidad = report.puntajeBase * multiplicador;
+    const puntajeBase = report.puntajeBase || 10;
+    const intensidad = puntajeBase * multiplicador;
     if (intensidad <= 0) continue;
 
     points.push([

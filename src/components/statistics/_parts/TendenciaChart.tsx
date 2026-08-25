@@ -239,12 +239,16 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
         </div>
       </div>
 
-      {/* Referencia pequeña de colores al costado */}
-      {selectedYear === "TODOS" && (
-        <div className="flex items-center gap-4 flex-wrap text-xs text-zinc-600 px-1">
-          <span className="font-semibold text-zinc-400 text-[11px] uppercase tracking-wider">
-            Años:
-          </span>
+      {/* Referencia pequeña de colores con animación de despliegue hacia abajo y repliegue hacia arriba */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          selectedYear === "TODOS"
+            ? "max-h-12 opacity-100 translate-y-0 mt-0"
+            : "max-h-0 opacity-0 -translate-y-2 pointer-events-none -mt-2"
+        }`}
+      >
+        <div className="flex items-center gap-4 flex-wrap text-xs text-zinc-600 px-1 py-0.5">
+          <span className="font-semibold text-zinc-600 text-xs">Año:</span>
           {chartSeries.map((s) => (
             <div key={s.id} className="flex items-center gap-1.5">
               <div
@@ -255,7 +259,7 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
             </div>
           ))}
         </div>
-      )}
+      </div>
 
       {/* Gráfico Nivo Line */}
       <div className="h-[300px] w-full">

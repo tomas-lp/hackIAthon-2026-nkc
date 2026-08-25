@@ -25,7 +25,7 @@ interface RegionAnalysisProps {
   barriosGeoJson: BarriosFeatureCollection | null;
   regionLists: RegionLista[];
   customRegions: RegionPersonalizada[];
-  selectedZoneFilter: string; // "BARRIOS" | lista_id
+  selectedZoneFilter: string; // "MAPA_CALOR" | "BARRIOS" | lista_id
   onZoneFilterChange: (filter: string) => void;
 }
 
@@ -39,6 +39,9 @@ export function RegionAnalysis({
 }: RegionAnalysisProps) {
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [selectedRegionName, setSelectedRegionName] = useState<string | null>(
+    null
+  );
   const overflowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,11 +57,15 @@ export function RegionAnalysis({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleZoneFilterChange = (filter: string) => {
+    onZoneFilterChange(filter);
+    setSelectedRegionName(null);
+  };
+
   const MAX_VISIBLE_LISTS = 2;
   const visibleLists = regionLists.slice(0, MAX_VISIBLE_LISTS);
   const overflowLists = regionLists.slice(MAX_VISIBLE_LISTS);
 
-  // Lista lateral calculada con TODOS los barrios o elementos de la lista
   const regionAffectedItems = useMemo(() => {
     const totalReportsCount = Math.max(reports.length, 1);
 
@@ -80,6 +87,10 @@ export function RegionAnalysis({
       return items.sort((a, b) =>
         sortOrder === "desc" ? b.count - a.count : a.count - b.count
       );
+    }
+
+    if (selectedZoneFilter === "MAPA_CALOR") {
+      return [];
     }
 
     // Lista Personalizada específica
@@ -105,21 +116,18 @@ export function RegionAnalysis({
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col gap-4">
-      {/* Encabezado y Selector con Switch (Ubicación bajada a la derecha) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
+      {/* Encabezado y Selector con Switch (sin separador inferior) */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-bold text-zinc-900">Análisis por región</h3>
 
-        {/* Interruptor Switch (Sin Mapa de calor) */}
+        {/* Interruptor Switch con Mapa de Calor incluido */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-zinc-600">Región:</span>
           <Switch
-            value={
-              selectedZoneFilter === "MAPA_CALOR"
-                ? "BARRIOS"
-                : selectedZoneFilter
-            }
-            onValueChange={(val) => onZoneFilterChange(val)}
+            value={selectedZoneFilter}
+            onValueChange={handleZoneFilterChange}
           >
+            <Switch.Option value="MAPA_CALOR">Mapa de calor</Switch.Option>
             <Switch.Option value="BARRIOS">Barrios</Switch.Option>
             {visibleLists.map((lista) => (
               <Switch.Option key={lista.id} value={lista.id}>
@@ -150,7 +158,7 @@ export function RegionAnalysis({
                     <button
                       key={lista.id}
                       onClick={() => {
-                        onZoneFilterChange(lista.id);
+                        handleZoneFilterChange(lista.id);
                         setIsOverflowOpen(false);
                       }}
                       className={`text-left px-3 py-2 text-xs rounded-lg font-medium transition cursor-pointer ${
@@ -169,71 +177,86 @@ export function RegionAnalysis({
         </div>
       </div>
 
-      {/* Cuerpo: Lista lateral alineada en altura con el Minimapa */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
-        {/* Columna Izquierda: Regiones más afectadas con ordenamiento y todos los elementos */}
-        <div className="md:col-span-4 flex flex-col gap-2.5 h-[420px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-600">
-              Regiones más afectadas:
-            </span>
-
-            {/* Botón de Ordenamiento (Fondo blanco y recuadro gris) */}
-            <button
-              onClick={() =>
-                setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
-              }
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-700 bg-white border border-gray-200 shadow-2xs hover:bg-zinc-50 px-2.5 py-1 rounded-xl transition cursor-pointer"
-              title="Cambiar orden de afectación"
-            >
-              <ArrowUpDown className="w-3 h-3" />
-              <span>
-                {sortOrder === "desc" ? "Mayor afección" : "Menor afección"}
+      {/* Cuerpo: Lista lateral + Minimapa */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch min-h-[420px]">
+        {/* Columna Izquierda: Regiones más afectadas (se oculta en Mapa de calor) */}
+        {selectedZoneFilter !== "MAPA_CALOR" && (
+          <div className="md:col-span-4 flex flex-col gap-2.5 h-[420px]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-zinc-600">
+                Regiones más afectadas:
               </span>
-            </button>
-          </div>
 
-          {/* Lista completa de elementos (con scroll si excede la altura) */}
-          <div className="flex flex-col gap-2 overflow-y-auto flex-1 pr-1.5">
-            {regionAffectedItems.length > 0 ? (
-              regionAffectedItems.map((item, idx) => (
-                <div
-                  key={`${item.nombre}-${idx}`}
-                  className="bg-zinc-50/80 hover:bg-zinc-100 border border-gray-200/80 rounded-xl p-3 flex items-center justify-between transition"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-zinc-900 line-clamp-1">
-                      {item.nombre}
+              {/* Botón de Ordenamiento (Fondo blanco y recuadro gris) */}
+              <button
+                onClick={() =>
+                  setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
+                }
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-700 bg-white border border-gray-200 shadow-2xs hover:bg-zinc-50 px-2.5 py-1 rounded-xl transition cursor-pointer"
+                title="Cambiar orden de afectación"
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                <span>
+                  {sortOrder === "desc" ? "Mayor afección" : "Menor afección"}
+                </span>
+              </button>
+            </div>
+
+            {/* Lista completa de elementos (con scroll si excede la altura) */}
+            <div className="flex flex-col gap-2 overflow-y-auto flex-1 pr-1.5">
+              {regionAffectedItems.length > 0 ? (
+                regionAffectedItems.map((item, idx) => (
+                  <button
+                    key={`${item.nombre}-${idx}`}
+                    onClick={() =>
+                      setSelectedRegionName((prev) =>
+                        prev === item.nombre ? null : item.nombre
+                      )
+                    }
+                    className={`text-left rounded-xl p-3 flex items-center justify-between transition cursor-pointer border ${
+                      selectedRegionName === item.nombre
+                        ? "bg-blue-50/90 border-blue-400 font-bold"
+                        : "bg-zinc-50/80 hover:bg-zinc-100 border-gray-200/80"
+                    }`}
+                    title={`Hacer zoom a ${item.nombre} en el minimapa`}
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-zinc-900 line-clamp-1">
+                        {item.nombre}
+                      </span>
+                      <span className="text-[11px] font-medium text-zinc-500">
+                        {item.count} {item.count === 1 ? "reclamo" : "reclamos"}
+                      </span>
+                    </div>
+                    {/* Porcentaje en texto plano sin recuadro */}
+                    <span className="text-xs font-bold text-zinc-700">
+                      {item.percentage}%
                     </span>
-                    <span className="text-[11px] font-medium text-zinc-500">
-                      {item.count} {item.count === 1 ? "reclamo" : "reclamos"}
-                    </span>
-                  </div>
-                  {/* Porcentaje en texto plano sin recuadro */}
-                  <span className="text-xs font-bold text-zinc-700">
-                    {item.percentage}%
-                  </span>
+                  </button>
+                ))
+              ) : (
+                <div className="p-6 text-center text-xs text-zinc-400 border border-dashed border-gray-200 rounded-xl">
+                  No hay datos de afectación disponibles.
                 </div>
-              ))
-            ) : (
-              <div className="p-6 text-center text-xs text-zinc-400 border border-dashed border-gray-200 rounded-xl">
-                No hay datos de afectación disponibles.
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Columna Derecha: Minimapa con altura igualada */}
-        <div className="md:col-span-8 h-[420px]">
+        {/* Columna Derecha: Minimapa (12 columnas en Mapa de calor, 8 en Barrios/Listas) */}
+        <div
+          className={`h-[420px] ${
+            selectedZoneFilter === "MAPA_CALOR"
+              ? "md:col-span-12"
+              : "md:col-span-8"
+          }`}
+        >
           <MinimapInternal
             reports={reports}
             barriosGeoJson={barriosGeoJson}
             customRegions={customRegions}
-            selectedZoneFilter={
-              selectedZoneFilter === "MAPA_CALOR"
-                ? "BARRIOS"
-                : selectedZoneFilter
-            }
+            selectedZoneFilter={selectedZoneFilter}
+            selectedRegionName={selectedRegionName}
           />
         </div>
       </div>
