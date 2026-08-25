@@ -126,6 +126,7 @@ interface SidebarProps {
   isNavigatingNearestHealthCenter?: boolean;
   activeAdminTab?: string;
   onAdminTabChange?: (tab: string) => void;
+  fullHeight?: boolean;
 }
 
 function HealthCenterCard({
@@ -324,6 +325,7 @@ export function Sidebar({
   isNavigatingNearestHealthCenter = false,
   activeAdminTab: activeAdminTabProp,
   onAdminTabChange,
+  fullHeight = false,
 }: SidebarProps) {
   const router = useRouter();
   const [internalActiveAdminTab, setInternalActiveAdminTab] =
@@ -401,7 +403,13 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="flex flex-col gap-3 m-4 z-100 w-72 max-w-72 rounded-2xl border border-gray-200 bg-white/60 p-2.5 backdrop-blur-xs max-h-[85vh]">
+    <aside
+      className={`flex flex-col gap-3 z-100 w-72 max-w-72 border-r border-gray-200/80 bg-white/95 p-3.5 backdrop-blur-xs transition-all duration-300 ${
+        fullHeight
+          ? "h-screen rounded-none m-0 border-y-0 border-l-0 shadow-md"
+          : "m-4 rounded-2xl border bg-white/60 max-h-[85vh]"
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center">
           <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
