@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Report } from "@/types/report";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatLocationAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
 import { ageMultiplier } from "@/lib/zones";
@@ -76,6 +76,11 @@ export function ReportDetailSidebar({
   useEffect(() => {
     let isCancelled = false;
 
+    // Si ya tenemos dirección guardada completa en la BD, no llamamos a Nominatim
+    if (activeReport && formatLocationAddress(activeReport)) {
+      return;
+    }
+
     if (activeReport?.latitud && activeReport?.longitud) {
       resolveAddress(activeReport.latitud, activeReport.longitud)
         .then((resolved) => {
@@ -89,7 +94,7 @@ export function ReportDetailSidebar({
     return () => {
       isCancelled = true;
     };
-  }, [activeReport?.latitud, activeReport?.longitud]);
+  }, [activeReport]);
 
   if (!activeReport) return null;
 
@@ -160,7 +165,8 @@ export function ReportDetailSidebar({
         <div className="flex items-start gap-2.5 text-xs p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
           <MapPin className="h-4 w-4 text-zinc-400 mt-0.5 shrink-0" />
           <span className="font-medium text-zinc-600 leading-relaxed">
-            {address ??
+            {formatLocationAddress(activeReport) ??
+              address ??
               activeReport.localidad ??
               `Lat ${activeReport.latitud.toFixed(4)}, Lng ${activeReport.longitud.toFixed(4)}`}
           </span>

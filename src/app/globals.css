@@ -50,6 +50,28 @@ body {
   margin: 0 !important;
 }
 
+.leaflet-container a.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  padding: 0 !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #71717a !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #18181b !important;
+  background-color: #f4f4f5 !important;
+}
+
 .leaflet-container {
   font-family: inherit !important;
   width: 100%;

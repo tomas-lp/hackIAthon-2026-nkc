@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
 import { useEffect, useState } from "react";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatLocationAddress } from "@/lib/format";
 
 interface SafeZoneDetailSidebarProps {
   safeZone: SafeZone | null;
@@ -72,17 +72,10 @@ export function SafeZoneDetailSidebar({
   useEffect(() => {
     let isCancelled = false;
 
-    if (!activeSafeZone) {
-      return;
-    }
+    if (!activeSafeZone) return;
 
-    const hasValidDireccion =
-      activeSafeZone.direccion &&
-      !activeSafeZone.direccion.toLowerCase().startsWith("lat ");
-
-    if (hasValidDireccion) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAsyncAddress(null);
+    // Si ya tenemos dirección completa desde la BD, no llamamos a Nominatim
+    if (formatLocationAddress(activeSafeZone)) {
       return;
     }
 
@@ -103,25 +96,9 @@ export function SafeZoneDetailSidebar({
 
   if (!activeSafeZone) return null;
 
-  const isCoordDireccion =
-    activeSafeZone.direccion &&
-    activeSafeZone.direccion.toLowerCase().startsWith("lat ");
-
-  const cleanDireccion = isCoordDireccion
-    ? null
-    : activeSafeZone.direccion?.trim();
-
-  const fullLocation = [
-    cleanDireccion,
-    activeSafeZone.localidad,
-    activeSafeZone.departamento,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
   const displayAddress =
-    fullLocation ||
-    asyncAddress ||
+    formatLocationAddress(activeSafeZone) ??
+    asyncAddress ??
     `${activeSafeZone.localidad || "Corrientes"}, ${activeSafeZone.departamento || "Capital"}`;
 
   const tipoLabel =

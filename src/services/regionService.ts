@@ -19,13 +19,7 @@ export const regionService = {
       return [];
     }
 
-    // Si el usuario no tiene ninguna lista, creamos "Lista 1" por defecto
-    if (!data || data.length === 0) {
-      const defaultList = await this.createList("Lista 1");
-      return defaultList ? [defaultList] : [];
-    }
-
-    return data;
+    return data || [];
   },
 
   async createList(nombre: string): Promise<RegionLista | null> {
@@ -146,5 +140,21 @@ export const regionService = {
       .in("id", ids);
 
     if (error) throw error;
+  },
+
+  async deleteList(id: string): Promise<void> {
+    const supabase = createClient();
+    // Delete associated regions first
+    await supabase.from("regiones_personalizadas").delete().eq("lista_id", id);
+
+    const { error } = await supabase
+      .from("listas_regiones")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting region list:", error);
+      throw error;
+    }
   },
 };

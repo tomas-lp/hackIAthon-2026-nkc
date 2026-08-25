@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
+import { TooltipSign } from "@/components/ui/TooltipSign";
 import {
   ChevronLeft,
   ChevronDown,
@@ -246,9 +247,12 @@ function ReportCard({
   onSelect: (report: Report) => void;
   isAdmin?: boolean;
 }) {
+  const storedAddress = formatReportAddress(report);
   const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
+    if (storedAddress) return; // ya tenemos datos de la BD
+
     let isCancelled = false;
 
     resolveAddress(report.latitud, report.longitud)
@@ -262,7 +266,7 @@ function ReportCard({
     return () => {
       isCancelled = true;
     };
-  }, [report.latitud, report.longitud]);
+  }, [report.latitud, report.longitud, storedAddress]);
 
   const typeLabel = TYPE_CONFIG[report.tipo].label;
 
@@ -286,9 +290,9 @@ function ReportCard({
           </span>
           <span
             className="text-xs font-medium text-black/80"
-            title={address ?? report.localidad ?? report.descripcion}
+            title={storedAddress ?? address ?? report.descripcion}
           >
-            {address ?? report.localidad ?? "Direccion no disponible"}
+            {storedAddress ?? address ?? "Dirección no disponible"}
           </span>
         </div>
         {isAdmin && (
@@ -422,14 +426,15 @@ export function Sidebar({
           </span>
         </div>
         {onCollapse && (
-          <button
-            id="sidebar-collapse-btn"
-            onClick={onCollapse}
-            title="Ocultar panel"
-            className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+          <TooltipSign label="Ocultar panel" position="right" delayMs={500}>
+            <button
+              id="sidebar-collapse-btn"
+              onClick={onCollapse}
+              className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </TooltipSign>
         )}
       </div>
 
