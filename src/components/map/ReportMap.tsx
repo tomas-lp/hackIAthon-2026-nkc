@@ -8,6 +8,8 @@ import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
 import { RouteResult } from "@/lib/routing";
 
+import { RegionPersonalizada } from "@/types/region";
+
 interface ReportMapProps {
   reports: Report[];
   selectedReport: Report | null;
@@ -30,6 +32,17 @@ interface ReportMapProps {
   showEvacuationCenters?: boolean;
   showMedicalCenters?: boolean;
   showBarrios?: boolean;
+  regiones?: RegionPersonalizada[];
+  newlyAddedDraftZones?: RegionPersonalizada[];
+  activeHeaderTab?: string;
+  isDrawing?: boolean;
+  draftPoints?: [number, number][];
+  onAddDraftPoint?: (pt: [number, number]) => void;
+  onFinishDrawing?: () => void;
+  onCancelDrawing?: () => void;
+  showNamePopup?: boolean;
+  isEditingRegions?: boolean;
+  onDeleteRegion?: (regionId: string) => void;
 }
 
 const ReportMapInternal = dynamic(() => import("./ReportMapInternal"), {

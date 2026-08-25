@@ -8,6 +8,7 @@ import { HealthCenter } from "@/types/healthCenter";
 import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
+import { TooltipSign } from "@/components/ui/TooltipSign";
 import {
   ChevronLeft,
   ChevronDown,
@@ -410,14 +411,15 @@ export function Sidebar({
           </span>
         </div>
         {onCollapse && (
-          <button
-            id="sidebar-collapse-btn"
-            onClick={onCollapse}
-            title="Ocultar panel"
-            className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+          <TooltipSign label="Ocultar panel" position="right" delayMs={500}>
+            <button
+              id="sidebar-collapse-btn"
+              onClick={onCollapse}
+              className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </TooltipSign>
         )}
       </div>
 

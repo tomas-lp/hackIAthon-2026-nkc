@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Layers, Info, Plus } from "lucide-react";
+import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface LayerControlsProps {
   showEvacuationCenters: boolean;
@@ -35,17 +36,18 @@ export function LayerControls({
       {/* Container for Layer Button & Popover */}
       <div className="relative">
         {/* Layer Toggle Floating Button */}
-        <button
-          onClick={() => setIsPopoverOpen((prev) => !prev)}
-          title="Capas del mapa"
-          className={`flex items-center justify-center rounded-full border p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
-            isPopoverOpen
-              ? "bg-zinc-200/90 text-zinc-950 border-zinc-300 shadow-sm"
-              : "bg-white/70 text-zinc-700 hover:bg-white/90 border-white/50"
-          }`}
-        >
-          <Layers className="h-5 w-5" />
-        </button>
+        <TooltipSign label="Mostrar capas" position="top" delayMs={500}>
+          <button
+            onClick={() => setIsPopoverOpen((prev) => !prev)}
+            className={`flex items-center justify-center rounded-full border p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
+              isPopoverOpen
+                ? "bg-zinc-200/90 text-zinc-950 border-zinc-300 shadow-sm"
+                : "bg-white/70 text-zinc-700 hover:bg-white/90 border-white/50"
+            }`}
+          >
+            <Layers className="h-5 w-5" />
+          </button>
+        </TooltipSign>
 
         {/* Popover Panel with Spring Bounce Slide Animation */}
         <div
@@ -69,27 +71,34 @@ export function LayerControls({
               {/* Toggle Switch */}
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setShowEvacuationCenters((prev) => !prev)}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   showEvacuationCenters ? "bg-emerald-500" : "bg-zinc-300"
                 }`}
               >
                 <span
+                  suppressHydrationWarning
                   className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
                     showEvacuationCenters ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
               </button>
               {/* Plus Button */}
-              <button
-                onClick={() => {
-                  onCreateEvacuationCenter?.();
-                }}
-                title="Agregar centro de evacuación"
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+              <TooltipSign
+                label="Añadir centro de evacuación"
+                position="top"
+                delayMs={500}
               >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
+                <button
+                  onClick={() => {
+                    onCreateEvacuationCenter?.();
+                  }}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </TooltipSign>
             </div>
           </div>
 
@@ -116,27 +125,34 @@ export function LayerControls({
               {/* Toggle Switch */}
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setShowMedicalCenters((prev) => !prev)}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   showMedicalCenters ? "bg-red-500" : "bg-zinc-300"
                 }`}
               >
                 <span
+                  suppressHydrationWarning
                   className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
                     showMedicalCenters ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
               </button>
               {/* Plus Button */}
-              <button
-                onClick={() => {
-                  onCreateMedicalCenter?.();
-                }}
-                title="Agregar centro de atención médica"
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+              <TooltipSign
+                label="Añadir centro de at. médica"
+                position="top"
+                delayMs={500}
               >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
+                <button
+                  onClick={() => {
+                    onCreateMedicalCenter?.();
+                  }}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </TooltipSign>
             </div>
           </div>
         </div>
