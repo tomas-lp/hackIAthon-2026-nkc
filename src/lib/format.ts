@@ -27,3 +27,61 @@ export function formatTitleCase(str?: string | null): string {
     })
     .join(" ");
 }
+
+/**
+ * Formatea la dirección completa desde campos de BD.
+ * Funciona con Report, SafeZone y HealthCenter.
+ * Formato: "Calle 123, Ciudad, Provincia, Argentina"
+ * Ejemplo: "Güemes 501, Resistencia, Chaco, Argentina"
+ */
+export function formatLocationAddress(record: {
+  direccion?: string | null;
+  barrio?: string | null;
+  localidad?: string | null;
+  provincia?: string | null;
+  departamento?: string | null;
+}): string | null {
+  const street = record.direccion?.trim();
+  const barrio = record.barrio?.trim();
+  const locality = record.localidad?.trim();
+  const prov = record.provincia?.trim();
+
+  // Si no hay ningún dato de ubicación estructurado, devolver null para activar el fallback
+  if (!street && !barrio && !locality && !prov) {
+    return null;
+  }
+
+  const parts: string[] = [];
+
+  if (street) {
+    parts.push(street);
+  } else if (barrio) {
+    parts.push(`Barrio ${barrio}`);
+  }
+
+  if (
+    locality &&
+    !parts.some((p) => p.toLowerCase().includes(locality.toLowerCase()))
+  ) {
+    parts.push(locality);
+  }
+
+  if (
+    prov &&
+    !parts.some((p) => p.toLowerCase().includes(prov.toLowerCase()))
+  ) {
+    parts.push(prov);
+  }
+
+  if (
+    parts.length > 0 &&
+    !parts.some((p) => p.toLowerCase().includes("argentina"))
+  ) {
+    parts.push("Argentina");
+  }
+
+  return parts.join(", ");
+}
+
+/** @deprecated Usar formatLocationAddress */
+export const formatReportAddress = formatLocationAddress;

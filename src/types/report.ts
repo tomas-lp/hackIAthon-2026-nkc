@@ -13,6 +13,10 @@ export interface Report {
   descripcion: string;
   usuario: string;
   localidad?: string | null;
+  departamento?: string | null;
+  provincia?: string | null;
+  direccion?: string | null;
+  barrio?: string | null;
   puntajeBase: number;
   puntajeDescripcion: number;
   puntajeFoto: number;

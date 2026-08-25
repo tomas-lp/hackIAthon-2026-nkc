@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
 import {
@@ -245,9 +245,12 @@ function ReportCard({
   onSelect: (report: Report) => void;
   isAdmin?: boolean;
 }) {
+  const storedAddress = formatReportAddress(report);
   const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
+    if (storedAddress) return; // ya tenemos datos de la BD
+
     let isCancelled = false;
 
     resolveAddress(report.latitud, report.longitud)
@@ -261,7 +264,7 @@ function ReportCard({
     return () => {
       isCancelled = true;
     };
-  }, [report.latitud, report.longitud]);
+  }, [report.latitud, report.longitud, storedAddress]);
 
   const typeLabel = TYPE_CONFIG[report.tipo].label;
 
@@ -285,9 +288,9 @@ function ReportCard({
           </span>
           <span
             className="text-xs font-medium text-black/80"
-            title={address ?? report.localidad ?? report.descripcion}
+            title={storedAddress ?? address ?? report.descripcion}
           >
-            {address ?? report.localidad ?? "Direccion no disponible"}
+            {storedAddress ?? address ?? "Dirección no disponible"}
           </span>
         </div>
         {isAdmin && (

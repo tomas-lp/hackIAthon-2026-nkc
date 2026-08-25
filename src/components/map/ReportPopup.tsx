@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Report } from "@/types/report";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { heatColor } from "@/lib/heatmap";
 import { resolveAddress } from "@/lib/geocode";
@@ -33,8 +33,12 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
     setAddress(null);
   }
 
+  // Construir dirección completa desde campos guardados en BD
+  const storedAddress = formatReportAddress(report);
+
   useEffect(() => {
-    if (!fetchAddress) {
+    // Si ya tenemos datos de la BD no hacemos la llamada a Nominatim
+    if (!fetchAddress || storedAddress) {
       return;
     }
 
@@ -55,7 +59,7 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
     return () => {
       isCancelled = true;
     };
-  }, [report.latitud, report.longitud, fetchAddress]);
+  }, [report.latitud, report.longitud, fetchAddress, storedAddress]);
 
   const typeCfg = TYPE_CONFIG[report.tipo];
   const badgeColor = heatColor(report.puntajeReal ?? report.puntajeBase);
@@ -85,8 +89,8 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
             Ubicación
           </span>
           <span className="max-w-45 text-right font-medium leading-snug text-zinc-700">
-            {address ??
-              report.localidad ??
+            {storedAddress ??
+              address ??
               `Lat ${report.latitud.toFixed(4)}, Lng ${report.longitud.toFixed(4)}`}
           </span>
         </div>
