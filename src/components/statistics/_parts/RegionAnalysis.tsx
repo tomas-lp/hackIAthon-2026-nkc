@@ -177,11 +177,11 @@ export function RegionAnalysis({
         </div>
       </div>
 
-      {/* Cuerpo: Lista lateral + Minimapa */}
+      {/* Cuerpo: Lista lateral + Minimapa con animación de desplazamiento */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch min-h-[420px]">
         {/* Columna Izquierda: Regiones más afectadas (se oculta en Mapa de calor) */}
         {selectedZoneFilter !== "MAPA_CALOR" && (
-          <div className="md:col-span-4 flex flex-col gap-2.5 h-[420px]">
+          <div className="md:col-span-4 flex flex-col gap-2.5 h-[420px] animate-list-slide-left">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-600">
                 Regiones más afectadas:
@@ -245,10 +245,11 @@ export function RegionAnalysis({
 
         {/* Columna Derecha: Minimapa (12 columnas en Mapa de calor, 8 en Barrios/Listas) */}
         <div
+          key={selectedZoneFilter === "MAPA_CALOR" ? "map-heat" : "map-regions"}
           className={`h-[420px] ${
             selectedZoneFilter === "MAPA_CALOR"
-              ? "md:col-span-12"
-              : "md:col-span-8"
+              ? "md:col-span-12 animate-map-expand"
+              : "md:col-span-8 animate-map-contract"
           }`}
         >
           <MinimapInternal

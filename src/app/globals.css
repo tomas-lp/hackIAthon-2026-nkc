@@ -226,64 +226,48 @@ path.leaflet-interactive:focus {
   animation: legend-bounce-down 0.28s cubic-bezier(0.25, 1.25, 0.5, 1) forwards;
 }
 
-/* Expansion bounce animation for full-width minimap view */
-@keyframes expand-bounce {
+/* Smooth map displacement animations */
+@keyframes map-slide-expand {
   0% {
-    transform: scale(0.98);
-    opacity: 0.9;
-  }
-  65% {
-    transform: scale(1.008);
-  }
-  85% {
-    transform: scale(0.997);
+    opacity: 0.82;
+    transform: translateX(20px);
   }
   100% {
-    transform: scale(1);
     opacity: 1;
-  }
-}
-
-.animate-expand-bounce {
-  animation: expand-bounce 0.48s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
-}
-
-@keyframes slide-in-bounce {
-  0% {
-    transform: translateX(-16px);
-    opacity: 0;
-  }
-  70% {
-    transform: translateX(3px);
-    opacity: 1;
-  }
-  100% {
     transform: translateX(0);
   }
 }
 
-.animate-slide-in-bounce {
-  animation: slide-in-bounce 0.42s ease-out forwards;
-}
-
-/* Minimap stretching and growing towards the left side with subtle transition */
-@keyframes stretch-left-bounce {
+@keyframes map-slide-contract {
   0% {
-    transform: scaleX(0.96);
-    transform-origin: right center;
-    opacity: 0.95;
-  }
-  70% {
-    transform: scaleX(1.004);
-    transform-origin: right center;
+    opacity: 0.82;
+    transform: translateX(-20px);
   }
   100% {
-    transform: scaleX(1);
-    transform-origin: right center;
     opacity: 1;
+    transform: translateX(0);
   }
 }
 
-.animate-stretch-left {
-  animation: stretch-left-bounce 0.45s ease-out forwards;
+.animate-map-expand {
+  animation: map-slide-expand 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-map-contract {
+  animation: map-slide-contract 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes list-slide-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-list-slide-left {
+  animation: list-slide-left 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
