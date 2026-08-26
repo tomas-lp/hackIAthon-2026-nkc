@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
@@ -131,8 +132,6 @@ interface SidebarProps {
   isNavigatingNearest?: boolean;
   onNavigateToNearestHealthCenter?: () => void;
   isNavigatingNearestHealthCenter?: boolean;
-  activeAdminTab?: string;
-  onAdminTabChange?: (tab: string) => void;
   fullHeight?: boolean;
 }
 
@@ -333,42 +332,16 @@ export function Sidebar({
   isNavigatingNearest = false,
   onNavigateToNearestHealthCenter,
   isNavigatingNearestHealthCenter = false,
-  activeAdminTab: activeAdminTabProp,
-  onAdminTabChange,
   fullHeight = false,
 }: SidebarProps) {
-  const router = useRouter();
-  const [internalActiveAdminTab, setInternalActiveAdminTab] =
-    useState<string>("Mapa");
-  const activeAdminTab = activeAdminTabProp ?? internalActiveAdminTab;
-
-  const handleAdminTabClick = (option: string) => {
-    if (onAdminTabChange) {
-      onAdminTabChange(option);
-    } else {
-      setInternalActiveAdminTab(option);
-    }
-
-    if (option === "Regiones") {
-      router.push("/regiones-personalizadas");
-      return;
-    }
-    if (option === "Marcadores") {
-      router.push("/marcadores");
-      return;
-    }
-    if (option === "Mapa") {
-      router.push("/");
-      return;
-    }
-    if (
-      option === "Panel de Administración" ||
-      option === "Panel de Estadísticas"
-    ) {
-      router.push("/estadisticas");
-      return;
-    }
+  const pathname = usePathname();
+  const pathToTab: Record<string, string> = {
+    "/": "Mapa",
+    "/marcadores": "Marcadores",
+    "/regiones-personalizadas": "Regiones",
+    "/estadisticas": "Panel de Administración",
   };
+  const activeAdminTab = pathToTab[pathname] ?? "Mapa";
 
   // Buscador de marcadores (Evacuación y Salud)
   const [markerSearchQuery, setMarkerSearchQuery] = useState("");
@@ -483,10 +456,10 @@ export function Sidebar({
   }, [filters.tipo, reports]);
 
   const adminMenuOptions = [
-    "Mapa",
-    "Marcadores",
-    "Regiones",
-    "Panel de Administración",
+    { label: "Mapa", href: "/" },
+    { label: "Marcadores", href: "/marcadores" },
+    { label: "Regiones", href: "/regiones-personalizadas" },
+    { label: "Panel de Administración", href: "/estadisticas" },
   ];
 
   const [isExpanded, setIsExpanded] = useState<boolean>(() => {
@@ -557,19 +530,19 @@ export function Sidebar({
         /* Admin Navigation View */
         <div className="flex flex-col gap-1.5 py-0.5">
           {adminMenuOptions.map((option) => {
-            const isSelected = activeAdminTab === option;
+            const isSelected = activeAdminTab === option.label;
             return (
-              <button
-                key={option}
-                onClick={() => handleAdminTabClick(option)}
+              <Link
+                key={option.href}
+                href={option.href}
                 className={`w-full rounded-xl border px-3.5 py-2.5 text-left font-medium text-xs transition-all duration-200 cursor-pointer shadow-2xs ${
                   isSelected
                     ? "border-zinc-400 bg-white text-zinc-950 font-bold shadow-xs scale-[1.01]"
                     : "border-gray-200/80 bg-white/90 text-zinc-700 hover:bg-gray-50 hover:border-gray-300"
                 }`}
               >
-                {option}
-              </button>
+                {option.label}
+              </Link>
             );
           })}
         </div>

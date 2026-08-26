@@ -19,7 +19,7 @@ import { DeleteListModal } from "@/components/ui/DeleteListModal";
 import { RegionNamePopup } from "@/components/regions/RegionNamePopup";
 import { Report } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
-import { RegionPersonalizada } from "@/types/region";
+import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { regionService } from "@/services/regionService";
 import { ChevronRight } from "lucide-react";
 import { User } from "@supabase/supabase-js";
@@ -35,11 +35,13 @@ import { EditingBar } from "./_parts/EditingBar";
 
 interface HomeDashboardProps {
   initialReports: Report[];
+  initialListas?: RegionLista[];
   user?: User | null;
 }
 
 export function HomeDashboard({
   initialReports,
+  initialListas,
   user: initialUser,
 }: HomeDashboardProps) {
   const { isAdmin } = useAuth(initialUser);
@@ -95,7 +97,7 @@ export function HomeDashboard({
     setIsAddListModalOpen,
     handleAddList,
     refreshLists,
-  } = useAdminTabs();
+  } = useAdminTabs(initialListas);
 
   const [regiones, setRegiones] = useState<RegionPersonalizada[]>([]);
   const [isEditingRegions, setIsEditingRegions] = useState(false);

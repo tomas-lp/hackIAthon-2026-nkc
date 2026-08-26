@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Report } from "@/types/report";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { User } from "@supabase/supabase-js";
-import { Sidebar } from "@/components/common/Sidebar";
 import { AuthWidget, LoginModal } from "@/components/common/AuthWidget";
 import { RegionsMap } from "./RegionsMap";
 import { RegionNamePopup } from "./RegionNamePopup";
@@ -16,7 +14,7 @@ import {
   barrioService,
   BarriosFeatureCollection,
 } from "@/services/barrioService";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import { useReports } from "@/hooks/useReports";
 
@@ -25,6 +23,7 @@ interface RegionsDashboardProps {
   initialAllReports?: Report[];
   initialRegiones: RegionPersonalizada[];
   initialListas?: RegionLista[];
+  initialBarriosGeoJson?: BarriosFeatureCollection | null;
   user: User | null;
 }
 
@@ -33,9 +32,9 @@ export function RegionsDashboard({
   initialAllReports = [],
   initialRegiones,
   initialListas = [],
+  initialBarriosGeoJson = null,
   user,
 }: RegionsDashboardProps) {
-  const router = useRouter();
   const [regiones, setRegiones] =
     useState<RegionPersonalizada[]>(initialRegiones);
   const [allReports, setAllReports] = useState<Report[]>(
@@ -43,11 +42,9 @@ export function RegionsDashboard({
   );
   const [listas, setListas] = useState<RegionLista[]>(initialListas);
   const [barriosGeoJson, setBarriosGeoJson] =
-    useState<BarriosFeatureCollection | null>(null);
-  const [activeAdminTab, setActiveAdminTab] = useState<string>("Regiones");
+    useState<BarriosFeatureCollection | null>(initialBarriosGeoJson);
   const [activeHeaderTab, setActiveHeaderTab] = useState<string>("Barrios");
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [draftPoints, setDraftPoints] = useState<[number, number][]>([]);
   const [showNamePopup, setShowNamePopup] = useState(false);
@@ -56,16 +53,7 @@ export function RegionsDashboard({
   const [isFocusedRegionView, setIsFocusedRegionView] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const {
-    reports,
-    filters,
-    loading,
-    error,
-    selectedReport,
-    setSelectedReport,
-    updateFilter,
-    resetFilters,
-  } = useReports(initialReports);
+  const { reports } = useReports(initialReports);
 
   // Cargar regiones, listas y barrios al montar
   const refreshData = useCallback(async () => {
@@ -101,21 +89,11 @@ export function RegionsDashboard({
     refreshData();
   }, [refreshData]);
 
-  // Manejo de navegación en menú lateral
-  const handleAdminTabChange = (tab: string) => {
-    if (tab === "Mapa") {
-      router.push("/");
-    } else {
-      setActiveAdminTab(tab);
-    }
-  };
-
   // Iniciar dibujo de región (desde el botón + de la tabla o mapa)
   const handleCreateRegion = () => {
     setIsDrawing(true);
     setDraftPoints([]);
     setShowNamePopup(false);
-    setSidebarCollapsed(true);
     setSelectedRegionId(null);
   };
 
@@ -139,7 +117,6 @@ export function RegionsDashboard({
     setIsDrawing(false);
     setDraftPoints([]);
     setShowNamePopup(false);
-    setSidebarCollapsed(false);
   }, []);
 
   useEffect(() => {
@@ -169,7 +146,6 @@ export function RegionsDashboard({
       setIsDrawing(false);
       setDraftPoints([]);
       setShowNamePopup(false);
-      setSidebarCollapsed(false);
     }
   };
 
@@ -239,14 +215,10 @@ export function RegionsDashboard({
   }, [regiones, activeHeaderTab, isFocusedRegionView, isSelectedBarrio]);
 
   // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa o se clickeó una región/barrio
-  const isMapVisible =
-    isFocusedRegionView ||
-    activeAdminTab !== "Regiones" ||
-    isDrawing ||
-    showNamePopup;
+  const isMapVisible = isFocusedRegionView || isDrawing || showNamePopup;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-zinc-100 font-sans">
+    <div className="relative h-screen w-full overflow-hidden bg-zinc-100 font-sans">
       {/* Botón Volver a la lista de regiones (arriba a la izquierda en vista de mapa enfocada) */}
       {isFocusedRegionView && (
         <div className="absolute top-6 left-6 z-[100]">
@@ -261,50 +233,6 @@ export function RegionsDashboard({
           </TooltipSign>
         </div>
       )}
-
-      {/* Botón flotante para abrir sidebar si está colapsado */}
-      {sidebarCollapsed &&
-        !isDrawing &&
-        !showNamePopup &&
-        !isFocusedRegionView && (
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
-            title="Mostrar panel"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        )}
-
-      {/* Menú lateral izquierdo (Sidebar de Home) */}
-      <div
-        className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
-        style={{
-          transform:
-            sidebarCollapsed ||
-            isDrawing ||
-            showNamePopup ||
-            isFocusedRegionView
-              ? "translateX(-110%)"
-              : "translateX(0)",
-        }}
-      >
-        <Sidebar
-          reports={reports}
-          filters={filters}
-          loading={loading}
-          error={error}
-          selectedReport={selectedReport}
-          onSelectReport={(r) => setSelectedReport(r)}
-          onUpdateFilter={updateFilter}
-          onResetFilters={resetFilters}
-          isAdmin={true}
-          activeAdminTab={activeAdminTab}
-          onAdminTabChange={handleAdminTabChange}
-          fullHeight={true}
-          onCollapse={() => setSidebarCollapsed(true)}
-        />
-      </div>
 
       {/* Widget de Usuario cuando está en vista de mapa */}
       {isMapVisible && !isDrawing && !showNamePopup && (
@@ -335,9 +263,7 @@ export function RegionsDashboard({
       {/* Contenido Principal: Tabla de Regiones o Mapa Limpio Enfocado */}
       {!isMapVisible ? (
         <div
-          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${
-            sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
-          }`}
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${"px-6"}`}
         >
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
             {/* Encabezado Superior */}

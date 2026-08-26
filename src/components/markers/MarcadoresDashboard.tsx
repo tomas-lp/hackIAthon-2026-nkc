@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter, HealthCenterType } from "@/types/healthCenter";
 import { Report } from "@/types/report";
@@ -12,15 +11,13 @@ import {
   HEALTH_CENTER_TYPE_LABELS,
 } from "@/types/marker";
 import { User } from "@supabase/supabase-js";
-import { Sidebar } from "@/components/common/Sidebar";
 import { AuthWidget, LoginModal } from "@/components/common/AuthWidget";
 import { MarcadoresTableUI } from "./MarcadoresTableUI";
 import { MarcadoresMap } from "./MarcadoresMap";
 import { MarkerCreationModal, MarkerFormData } from "./MarkerCreationModal";
 import { safeZoneService } from "@/services/safeZoneService";
 import { healthCenterService } from "@/services/healthCenterService";
-import { useReports } from "@/hooks/useReports";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import { resolveLocationDetails, geocodeAddress } from "@/lib/geocode";
 import { SafeZoneDetailSidebar } from "@/components/map/SafeZoneDetailSidebar";
@@ -43,13 +40,11 @@ interface MarcadoresDashboardProps {
 export function MarcadoresDashboard({
   initialSafeZones,
   initialHealthCenters,
-  initialReports,
   initialBarriosGeoJson,
   initialRegionLists,
   initialCustomRegions,
   user,
 }: MarcadoresDashboardProps) {
-  const router = useRouter();
   const [safeZones, setSafeZones] = useState<SafeZone[]>(initialSafeZones);
   const [healthCenters, setHealthCenters] =
     useState<HealthCenter[]>(initialHealthCenters);
@@ -57,11 +52,9 @@ export function MarcadoresDashboard({
   const regionLists = initialRegionLists || [];
   const customRegions = initialCustomRegions || [];
 
-  const [activeAdminTab, setActiveAdminTab] = useState<string>("Marcadores");
   const [activeCategoryFilter, setActiveCategoryFilter] =
     useState<string>("TODOS");
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<MarkerRow | null>(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -79,17 +72,6 @@ export function MarcadoresDashboard({
   } | null>(null);
   const [showCreationModal, setShowCreationModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-
-  const {
-    reports,
-    filters,
-    loading,
-    error,
-    selectedReport,
-    setSelectedReport,
-    updateFilter,
-    resetFilters,
-  } = useReports(initialReports);
 
   // Refrescar marcadores desde la base de datos
   const refreshData = useCallback(async () => {
@@ -147,22 +129,10 @@ export function MarcadoresDashboard({
     return [...szRows, ...hcRows];
   }, [safeZones, healthCenters]);
 
-  // Manejo de navegación en menú lateral
-  const handleAdminTabChange = (tab: string) => {
-    if (tab === "Mapa") {
-      router.push("/");
-    } else if (tab === "Regiones") {
-      router.push("/regiones-personalizadas");
-    } else {
-      setActiveAdminTab(tab);
-    }
-  };
-
   // Iniciar flujo de creación
   const handleStartCreateMarker = () => {
     setIsMapVisible(true);
     setIsCreating(true);
-    setSidebarCollapsed(true);
     setCreatingCategory(
       activeCategoryFilter === "SALUD" ? "SALUD" : "EVACUACION"
     );
@@ -346,7 +316,6 @@ export function MarcadoresDashboard({
   const handleSelectMarker = (marker: MarkerRow) => {
     setSelectedMarker(marker);
     setIsMapVisible(true);
-    setSidebarCollapsed(true);
   };
 
   // Volver a la vista de tabla
@@ -355,11 +324,10 @@ export function MarcadoresDashboard({
     setSelectedMarker(null);
     setIsCreating(false);
     setDraftLocation(null);
-    setSidebarCollapsed(false);
   };
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-zinc-100 font-sans">
+    <div className="relative h-screen w-full overflow-hidden bg-zinc-100 font-sans">
       {/* Botón flotante para volver a la tabla si está en mapa enfocado */}
       {isMapVisible && (
         <div className="absolute left-6 top-6 z-[100]">
@@ -374,44 +342,6 @@ export function MarcadoresDashboard({
           </TooltipSign>
         </div>
       )}
-
-      {/* Botón flotante para abrir sidebar si está colapsado */}
-      {sidebarCollapsed && !isMapVisible && (
-        <button
-          onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
-          title="Mostrar panel"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      )}
-
-      {/* Menú lateral izquierdo (Sidebar de navegación) */}
-      <div
-        className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
-        style={{
-          transform:
-            sidebarCollapsed || isMapVisible
-              ? "translateX(-110%)"
-              : "translateX(0)",
-        }}
-      >
-        <Sidebar
-          reports={reports}
-          filters={filters}
-          loading={loading}
-          error={error}
-          selectedReport={selectedReport}
-          onSelectReport={(r) => setSelectedReport(r)}
-          onUpdateFilter={updateFilter}
-          onResetFilters={resetFilters}
-          isAdmin={true}
-          activeAdminTab={activeAdminTab}
-          onAdminTabChange={handleAdminTabChange}
-          fullHeight={true}
-          onCollapse={() => setSidebarCollapsed(true)}
-        />
-      </div>
 
       {/* Widget de Usuario cuando está en vista de mapa */}
       {isMapVisible && !isCreating && (
@@ -448,9 +378,7 @@ export function MarcadoresDashboard({
       {/* Contenido Principal: Tabla de Marcadores o Mapa Limpio */}
       {!isMapVisible ? (
         <div
-          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${
-            sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
-          }`}
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${"px-6"}`}
         >
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
             {/* Encabezado Superior */}
@@ -515,7 +443,6 @@ export function MarcadoresDashboard({
                   setIsCreating(false);
                   setDraftLocation(null);
                   setIsMapVisible(false);
-                  setSidebarCollapsed(false);
                 }}
                 className="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-6 py-2.5 text-sm font-bold text-red-600 shadow-xl transition-all duration-200 hover:bg-red-50 hover:scale-105 active:scale-95 cursor-pointer"
               >

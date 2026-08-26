@@ -1,4 +1,5 @@
 import { reportService } from "@/services/reportService";
+import { barrioService } from "@/services/barrioService";
 import { regionService } from "@/services/regionService";
 import { RegionsDashboard } from "@/components/regions/RegionsDashboard";
 import { createClient } from "@/lib/supabase/server";
@@ -20,22 +21,25 @@ export default async function RegionesPersonalizadasPage() {
   }
 
   // Cargar reportes activos, todos los reportes historicos, regiones y listas
-  const [reports, allReports, regiones, listas] = await Promise.all([
-    reportService.getReports(),
-    reportService.getAllReports(),
-    regionService.getRegions(supabase),
-    regionService.getLists(supabase),
-  ]);
+  const [reports, allReports, regiones, listas, barriosGeoJson] =
+    await Promise.all([
+      reportService.getReports(),
+      reportService.getAllReports(),
+      regionService.getRegions(supabase),
+      regionService.getLists(supabase),
+      barrioService.getBarriosGeoJson(),
+    ]);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-zinc-100">
       <RegionsDashboard
         initialReports={reports}
         initialAllReports={allReports}
         initialRegiones={regiones}
         initialListas={listas}
+        initialBarriosGeoJson={barriosGeoJson}
         user={user}
       />
-    </main>
+    </div>
   );
 }

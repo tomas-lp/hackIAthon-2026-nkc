@@ -28,7 +28,7 @@ export default async function EstadisticasPage() {
     ]);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-zinc-100">
       <EstadisticasDashboard
         allReports={allReports}
         barriosGeoJson={barriosGeoJson}
@@ -36,6 +36,6 @@ export default async function EstadisticasPage() {
         customRegions={customRegions}
         user={user}
       />
-    </main>
+    </div>
   );
 }

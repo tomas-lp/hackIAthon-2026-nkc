@@ -40,7 +40,7 @@ export default async function MarcadoresPage() {
   ]);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-zinc-100">
       <MarcadoresDashboard
         initialSafeZones={safeZones}
         initialHealthCenters={healthCenters}
@@ -50,6 +50,6 @@ export default async function MarcadoresPage() {
         initialCustomRegions={customRegions}
         user={user}
       />
-    </main>
+    </div>
   );
 }
