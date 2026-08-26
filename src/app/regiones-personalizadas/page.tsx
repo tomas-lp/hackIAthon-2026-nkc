@@ -19,11 +19,12 @@ export default async function RegionesPersonalizadasPage() {
     redirect("/");
   }
 
-  // Cargar reportes activos, todos los reportes historicos y regiones
-  const [reports, allReports, regiones] = await Promise.all([
+  // Cargar reportes activos, todos los reportes historicos, regiones y listas
+  const [reports, allReports, regiones, listas] = await Promise.all([
     reportService.getReports(),
     reportService.getAllReports(),
-    regionService.getRegions(),
+    regionService.getRegions(supabase),
+    regionService.getLists(supabase),
   ]);
 
   return (
@@ -32,6 +33,7 @@ export default async function RegionesPersonalizadasPage() {
         initialReports={reports}
         initialAllReports={allReports}
         initialRegiones={regiones}
+        initialListas={listas}
         user={user}
       />
     </main>

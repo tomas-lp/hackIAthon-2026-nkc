@@ -7,27 +7,24 @@ import { isPointInPolygon, isPointInGeoJSONGeometry } from "@/lib/geometry";
 import { formatTitleCase } from "@/lib/format";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 import { TooltipSign } from "@/components/ui/TooltipSign";
+import { Switch } from "@/components/ui/Switch";
 import {
   Search,
   Plus,
   Trash2,
   Download,
   MoreHorizontal,
-  ChevronDown,
   X,
   MapPin,
   Check,
+  Pencil,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronDown,
 } from "lucide-react";
 
-export type SortField =
-  | "nombre"
-  | "localidad"
-  | "cantidadReclamos"
-  | "ultimaAyuda"
-  | "reclamosActivos";
+export type SortField = "nombre" | "localidad";
 
 export type SortOrder = "asc" | "desc";
 
@@ -42,7 +39,9 @@ interface RegionsTableUIProps {
   onSelectRegion: (id: string) => void;
   onCreateRegion: () => void;
   onDeleteRegions: (ids: string[]) => Promise<void>;
+  onUpdateRegion?: (id: string, data: { nombre: string }) => Promise<void>;
   selectedRegionId: string | null;
+  onOpenNewListModal?: () => void;
 }
 
 // Helper para calcular el centroide de un polígono
@@ -94,7 +93,9 @@ export function RegionsTableUI({
   onSelectRegion,
   onCreateRegion,
   onDeleteRegions,
+  onUpdateRegion,
   selectedRegionId,
+  onOpenNewListModal,
 }: RegionsTableUIProps) {
   const [selectedType, setSelectedType] = useState<string>(
     activeListFilter === "Todo" || !activeListFilter
@@ -105,34 +106,55 @@ export function RegionsTableUI({
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
-  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const [isOverflowOpen, setIsOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
+  const rowMenuRef = useRef<HTMLDivElement>(null);
+
+  // Estado para el menú flotante fijo (fuera del contenedor recortado)
+  const [activeMenuData, setActiveMenuData] = useState<{
+    region: { id: string; nombre: string };
+    top: number;
+    right: number;
+  } | null>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleScrollOrClick(event: Event) {
       if (
-        typeDropdownRef.current &&
-        !typeDropdownRef.current.contains(event.target as Node)
+        overflowRef.current &&
+        !overflowRef.current.contains(event.target as Node)
       ) {
-        setIsTypeDropdownOpen(false);
+        setIsOverflowOpen(false);
+      }
+      if (
+        rowMenuRef.current &&
+        !rowMenuRef.current.contains(event.target as Node)
+      ) {
+        setActiveMenuData(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleScrollOrClick);
+    window.addEventListener("scroll", handleScrollOrClick, true);
+    return () => {
+      document.removeEventListener("mousedown", handleScrollOrClick);
+      window.removeEventListener("scroll", handleScrollOrClick, true);
+    };
   }, []);
 
-  const [activeRowMenuId, setActiveRowMenuId] = useState<string | null>(null);
   const [resolvedLocalities, setResolvedLocalities] = useState<
     Record<string, string>
   >({});
   const [sortField, setSortField] = useState<SortField>("nombre");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
+  // Inline editing state
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+
   // Mantener sincronizado selectedType si cambia activeListFilter desde el header
   useEffect(() => {
     if (activeListFilter === "Todo") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedType("TODOS");
+      setSelectedType("Barrios");
     } else if (activeListFilter === "Barrios") {
       setSelectedType("Barrios");
     } else {
@@ -374,57 +396,24 @@ export function RegionsTableUI({
     isBarriosSelected,
   ]);
 
-  // Manejo de ordenamiento dinámico con ciclo de 3 estados (1° orden primario, 2° orden secundario, 3° reset a Nombre A-Z por defecto)
+  // Manejo de ordenamiento solo para nombre y localidad
   const handleSort = (field: SortField) => {
-    if (field === "nombre") {
-      if (sortField === "nombre") {
-        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-      } else {
-        setSortField("nombre");
-        setSortOrder("asc");
-      }
-      return;
-    }
-
     if (sortField === field) {
-      const primaryOrder: SortOrder = field === "localidad" ? "asc" : "desc";
-      if (sortOrder === primaryOrder) {
-        // 2° click: cambiar a orden secundario
-        setSortOrder(primaryOrder === "asc" ? "desc" : "asc");
-      } else {
-        // 3° click: RESETEAR a estado por defecto (Nombre A-Z)
-        setSortField("nombre");
-        setSortOrder("asc");
-      }
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
-      // 1° click: activar esta columna en su orden primario
       setSortField(field);
-      setSortOrder(field === "localidad" ? "asc" : "desc");
+      setSortOrder("asc");
     }
   };
 
   const sortedRegiones = useMemo(() => {
     return [...filteredRegiones].sort((a, b) => {
-      const valA = a[sortField];
-      const valB = b[sortField];
-
-      // Valores nulos al final
-      if (valA === null || valA === undefined) return 1;
-      if (valB === null || valB === undefined) return -1;
+      const valA = a[sortField] ?? "";
+      const valB = b[sortField] ?? "";
 
       if (typeof valA === "string" && typeof valB === "string") {
         const cmp = valA.localeCompare(valB, "es", { sensitivity: "base" });
         return sortOrder === "asc" ? cmp : -cmp;
-      }
-
-      if (typeof valA === "number" && typeof valB === "number") {
-        return sortOrder === "asc" ? valA - valB : valB - valA;
-      }
-
-      const dateA = new Date(valA).getTime();
-      const dateB = new Date(valB).getTime();
-      if (!isNaN(dateA) && !isNaN(dateB)) {
-        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
       }
 
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
@@ -478,6 +467,29 @@ export function RegionsTableUI({
   const handleCancelDeleteMode = () => {
     setIsDeleteMode(false);
     setSelectedRowIds(new Set());
+  };
+
+  // Inline editing handlers
+  const handleStartEdit = (region: { id: string; nombre: string }) => {
+    setEditingRowId(region.id);
+    setEditNombre(region.nombre);
+    setActiveMenuData(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRowId(null);
+    setEditNombre("");
+  };
+
+  const handleConfirmEdit = async () => {
+    if (!editingRowId || !onUpdateRegion) return;
+    try {
+      await onUpdateRegion(editingRowId, { nombre: editNombre.trim() });
+    } catch (e) {
+      console.error("Error al actualizar región:", e);
+    }
+    setEditingRowId(null);
+    setEditNombre("");
   };
 
   // Exportar a Excel (CSV con UTF-8 BOM y datos reales)
@@ -539,116 +551,179 @@ export function RegionsTableUI({
     }
   };
 
-  const typeOptions = useMemo(() => {
-    const baseOptions = [{ id: "Barrios", label: "Barrios" }];
+  // Listas personalizadas únicas
+  const uniqueListas = useMemo(() => {
     const seen = new Set<string>();
-    seen.add("Barrios");
-
-    const listOpts: { id: string; label: string }[] = [];
+    const res: RegionLista[] = [];
     for (const l of listas) {
-      const key = l.id || l.nombre;
-      if (!seen.has(key) && !seen.has(l.nombre)) {
-        seen.add(key);
+      if (l.nombre && !seen.has(l.nombre)) {
         seen.add(l.nombre);
-        listOpts.push({ id: l.id || l.nombre, label: l.nombre });
+        res.push(l);
       }
     }
-    return [...baseOptions, ...listOpts];
+    return res;
   }, [listas]);
 
-  const currentTypeLabel = useMemo(() => {
-    if (isBarriosSelected) return "Barrios";
+  const activeCustomList = useMemo(() => {
     return (
-      typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
-        ?.label || "Barrios"
+      uniqueListas.find(
+        (l) => l.nombre === selectedType || l.id === selectedType
+      ) ||
+      uniqueListas[0] ||
+      null
     );
-  }, [isBarriosSelected, typeOptions, selectedType]);
+  }, [uniqueListas, selectedType]);
+
+  const hasMultipleLists = uniqueListas.length >= 2;
 
   return (
-    <div className="flex flex-col h-full min-h-0 gap-6 w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans">
-      {/* Encabezado: Título y Controles */}
-      <div className="flex-shrink-0 flex flex-col gap-4">
-        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
-          Regiones
-        </h1>
+    <div className="flex flex-col gap-4 w-full">
+      {/* Controles de Filtro Superiores y Acciones (Alineados en altura y con mismo sombreado) */}
+      <div className="flex flex-wrap items-center justify-between gap-4 w-full py-1">
+        {/* Lado Izquierdo: Filtro Región con Switch animado y dropdown select */}
+        <div ref={overflowRef} className="relative flex items-center gap-2">
+          <span className="text-xs font-semibold text-zinc-600">Región:</span>
+          <Switch
+            value={isBarriosSelected ? "Barrios" : selectedType}
+            onValueChange={(val) => {
+              setSelectedType(val);
+              onListFilterChange(val === "TODOS" ? "Todo" : val);
+            }}
+          >
+            <Switch.Option value="Barrios">Barrios</Switch.Option>
 
-        {/* Barra de Filtros y Acciones */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Lado Izquierdo: Filtro Tipo */}
-          <div className="flex items-center gap-2 relative">
-            <span className="text-sm font-semibold text-zinc-900">Tipo</span>
-            <div ref={typeDropdownRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setIsTypeDropdownOpen((prev) => !prev)}
-                className="flex items-center justify-between gap-3 rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer min-w-[140px]"
+            {/* Pestaña de lista personalizada única con dropdown */}
+            {activeCustomList && (
+              <Switch.Option
+                value={activeCustomList.nombre}
+                onClick={() => {
+                  if (
+                    !isBarriosSelected &&
+                    (selectedType === activeCustomList.nombre ||
+                      selectedType === activeCustomList.id)
+                  ) {
+                    if (hasMultipleLists) {
+                      setIsOverflowOpen((prev) => !prev);
+                    }
+                  } else {
+                    setSelectedType(activeCustomList.nombre);
+                    onListFilterChange(activeCustomList.nombre);
+                    setIsOverflowOpen(false);
+                  }
+                }}
               >
-                <span>{currentTypeLabel}</span>
-                <ChevronDown className="h-4 w-4 text-zinc-500" />
-              </button>
+                <span className="flex items-center gap-1">
+                  <span>{activeCustomList.nombre}</span>
+                  {hasMultipleLists && (
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                        isOverflowOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  )}
+                </span>
+              </Switch.Option>
+            )}
+          </Switch>
 
-              {isTypeDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                  {typeOptions.map((opt, idx) => {
-                    const isSelected =
-                      opt.id === "Barrios"
-                        ? isBarriosSelected
-                        : selectedType === opt.id || selectedType === opt.label;
-                    return (
-                      <button
-                        key={`${opt.id}-${idx}`}
-                        onClick={() => {
-                          const targetId =
-                            opt.id === "Barrios" ? "Barrios" : opt.id;
-                          setSelectedType(targetId);
-                          setIsTypeDropdownOpen(false);
-                          onListFilterChange(
-                            opt.id === "Barrios" ? "Barrios" : opt.label
-                          );
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
-                          isSelected
-                            ? "bg-zinc-100 font-bold text-zinc-900"
-                            : "text-zinc-700 hover:bg-zinc-50"
-                        }`}
-                      >
-                        <span>{opt.label}</span>
-                        {isSelected && (
-                          <Check className="h-3.5 w-3.5 text-zinc-900" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* Menú desplegable flotante con las demás listas */}
+          {hasMultipleLists && isOverflowOpen && (
+            <div className="absolute top-full mt-2 left-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 bg-white/90 backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
+              {uniqueListas.map((lista) => {
+                const isSelected =
+                  !isBarriosSelected &&
+                  (selectedType === lista.nombre || selectedType === lista.id);
+                return (
+                  <button
+                    key={lista.id || lista.nombre}
+                    type="button"
+                    onClick={() => {
+                      setSelectedType(lista.nombre);
+                      onListFilterChange(lista.nombre);
+                      setIsOverflowOpen(false);
+                    }}
+                    className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-white font-bold text-zinc-950 shadow-xs"
+                        : "text-zinc-700 hover:bg-white/60 hover:text-zinc-950 font-medium"
+                    }`}
+                  >
+                    <span>{lista.nombre}</span>
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                    )}
+                  </button>
+                );
+              })}
+              {onOpenNewListModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOverflowOpen(false);
+                    onOpenNewListModal();
+                  }}
+                  className="text-left px-3 py-2 text-xs rounded-lg font-bold text-zinc-800 hover:bg-zinc-100 transition cursor-pointer border-t border-gray-200/60 mt-1 flex items-center gap-1.5"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Nueva lista...</span>
+                </button>
               )}
             </div>
+          )}
+        </div>
+
+        {/* Lado Derecho: Buscador, +, Trash, Exportar - Todos con h-9 y sombra uniforme */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Buscador */}
+          <div className="relative flex items-center h-9">
+            <input
+              type="text"
+              placeholder="Buscar región..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 rounded-full border border-gray-200/60 bg-white/50 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md pl-3.5 pr-8 text-xs text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white transition-all w-36 sm:w-48"
+            />
+            <button
+              type="button"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800 transition-colors cursor-pointer"
+            >
+              <Search className="h-3.5 w-3.5" />
+            </button>
           </div>
 
-          {/* Lado Derecho: Buscador, +, Trash, Exportar */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Buscador */}
-            <div className="relative flex items-center">
-              <input
-                type="text"
-                placeholder="Buscar..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="rounded-full border border-gray-300 bg-white pl-4 pr-10 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400 transition-all w-44 sm:w-56"
-              />
-              <button
-                type="button"
-                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </div>
+          {/* Botón + Crear nueva región en mapa */}
+          <TooltipSign
+            label={
+              isBarriosSelected
+                ? "No se pueden añadir barrios"
+                : "Añadir nueva región en el mapa"
+            }
+            position="top"
+            delayMs={500}
+          >
+            <button
+              type="button"
+              disabled={isBarriosSelected}
+              onClick={onCreateRegion}
+              className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all active:scale-95 shrink-0 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md ${
+                isBarriosSelected
+                  ? "border-gray-200/60 bg-white/30 text-zinc-300 cursor-not-allowed opacity-50"
+                  : "border-gray-200/60 bg-white/50 text-zinc-700 hover:bg-white hover:text-zinc-900 cursor-pointer"
+              }`}
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </TooltipSign>
 
-            {/* Botón + Crear nueva región en mapa */}
+          {/* Botón Basura — perfectamente redondo con h-9 w-9 y sombra uniforme */}
+          <div className="flex items-center gap-1.5 transition-all duration-200">
             <TooltipSign
               label={
                 isBarriosSelected
-                  ? "No se pueden añadir barrios"
-                  : "Añadir nueva región en el mapa"
+                  ? "Los barrios no se pueden eliminar"
+                  : isDeleteMode
+                    ? "Cancelar modo eliminación"
+                    : "Eliminar una región"
               }
               position="top"
               delayMs={500}
@@ -656,231 +731,138 @@ export function RegionsTableUI({
               <button
                 type="button"
                 disabled={isBarriosSelected}
-                onClick={onCreateRegion}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border shadow-xs transition-colors shrink-0 ${
+                onClick={handleTrashButtonClick}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md active:scale-95 shrink-0 ${
                   isBarriosSelected
-                    ? "border-gray-200 bg-white text-zinc-300 cursor-not-allowed pointer-events-none"
-                    : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50 cursor-pointer"
+                    ? "border-gray-200/60 bg-white/30 text-zinc-300 cursor-not-allowed opacity-50"
+                    : isDeleteMode
+                      ? "border-red-200 bg-red-50/90 text-red-600 hover:bg-red-100 cursor-pointer"
+                      : "border-gray-200/60 bg-white/50 text-zinc-700 hover:bg-white hover:text-zinc-900 cursor-pointer"
                 }`}
               >
-                <Plus className="h-4 w-4" />
+                {isDeleteMode && selectedRowIds.size > 0 ? (
+                  <span className="text-[11px] font-bold animate-fade-kpi">
+                    {selectedRowIds.size}
+                  </span>
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
               </button>
             </TooltipSign>
 
-            {/* Botón Basura con estados y animaciones */}
-            <div className="flex items-center gap-1.5 transition-all duration-200">
-              <TooltipSign
-                label={
-                  isBarriosSelected
-                    ? "Los barrios no se pueden eliminar"
-                    : isDeleteMode
-                      ? "Cancelar modo eliminación"
-                      : "Eliminar una región"
-                }
-                position="top"
-                delayMs={500}
+            {isDeleteMode && !isBarriosSelected && (
+              <button
+                type="button"
+                onClick={handleCancelDeleteMode}
+                className="h-9 rounded-full border border-gray-200/60 bg-white/50 px-3.5 text-xs font-semibold text-zinc-600 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
               >
-                <button
-                  type="button"
-                  disabled={isBarriosSelected}
-                  onClick={handleTrashButtonClick}
-                  className={`flex h-9 items-center justify-center rounded-full border px-3 transition-all duration-200 shadow-xs ${
-                    isBarriosSelected
-                      ? "border-gray-200 bg-white text-zinc-300 cursor-not-allowed pointer-events-none"
-                      : isDeleteMode
-                        ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
-                        : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50 cursor-pointer"
-                  }`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  {isDeleteMode && selectedRowIds.size > 0 && (
-                    <span className="ml-1.5 text-xs font-bold animate-in fade-in duration-150">
-                      {selectedRowIds.size}
-                    </span>
-                  )}
-                </button>
-              </TooltipSign>
+                Cancelar
+              </button>
+            )}
+          </div>
 
-              {isDeleteMode && !isBarriosSelected && (
-                <button
-                  type="button"
-                  onClick={handleCancelDeleteMode}
-                  className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-gray-50 transition-all duration-150 animate-in fade-in cursor-pointer"
-                >
-                  Cancelar
-                </button>
-              )}
-            </div>
-
-            {/* Botón Exportar */}
+          {/* Botón Exportar — perfectamente redondo con icono y sombra uniforme */}
+          <TooltipSign label="Exportar listado" position="top" delayMs={500}>
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm font-semibold text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 bg-white/50 text-zinc-700 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all active:scale-95 cursor-pointer shrink-0"
             >
-              <Download className="h-4 w-4" />
-              <span>Exportar</span>
+              <Download className="h-3.5 w-3.5" />
             </button>
-          </div>
+          </TooltipSign>
         </div>
       </div>
 
-      {/* Tabla de Regiones (Caja contenedor que llena el espacio vertical) */}
-      <div
-        id="regiones-table-card"
-        className="flex-1 min-h-0 w-full rounded-3xl border border-gray-200 bg-white shadow-xs overflow-hidden flex flex-col"
-      >
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
-          <table className="w-full text-left text-sm relative border-collapse">
-            <thead className="sticky top-0 z-20 bg-white shadow-xs">
-              <tr className="border-b border-gray-200 bg-white select-none">
+      {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
+      <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
+        <div className="rounded-xl border border-gray-200/80 bg-white overflow-hidden">
+          <table className="w-full text-left text-xs relative border-collapse">
+            <thead className="sticky top-0 z-20 bg-zinc-50/90 backdrop-blur-xs shadow-2xs">
+              <tr className="border-b border-gray-200 select-none">
                 {isDeleteMode && (
-                  <th className="w-12 px-4 py-3.5 text-center animate-in fade-in duration-200">
+                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 transition-colors animate-fade-kpi">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                     />
                   </th>
                 )}
-                {/* Nombre */}
+
+                {/* Nombre — sortable y hover */}
                 <th
                   onClick={() => handleSort("nombre")}
-                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[180px] ${
                     sortField === "nombre"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
+                      ? "text-zinc-900 bg-zinc-100/40"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Nombre</span>
                     {sortField === "nombre" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
-                {/* Localidad */}
+                {/* Localidad — sortable y hover */}
                 <th
                   onClick={() => handleSort("localidad")}
-                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[150px] ${
                     sortField === "localidad"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
+                      ? "text-zinc-900 bg-zinc-100/40"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Localidad</span>
                     {sortField === "localidad" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
-                {/* Cantidad de reclamos (Centrado, 2 líneas) */}
-                <th
-                  onClick={() => handleSort("cantidadReclamos")}
-                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
-                    sortField === "cantidadReclamos"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span className="leading-snug text-center">
-                      Cantidad de
-                      <br />
-                      reclamos
-                    </span>
-                    {sortField === "cantidadReclamos" ? (
-                      sortOrder === "desc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
+                {/* Cantidad de reclamos — hover, título completo y alineado izquierda */}
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[150px]">
+                  Cantidad de reclamos
                 </th>
 
-                {/* Última ayuda (Centrado, 2 líneas) */}
-                <th
-                  onClick={() => handleSort("ultimaAyuda")}
-                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
-                    sortField === "ultimaAyuda"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span className="leading-snug text-center">
-                      Última
-                      <br />
-                      ayuda
-                    </span>
-                    {sortField === "ultimaAyuda" ? (
-                      sortOrder === "desc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
+                {/* Última ayuda — hover, título completo y alineado izquierda */}
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[130px]">
+                  Última ayuda
                 </th>
 
-                {/* Reclamos activos (Centrado, 2 líneas) */}
-                <th
-                  onClick={() => handleSort("reclamosActivos")}
-                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
-                    sortField === "reclamosActivos"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span className="leading-snug text-center">
-                      Reclamos
-                      <br />
-                      activos
-                    </span>
-                    {sortField === "reclamosActivos" ? (
-                      sortOrder === "desc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
+                {/* Reclamos activos — hover, título completo y alineado izquierda */}
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[140px]">
+                  Reclamos activos
                 </th>
 
-                <th className="w-12 px-4 py-3.5 text-center"></th>
+                {/* Acciones — hover en cabecera */}
+                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 transition-colors" />
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100 bg-white">
               {sortedRegiones.length === 0 ? (
                 <tr>
                   <td
                     colSpan={isDeleteMode ? 7 : 6}
-                    className="px-6 py-12 text-center text-zinc-400"
+                    className="px-6 py-12 text-center text-xs text-zinc-400"
                   >
                     {isBarriosSelected && !barriosGeoJson
                       ? "Cargando barrios..."
@@ -889,16 +871,17 @@ export function RegionsTableUI({
                 </tr>
               ) : (
                 <>
-                  {sortedRegiones.map((region, index) => {
+                  {sortedRegiones.map((region) => {
                     const isChecked = selectedRowIds.has(region.id);
                     const isSelected = selectedRegionId === region.id;
-                    const isLast = index === sortedRegiones.length - 1;
+                    const isEditing = editingRowId === region.id;
 
                     return (
                       <tr
                         key={region.id}
                         id={`region-row-${region.id}`}
                         onClick={() => {
+                          if (isEditing) return;
                           if (isDeleteMode) {
                             toggleSelectRow(region.id);
                           } else {
@@ -906,117 +889,116 @@ export function RegionsTableUI({
                           }
                         }}
                         className={`group transition-colors cursor-pointer ${
-                          isSelected
-                            ? "bg-zinc-100"
-                            : isChecked
-                              ? "bg-red-50/60"
-                              : "hover:bg-zinc-50/80"
+                          isEditing
+                            ? "bg-amber-50/60"
+                            : isSelected
+                              ? "bg-blue-50/90 font-bold"
+                              : isChecked
+                                ? "bg-red-50/60"
+                                : "hover:bg-zinc-50/80"
                         }`}
                       >
                         {/* Checkbox (solo visible en modo eliminación) */}
                         {isDeleteMode && (
                           <td
-                            className={`px-4 text-center animate-in fade-in duration-200 ${
-                              isLast ? "pt-4 pb-6" : "py-4"
-                            }`}
+                            className="px-4 py-3 text-left animate-fade-kpi"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => toggleSelectRow(region.id)}
-                              className="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                              className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                             />
                           </td>
                         )}
 
-                        {/* Nombre */}
-                        <td
-                          className={`px-6 font-medium text-zinc-800 ${
-                            isLast ? "pt-4 pb-6" : "py-4"
-                          }`}
-                        >
-                          {region.nombre}
+                        {/* Nombre — alineado a la izquierda */}
+                        <td className="px-5 py-3 font-bold text-zinc-900 text-left">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editNombre}
+                              onChange={(e) => setEditNombre(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 font-bold outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                              autoFocus
+                            />
+                          ) : (
+                            region.nombre
+                          )}
                         </td>
 
-                        {/* Localidad */}
-                        <td
-                          className={`px-6 text-zinc-700 ${
-                            isLast ? "pt-4 pb-6" : "py-4"
-                          }`}
-                        >
+                        {/* Localidad — alineado a la izquierda */}
+                        <td className="px-5 py-3 text-zinc-600 font-medium text-left">
                           {region.localidad}
                         </td>
 
-                        {/* Cantidad de reclamos (históricos de siempre, centrado) */}
-                        <td
-                          className={`px-6 text-zinc-700 text-center font-medium ${
-                            isLast ? "pt-4 pb-6" : "py-4"
-                          }`}
-                        >
+                        {/* Cantidad de reclamos — alineado a la izquierda */}
+                        <td className="px-5 py-3 text-zinc-800 text-left font-bold">
                           {region.cantidadReclamos}
                         </td>
 
-                        {/* Última ayuda (centrado, siempre null / -) */}
-                        <td
-                          className={`px-6 text-zinc-400 text-center ${
-                            isLast ? "pt-4 pb-6" : "py-4"
-                          }`}
-                        >
+                        {/* Última ayuda — alineado a la izquierda */}
+                        <td className="px-5 py-3 text-zinc-400 text-left font-medium">
                           {region.ultimaAyuda ?? "-"}
                         </td>
 
-                        {/* Reclamos activos (cantidad numérica, centrado) */}
-                        <td
-                          className={`px-6 text-zinc-700 font-medium text-center ${
-                            isLast ? "pt-4 pb-6" : "py-4"
-                          }`}
-                        >
+                        {/* Reclamos activos — alineado a la izquierda */}
+                        <td className="px-5 py-3 text-zinc-800 font-bold text-left">
                           {region.reclamosActivos}
                         </td>
 
-                        {/* Opciones ... */}
+                        {/* Opciones ... — botones redondos con color de fuente normal */}
                         <td
-                          className="px-4 py-4 text-center relative"
+                          className="px-3 py-3 text-left relative"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveRowMenuId((prev) =>
-                                prev === region.id ? null : region.id
-                              )
-                            }
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-gray-200 hover:text-zinc-800 transition-colors cursor-pointer mx-auto"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
-
-                          {activeRowMenuId === region.id && (
-                            <div className="absolute right-4 top-full mt-1 z-50 w-36 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                          {isEditing ? (
+                            <div className="flex items-center justify-start gap-1.5">
                               <button
-                                onClick={() => {
-                                  onSelectRegion(region.id);
-                                  setActiveRowMenuId(null);
-                                }}
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+                                type="button"
+                                onClick={handleConfirmEdit}
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title="Confirmar edición"
                               >
-                                <MapPin className="h-3.5 w-3.5" />
-                                Ver en mapa
+                                <Check className="h-3.5 w-3.5" />
                               </button>
-                              {!isBarriosSelected && (
-                                <button
-                                  onClick={async () => {
-                                    setActiveRowMenuId(null);
-                                    await onDeleteRegions([region.id]);
-                                  }}
-                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  Eliminar
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title="Cancelar edición"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
                             </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                if (activeMenuData?.region.id === region.id) {
+                                  setActiveMenuData(null);
+                                } else {
+                                  const spaceBelow =
+                                    window.innerHeight - rect.bottom;
+                                  const showAbove = spaceBelow < 140;
+                                  setActiveMenuData({
+                                    region,
+                                    top: showAbove
+                                      ? rect.top - 120
+                                      : rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                  });
+                                }
+                              }}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 transition-colors cursor-pointer"
+                            >
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -1029,38 +1011,89 @@ export function RegionsTableUI({
         </div>
       </div>
 
+      {/* Menú contextual flotante fijo (Portal libre de recortes o límites de tabla) */}
+      {activeMenuData && (
+        <div
+          ref={rowMenuRef}
+          style={{
+            position: "fixed",
+            top: `${activeMenuData.top}px`,
+            right: `${activeMenuData.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-36 rounded-xl border border-gray-200 bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              onSelectRegion(activeMenuData.region.id);
+              setActiveMenuData(null);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+          >
+            <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+            <span>Ver en mapa</span>
+          </button>
+          {!isBarriosSelected && onUpdateRegion && (
+            <button
+              onClick={() => {
+                handleStartEdit(activeMenuData.region);
+                setActiveMenuData(null);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+            >
+              <Pencil className="h-3.5 w-3.5 text-zinc-500" />
+              <span>Editar</span>
+            </button>
+          )}
+          {!isBarriosSelected && (
+            <button
+              onClick={async () => {
+                const idToDelete = activeMenuData.region.id;
+                setActiveMenuData(null);
+                await onDeleteRegions([idToDelete]);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Eliminar</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Modal de confirmación para borrado */}
       {showConfirmDeleteModal && (
-        <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-gray-200 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-zinc-900">
                 Confirmar eliminación
               </h3>
               <button
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer"
+                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="text-sm text-zinc-600">
+            <p className="text-xs text-zinc-600 leading-relaxed">
               ¿Estás seguro de que deseas eliminar {selectedRowIds.size} región
               {selectedRowIds.size > 1 ? "es" : ""}? Esta acción no se puede
               deshacer.
             </p>
-            <div className="flex items-center justify-end gap-3 mt-2">
+            <div className="flex items-center justify-end gap-2.5 mt-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-gray-50 transition cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-red-700 transition cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-red-500 bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition-all active:scale-95 cursor-pointer"
               >
                 Eliminar
               </button>

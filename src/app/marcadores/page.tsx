@@ -1,6 +1,8 @@
 import { reportService } from "@/services/reportService";
 import { safeZoneService } from "@/services/safeZoneService";
 import { healthCenterService } from "@/services/healthCenterService";
+import { barrioService } from "@/services/barrioService";
+import { regionService } from "@/services/regionService";
 import { MarcadoresDashboard } from "@/components/markers/MarcadoresDashboard";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -20,11 +22,21 @@ export default async function MarcadoresPage() {
     redirect("/");
   }
 
-  // Cargar centros de evacuación, centros de salud y reportes iniciales
-  const [safeZones, healthCenters, reports] = await Promise.all([
+  // Cargar centros de evacuación, centros de salud, reportes, barrios y regiones
+  const [
+    safeZones,
+    healthCenters,
+    reports,
+    barriosGeoJson,
+    regionLists,
+    customRegions,
+  ] = await Promise.all([
     safeZoneService.getSafeZones(),
     healthCenterService.getHealthCenters(),
     reportService.getReports(),
+    barrioService.getBarriosGeoJson(),
+    regionService.getLists(supabase),
+    regionService.getRegions(supabase),
   ]);
 
   return (
@@ -33,6 +45,9 @@ export default async function MarcadoresPage() {
         initialSafeZones={safeZones}
         initialHealthCenters={healthCenters}
         initialReports={reports}
+        initialBarriosGeoJson={barriosGeoJson}
+        initialRegionLists={regionLists}
+        initialCustomRegions={customRegions}
         user={user}
       />
     </main>

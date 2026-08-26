@@ -112,7 +112,16 @@ export const healthCenterService = {
 
   async updateHealthCenter(
     id: string,
-    dto: { nombre: string; tipo?: HealthCenterType }
+    dto: {
+      nombre?: string;
+      tipo?: HealthCenterType;
+      direccion?: string | null;
+      lat?: number;
+      lon?: number;
+      localidad?: string | null;
+      departamento?: string | null;
+      provincia?: string | null;
+    }
   ): Promise<HealthCenter | null> {
     const supabase = createClient();
     const { data, error } = await supabase

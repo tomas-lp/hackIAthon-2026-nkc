@@ -8,13 +8,16 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
+    const all = searchParams.get("all") === "true";
     const tipo = (searchParams.get("tipo") as ReportType | "TODOS") || "TODOS";
     const busqueda = searchParams.get("busqueda") || "";
 
-    const reports = await reportService.getReports({
-      tipo,
-      busqueda,
-    });
+    const reports = all
+      ? await reportService.getAllReports()
+      : await reportService.getReports({
+          tipo,
+          busqueda,
+        });
 
     return NextResponse.json(reports, {
       status: 200,

@@ -80,7 +80,7 @@ export function MetricCards({
       {/* Controles de Filtro Superiores (Sin fondo blanco) */}
       <div className="flex flex-wrap items-center justify-between gap-4 w-full py-1">
         {/* Lado Izquierdo: Periodo y Tipo de Reclamo */}
-        <div className="flex flex-wrap items-center gap-6">
+        <div className="flex flex-wrap items-center gap-4">
           {/* Filtro Periodo */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-600">
