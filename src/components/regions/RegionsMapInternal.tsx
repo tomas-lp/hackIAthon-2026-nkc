@@ -118,7 +118,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
       >
         <TileLayer
           attribution="&copy; OpenStreetMap"
-          url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/mapabase_gris@EPSG%3A3857@png/{z}/{x}/{-y}.png"
+          url="/api/tile/{z}/{x}/{-y}.png"
         />
 
         {!props.hideHeatmap && <HeatLayer points={heatPoints} />}

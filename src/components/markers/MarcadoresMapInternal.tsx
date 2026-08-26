@@ -155,7 +155,7 @@ export default function MarcadoresMapInternal({
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/mapabase_gris@EPSG%3A3857@png/{z}/{x}/{-y}.png"
+          url="/api/tile/{z}/{x}/{-y}.png"
         />
 
         <ZoomWatcher onZoomChange={setCurrentZoom} />

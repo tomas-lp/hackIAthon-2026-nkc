@@ -387,10 +387,7 @@ export function MinimapInternal({
         className="w-full h-full z-0"
         attributionControl={false}
       >
-        <TileLayer
-          url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/mapabase_gris@EPSG%3A3857@png/{z}/{x}/{-y}.png"
-          maxZoom={19}
-        />
+        <TileLayer url="/api/tile/{z}/{x}/{-y}.png" maxZoom={19} />
 
         {/* Controladores de mapa */}
         <CustomMapControls />

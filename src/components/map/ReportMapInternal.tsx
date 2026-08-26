@@ -696,7 +696,7 @@ export default function ReportMapInternal({
         <AttributionControl prefix='🇦🇷 <a href="https://leafletjs.com">Leaflet</a>' />
         <TileLayer
           attribution='&copy; <a href="https://www.ign.gob.ar/">Instituto Geográfico Nacional</a> (IGN)'
-          url="https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/mapabase_gris@EPSG%3A3857@png/{z}/{x}/{-y}.png"
+          url="/api/tile/{z}/{x}/{-y}.png"
         />
 
         {/* Capa de polígonos de barrios — solo cuando Barrios está activo (variante interna) */}
