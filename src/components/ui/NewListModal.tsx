@@ -67,11 +67,11 @@ export function NewListModal({
 
   return (
     <div
-      className="fixed inset-0 z-[2500] flex items-center justify-center bg-black/25 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[2500] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-sm rounded-3xl bg-white/95 backdrop-blur-md p-6 shadow-2xl border border-gray-200/80 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-200 font-sans"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -81,16 +81,16 @@ export function NewListModal({
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer shrink-0 -mt-2 -mr-2"
+            className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer shrink-0 -mt-1 -mr-1"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div className="flex flex-col gap-1.5">
             {onSave && (
-              <label className="text-sm font-medium text-zinc-700">
+              <label className="text-xs font-semibold text-zinc-700">
                 Nombre de la lista
               </label>
             )}
@@ -105,22 +105,22 @@ export function NewListModal({
               }
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+              className="w-full rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
             />
           </div>
 
-          <div className="flex items-center justify-center gap-3 mt-1">
+          <div className="flex items-center justify-center gap-2.5 mt-1">
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-zinc-800 transition hover:bg-gray-50 active:scale-95 cursor-pointer"
+              className="flex-1 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs hover:bg-gray-50 hover:border-gray-300 transition active:scale-95 cursor-pointer text-center"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={!name.trim() || isSubmitting}
-              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 text-sm font-medium transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="flex-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs font-bold shadow-2xs transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-center"
             >
               {isSubmitting ? "Guardando..." : onSave ? "Guardar" : "Aceptar"}
             </button>

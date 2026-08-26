@@ -49,9 +49,7 @@ export function AuthWidget({
   return (
     <div
       className={`absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out pointer-events-none ${
-        isHidden
-          ? "-translate-y-20 opacity-0"
-          : "translate-y-0 opacity-100"
+        isHidden ? "-translate-y-20 opacity-0" : "translate-y-0 opacity-100"
       }`}
     >
       {isAdmin ? (
@@ -65,7 +63,7 @@ export function AuthWidget({
                 onLogoutClick();
               }}
               title="Cerrar sesión"
-              className={`flex items-center gap-2 rounded-full border border-red-200/80 bg-white/90 px-4 py-2 text-xs font-bold text-red-600 shadow-md backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer hover:bg-red-50 active:scale-95 ${
+              className={`flex items-center gap-2 rounded-full border border-red-200/80 bg-white/90 px-4 py-2 text-xs font-bold text-red-600 shadow-2xs backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer hover:bg-red-50 active:scale-95 ${
                 showUserMenu
                   ? "translate-x-0 opacity-100 scale-100"
                   : "translate-x-12 opacity-0 pointer-events-none scale-90"
@@ -79,7 +77,7 @@ export function AuthWidget({
             <TooltipSign label="Menú de usuario" position="left" delayMs={500}>
               <button
                 onClick={() => setShowUserMenu((prev) => !prev)}
-                className={`flex items-center justify-center rounded-full border border-white/40 p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
+                className={`flex items-center justify-center rounded-full border border-white/40 p-2.5 shadow-2xs backdrop-blur-md transition-all duration-200 cursor-pointer ${
                   showUserMenu
                     ? "bg-zinc-800 text-white border-zinc-700"
                     : "bg-white/70 text-zinc-700 hover:bg-white/90"
@@ -101,7 +99,7 @@ export function AuthWidget({
             >
               <button
                 onClick={toggleDarkMode}
-                className="flex items-center justify-center rounded-full border border-white/40 bg-white/70 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
+                className="flex items-center justify-center rounded-full border border-white/40 bg-white/70 p-2.5 text-zinc-700 shadow-2xs backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
               >
                 {isDarkMode ? (
                   <Sun className="h-5 w-5 text-amber-500" />
@@ -117,7 +115,7 @@ export function AuthWidget({
           <TooltipSign label="Menú de usuario" position="left" delayMs={500}>
             <button
               onClick={onLoginClick}
-              className="flex items-center justify-center rounded-full border border-white/40 bg-white/60 p-2.5 text-zinc-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
+              className="flex items-center justify-center rounded-full border border-white/40 bg-white/60 p-2.5 text-zinc-700 shadow-2xs backdrop-blur-md transition-colors hover:bg-zinc-100 hover:text-zinc-900 cursor-pointer"
             >
               <User className="h-5 w-5" />
             </button>

@@ -117,13 +117,13 @@ export function EstadisticasDashboard({
 
       {/* Área Principal con la misma estructura y espaciado que Regiones y Marcadores */}
       <div
-        className={`flex-1 flex flex-col h-full overflow-y-auto pt-20 pb-16 transition-all duration-300 ease-in-out ${
+        className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
         }`}
       >
-        <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans flex flex-col gap-6">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
           {/* Encabezado Superior */}
-          <div className="flex items-center justify-between gap-4 mb-2">
+          <div className="flex items-center justify-between gap-4 mb-1">
             <div>
               <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
                 Panel de Administración
@@ -134,7 +134,8 @@ export function EstadisticasDashboard({
               isAdmin={true}
               onLoginClick={() => {}}
               onLogoutClick={async () => {
-                const { logoutFromSession } = await import("@/app/auth/actions");
+                const { logoutFromSession } =
+                  await import("@/app/auth/actions");
                 await logoutFromSession();
                 window.location.reload();
               }}

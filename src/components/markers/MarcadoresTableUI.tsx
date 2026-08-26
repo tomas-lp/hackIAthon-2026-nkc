@@ -1,24 +1,34 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { MarkerRow } from "@/types/marker";
+import {
+  MarkerRow,
+  SAFE_ZONE_TYPE_LABELS,
+  HEALTH_CENTER_TYPE_LABELS,
+} from "@/types/marker";
+import { RegionLista, RegionPersonalizada } from "@/types/region";
+import { BarriosFeatureCollection } from "@/services/barrioService";
+import { isPointInPolygon, isPointInGeoJSONGeometry } from "@/lib/geometry";
+import { formatTitleCase } from "@/lib/format";
 import {
   Search,
   Plus,
   Trash2,
   Download,
   MoreHorizontal,
-  ChevronDown,
   MapPin,
   Check,
+  X,
+  Pencil,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronDown,
 } from "lucide-react";
+import { Switch } from "@/components/ui/Switch";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 
-export type SortField =
-  "nombre" | "localidad" | "subtipo" | "direccion" | "capacidad_maxima";
+export type SortField = "nombre" | "localidad" | "region" | "subtipo";
 
 export type SortOrder = "asc" | "desc";
 
@@ -26,9 +36,21 @@ interface MarcadoresTableUIProps {
   markers: MarkerRow[];
   activeCategoryFilter: string;
   onCategoryFilterChange: (cat: string) => void;
+  barriosGeoJson?: BarriosFeatureCollection | null;
+  regionLists?: RegionLista[];
+  customRegions?: RegionPersonalizada[];
   onSelectMarker: (marker: MarkerRow) => void;
   onCreateMarker: () => void;
   onDeleteMarkers: (ids: string[]) => Promise<void>;
+  onUpdateMarker?: (
+    id: string,
+    data: {
+      nombre: string;
+      direccion: string;
+      tipo?: string;
+      capacidad_maxima?: number | null;
+    }
+  ) => Promise<void>;
   selectedMarkerId: string | null;
 }
 
@@ -39,72 +61,97 @@ export function MarcadoresTableUI({
   markers,
   activeCategoryFilter,
   onCategoryFilterChange,
+  barriosGeoJson,
+  regionLists = [],
+  customRegions = [],
   onSelectMarker,
   onCreateMarker,
   onDeleteMarkers,
+  onUpdateMarker,
   selectedMarkerId,
 }: MarcadoresTableUIProps) {
   const [selectedType, setSelectedType] = useState<string>(
-    activeCategoryFilter === "TODOS" ? "TODOS" : activeCategoryFilter
+    activeCategoryFilter === "TODOS" ? "EVACUACION" : activeCategoryFilter
   );
+  const [selectedRegionFilter, setSelectedRegionFilter] =
+    useState<string>("Barrios");
+  const [isRegionOverflowOpen, setIsRegionOverflowOpen] = useState(false);
+  const regionOverflowRef = useRef<HTMLDivElement>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
-  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-  const [activeRowMenuId, setActiveRowMenuId] = useState<string | null>(null);
+
+  // Estado para el menú flotante fijo (fuera del contenedor recortado)
+  const [activeMenuData, setActiveMenuData] = useState<{
+    marker: MarkerRow;
+    top: number;
+    right: number;
+  } | null>(null);
+
   const [resolvedLocalities, setResolvedLocalities] = useState<
     Record<string, string>
   >({});
   const [sortField, setSortField] = useState<SortField>("nombre");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  // Inline editing state
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editTipo, setEditTipo] = useState("");
+  const [editDireccion, setEditDireccion] = useState("");
+  const [editCapacidad, setEditCapacidad] = useState<string>("");
+
   const rowMenuRef = useRef<HTMLDivElement>(null);
 
   // Sincronizar estado si cambia desde el padre
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedType(
-      activeCategoryFilter === "TODOS" ? "TODOS" : activeCategoryFilter
+      activeCategoryFilter === "TODOS" ? "EVACUACION" : activeCategoryFilter
     );
   }, [activeCategoryFilter]);
 
-  // Click outside para cerrar dropdowns
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const [typeDropdownPos, setTypeDropdownPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    marker: MarkerRow;
+  } | null>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú contextual en click fuera o scroll
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleScrollOrClick(event: Event) {
+      if (
+        rowMenuRef.current &&
+        !rowMenuRef.current.contains(event.target as Node)
+      ) {
+        setActiveMenuData(null);
+      }
+      if (
+        regionOverflowRef.current &&
+        !regionOverflowRef.current.contains(event.target as Node)
+      ) {
+        setIsRegionOverflowOpen(false);
+      }
       if (
         typeDropdownRef.current &&
         !typeDropdownRef.current.contains(event.target as Node)
       ) {
         setIsTypeDropdownOpen(false);
-      }
-      if (
-        rowMenuRef.current &&
-        !rowMenuRef.current.contains(event.target as Node)
-      ) {
-        setActiveRowMenuId(null);
+        setTypeDropdownPos(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleScrollOrClick);
+    window.addEventListener("scroll", handleScrollOrClick, true);
+    return () => {
+      document.removeEventListener("mousedown", handleScrollOrClick);
+      window.removeEventListener("scroll", handleScrollOrClick, true);
+    };
   }, []);
-
-  // Opciones de tipos de marcadores
-  const typeOptions = useMemo(() => {
-    return [
-      { id: "TODOS", label: "Todos los marcadores" },
-      { id: "EVACUACION", label: "Centros de evacuación" },
-      { id: "SALUD", label: "Centros de salud" },
-    ];
-  }, []);
-
-  const currentTypeLabel = useMemo(() => {
-    return (
-      typeOptions.find((t) => t.id === selectedType || t.label === selectedType)
-        ?.label || "Todos los marcadores"
-    );
-  }, [typeOptions, selectedType]);
 
   // Reverse geocoding diferido para los marcadores sin localidad
   useEffect(() => {
@@ -155,64 +202,130 @@ export function MarcadoresTableUI({
     };
   }, [markers]);
 
+  // Listas personalizadas únicas
+  const uniqueListas = useMemo(() => {
+    const seen = new Set<string>();
+    const res: RegionLista[] = [];
+    for (const l of regionLists) {
+      if (l.nombre && !seen.has(l.nombre)) {
+        seen.add(l.nombre);
+        res.push(l);
+      }
+    }
+    return res;
+  }, [regionLists]);
+
+  const activeCustomList = useMemo(() => {
+    return (
+      uniqueListas.find(
+        (l) =>
+          l.nombre === selectedRegionFilter || l.id === selectedRegionFilter
+      ) ||
+      uniqueListas[0] ||
+      null
+    );
+  }, [uniqueListas, selectedRegionFilter]);
+
+  const hasMultipleLists = uniqueListas.length >= 2;
+
+  // Mapeo espacial de Marcadores -> Región / Barrio / Fuera de rango
+  const markerRegionMap = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const m of markers) {
+      if (!Number.isFinite(m.lat) || !Number.isFinite(m.lon)) {
+        map.set(m.id, "Fuera de rango");
+        continue;
+      }
+
+      if (selectedRegionFilter === "Barrios") {
+        if (!barriosGeoJson?.features) {
+          map.set(m.id, "Fuera de rango");
+          continue;
+        }
+
+        let foundBarrio: string | null = null;
+        for (const feature of barriosGeoJson.features) {
+          if (
+            feature.geometry &&
+            isPointInGeoJSONGeometry([m.lat, m.lon], feature.geometry)
+          ) {
+            foundBarrio = feature.properties?.nombre || "Barrio";
+            break;
+          }
+        }
+
+        map.set(
+          m.id,
+          foundBarrio ? formatTitleCase(foundBarrio) : "Fuera de rango"
+        );
+      } else {
+        // Lista personalizada seleccionada
+        const targetListRegions = customRegions.filter(
+          (r) =>
+            r.lista_nombre === selectedRegionFilter ||
+            r.lista_id === selectedRegionFilter
+        );
+
+        let foundRegion: string | null = null;
+        for (const r of targetListRegions) {
+          if (isPointInPolygon([m.lat, m.lon], r.points)) {
+            foundRegion = r.nombre;
+            break;
+          }
+        }
+
+        map.set(
+          m.id,
+          foundRegion ? formatTitleCase(foundRegion) : "Fuera de rango"
+        );
+      }
+    }
+
+    return map;
+  }, [markers, selectedRegionFilter, barriosGeoJson, customRegions]);
+
   // Filtrado
   const filteredMarkers = useMemo(() => {
     return markers.filter((item) => {
-      if (selectedType !== "TODOS") {
-        if (item.category !== selectedType) {
-          return false;
-        }
+      // Filtro por tipo/categoría
+      if (item.category !== selectedType) {
+        return false;
       }
 
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const loc = item.localidad || resolvedLocalities[item.id] || "";
         const dir = item.direccion || "";
+        const region = markerRegionMap.get(item.id) || "";
         const matchName = item.nombre.toLowerCase().includes(query);
         const matchLoc = loc.toLowerCase().includes(query);
         const matchDir = dir.toLowerCase().includes(query);
         const matchSub = item.subtipo.toLowerCase().includes(query);
-        if (!matchName && !matchLoc && !matchDir && !matchSub) {
+        const matchRegion = region.toLowerCase().includes(query);
+        if (!matchName && !matchLoc && !matchDir && !matchSub && !matchRegion) {
           return false;
         }
       }
 
       return true;
     });
-  }, [markers, selectedType, searchQuery, resolvedLocalities]);
+  }, [markers, selectedType, searchQuery, resolvedLocalities, markerRegionMap]);
 
-  // Manejo de ordenamiento dinámico con ciclo de 3 estados
+  // Manejo de ordenamiento (nombre, localidad, region, subtipo)
   const handleSort = (field: SortField) => {
-    if (field === "nombre") {
-      if (sortField === "nombre") {
-        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-      } else {
-        setSortField("nombre");
-        setSortOrder("asc");
-      }
-      return;
-    }
-
     if (sortField === field) {
-      // Solo capacidad_maxima arranca desc (mayor primero); el resto arranca asc (A→Z)
-      const primaryOrder: SortOrder =
-        field === "capacidad_maxima" ? "desc" : "asc";
-      if (sortOrder === primaryOrder) {
-        setSortOrder(primaryOrder === "asc" ? "desc" : "asc");
-      } else {
-        setSortField("nombre");
-        setSortOrder("asc");
-      }
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortOrder(field === "capacidad_maxima" ? "desc" : "asc");
+      setSortOrder("asc");
     }
   };
 
   const sortedMarkers = useMemo(() => {
     return [...filteredMarkers].sort((a, b) => {
-      let valA: string | number | null = null;
-      let valB: string | number | null = null;
+      let valA: string = "";
+      let valB: string = "";
 
       switch (sortField) {
         case "nombre":
@@ -225,35 +338,26 @@ export function MarcadoresTableUI({
           valB =
             b.localidad || resolvedLocalities[b.id] || "Corrientes Capital";
           break;
+        case "region":
+          valA = markerRegionMap.get(a.id) || "";
+          valB = markerRegionMap.get(b.id) || "";
+          break;
         case "subtipo":
           valA = a.subtipo;
           valB = b.subtipo;
           break;
-        case "direccion":
-          valA = a.direccion || "";
-          valB = b.direccion || "";
-          break;
-        case "capacidad_maxima":
-          valA = a.capacidad_maxima ?? -1;
-          valB = b.capacidad_maxima ?? -1;
-          break;
       }
 
-      if (valA === null || valA === undefined) return 1;
-      if (valB === null || valB === undefined) return -1;
-
-      if (typeof valA === "string" && typeof valB === "string") {
-        const cmp = valA.localeCompare(valB, "es", { sensitivity: "base" });
-        return sortOrder === "asc" ? cmp : -cmp;
-      }
-
-      if (typeof valA === "number" && typeof valB === "number") {
-        return sortOrder === "asc" ? valA - valB : valB - valA;
-      }
-
-      return 0;
+      const cmp = valA.localeCompare(valB, "es", { sensitivity: "base" });
+      return sortOrder === "asc" ? cmp : -cmp;
     });
-  }, [filteredMarkers, sortField, sortOrder, resolvedLocalities]);
+  }, [
+    filteredMarkers,
+    sortField,
+    sortOrder,
+    resolvedLocalities,
+    markerRegionMap,
+  ]);
 
   // Manejo de checkboxes
   const isAllSelected =
@@ -296,6 +400,57 @@ export function MarcadoresTableUI({
     setSelectedRowIds(new Set());
   };
 
+  // Inline editing handlers
+  const handleStartEdit = (marker: MarkerRow) => {
+    setEditingRowId(marker.id);
+    setEditNombre(marker.nombre);
+    setEditTipo(marker.rawTipo || marker.subtipo);
+    setEditDireccion(marker.direccion || "");
+    setEditCapacidad(
+      marker.capacidad_maxima !== null && marker.capacidad_maxima !== undefined
+        ? String(marker.capacidad_maxima)
+        : ""
+    );
+    setIsTypeDropdownOpen(false);
+    setTypeDropdownPos(null);
+    setActiveMenuData(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRowId(null);
+    setEditNombre("");
+    setEditTipo("");
+    setEditDireccion("");
+    setEditCapacidad("");
+    setIsTypeDropdownOpen(false);
+    setTypeDropdownPos(null);
+  };
+
+  const handleConfirmEdit = async (marker: MarkerRow) => {
+    if (!editingRowId || !onUpdateMarker) return;
+    try {
+      const parsedCap = editCapacidad.trim()
+        ? parseInt(editCapacidad.trim(), 10)
+        : null;
+
+      await onUpdateMarker(editingRowId, {
+        nombre: editNombre.trim(),
+        direccion: editDireccion.trim(),
+        tipo: editTipo || undefined,
+        capacidad_maxima: marker.category === "EVACUACION" ? parsedCap : null,
+      });
+    } catch (e) {
+      console.error("Error al actualizar marcador:", e);
+    }
+    setEditingRowId(null);
+    setEditNombre("");
+    setEditTipo("");
+    setEditDireccion("");
+    setEditCapacidad("");
+    setIsTypeDropdownOpen(false);
+    setTypeDropdownPos(null);
+  };
+
   // Exportar a Excel / CSV (UTF-8 BOM con separador ;)
   const handleExportExcel = () => {
     if (sortedMarkers.length === 0) {
@@ -308,9 +463,10 @@ export function MarcadoresTableUI({
       "Categoría",
       "Tipo",
       "Localidad",
+      "Región",
       "Departamento",
       "Dirección",
-      "Capacidad máxima",
+      ...(selectedType === "EVACUACION" ? ["Capacidad"] : []),
       "Latitud",
       "Longitud",
       "Fecha de registro",
@@ -319,6 +475,7 @@ export function MarcadoresTableUI({
     const rows = sortedMarkers.map((m) => {
       const loc =
         m.localidad || resolvedLocalities[m.id] || "Corrientes Capital";
+      const reg = markerRegionMap.get(m.id) || "Fuera de rango";
       const catLabel =
         m.category === "EVACUACION"
           ? "Centro de evacuación"
@@ -328,11 +485,16 @@ export function MarcadoresTableUI({
         `"${catLabel}"`,
         `"${m.subtipo.replace(/"/g, '""')}"`,
         `"${loc.replace(/"/g, '""')}"`,
+        `"${reg.replace(/"/g, '""')}"`,
         `"${(m.departamento || "").replace(/"/g, '""')}"`,
         `"${(m.direccion || "").replace(/"/g, '""')}"`,
-        m.capacidad_maxima !== null && m.capacidad_maxima !== undefined
-          ? m.capacidad_maxima
-          : "",
+        ...(selectedType === "EVACUACION"
+          ? [
+              m.capacidad_maxima !== null && m.capacidad_maxima !== undefined
+                ? m.capacidad_maxima
+                : "",
+            ]
+          : []),
         m.lat,
         m.lon,
         `"${new Date(m.fecha).toLocaleDateString()}"`,
@@ -370,292 +532,329 @@ export function MarcadoresTableUI({
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 gap-6 w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans">
-      {/* Encabezado: Título y Controles */}
-      <div className="flex-shrink-0 flex flex-col gap-4">
-        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
-          Marcadores
-        </h1>
-
-        {/* Barra de Filtros y Acciones */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Lado Izquierdo: Filtro Tipo */}
-          <div className="flex items-center gap-2 relative">
-            <span className="text-sm font-semibold text-zinc-900">Tipo</span>
-            <div ref={typeDropdownRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setIsTypeDropdownOpen((prev) => !prev)}
-                className="flex items-center justify-between gap-3 rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer min-w-[140px]"
-              >
-                <span>{currentTypeLabel}</span>
-                <ChevronDown className="h-4 w-4 text-zinc-500" />
-              </button>
-
-              {isTypeDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-52 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                  {typeOptions.map((opt, idx) => {
-                    const isSelected = selectedType === opt.id;
-                    return (
-                      <button
-                        key={`${opt.id}-${idx}`}
-                        onClick={() => {
-                          setSelectedType(opt.id);
-                          setIsTypeDropdownOpen(false);
-                          onCategoryFilterChange(opt.id);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
-                          isSelected
-                            ? "bg-zinc-100 font-bold text-zinc-900"
-                            : "text-zinc-700 hover:bg-zinc-50"
-                        }`}
-                      >
-                        <span>{opt.label}</span>
-                        {isSelected && (
-                          <Check className="h-3.5 w-3.5 text-zinc-900" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+    <div className="flex flex-col gap-4 w-full">
+      {/* Controles de Filtro Superiores y Acciones (Alineados en altura y con mismo sombreado) */}
+      <div className="flex flex-wrap items-center justify-between gap-4 w-full py-1">
+        {/* Lado Izquierdo: Filtro Tipo y Filtro Región */}
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Filtro Tipo */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-zinc-600">
+              Tipo de marcador:
+            </span>
+            <Switch
+              value={selectedType}
+              onValueChange={(val) => {
+                setSelectedType(val);
+                onCategoryFilterChange(val);
+              }}
+            >
+              <Switch.Option value="EVACUACION">
+                Centros de evacuación
+              </Switch.Option>
+              <Switch.Option value="SALUD">Centros de salud</Switch.Option>
+            </Switch>
           </div>
 
-          {/* Lado Derecho: Buscador, +, Trash, Exportar */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Buscador */}
-            <div className="relative flex items-center">
-              <input
-                type="text"
-                placeholder="Buscar..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="rounded-full border border-gray-300 bg-white pl-4 pr-10 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400 transition-all w-44 sm:w-56"
-              />
-              <button
-                type="button"
-                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </div>
+          {/* Filtro Región (Barrios y Listas personalizadas) */}
+          <div
+            ref={regionOverflowRef}
+            className="relative flex items-center gap-2"
+          >
+            <span className="text-xs font-semibold text-zinc-600">Región:</span>
+            <Switch
+              value={selectedRegionFilter}
+              onValueChange={(val) => {
+                setSelectedRegionFilter(val);
+              }}
+            >
+              <Switch.Option value="Barrios">Barrios</Switch.Option>
 
-            {/* Botón + Añadir marcador */}
+              {/* Pestaña de lista personalizada única con dropdown */}
+              {activeCustomList && (
+                <Switch.Option
+                  value={activeCustomList.nombre}
+                  onClick={() => {
+                    if (
+                      selectedRegionFilter === activeCustomList.nombre ||
+                      selectedRegionFilter === activeCustomList.id
+                    ) {
+                      if (hasMultipleLists) {
+                        setIsRegionOverflowOpen((prev) => !prev);
+                      }
+                    } else {
+                      setSelectedRegionFilter(activeCustomList.nombre);
+                      setIsRegionOverflowOpen(false);
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-1">
+                    <span>{activeCustomList.nombre}</span>
+                    {hasMultipleLists && (
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                          isRegionOverflowOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    )}
+                  </span>
+                </Switch.Option>
+              )}
+            </Switch>
+
+            {/* Menú desplegable flotante con las demás listas */}
+            {hasMultipleLists && isRegionOverflowOpen && (
+              <div className="absolute top-full mt-2 right-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 bg-white/90 backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
+                {uniqueListas.map((lista) => {
+                  const isSelected =
+                    selectedRegionFilter === lista.nombre ||
+                    selectedRegionFilter === lista.id;
+                  return (
+                    <button
+                      key={lista.id || lista.nombre}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRegionFilter(lista.nombre);
+                        setIsRegionOverflowOpen(false);
+                      }}
+                      className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-white font-bold text-zinc-950 shadow-xs"
+                          : "text-zinc-700 hover:bg-white/60 hover:text-zinc-950 font-medium"
+                      }`}
+                    >
+                      <span>{lista.nombre}</span>
+                      {isSelected && (
+                        <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Lado Derecho: Buscador, +, Trash, Exportar - Todos con h-9 y sombra uniforme */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Buscador */}
+          <div className="relative flex items-center h-9">
+            <input
+              type="text"
+              placeholder="Buscar marcador..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 rounded-full border border-gray-200/60 bg-white/50 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md pl-3.5 pr-8 text-xs text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white transition-all w-36 sm:w-48"
+            />
+            <button
+              type="button"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800 transition-colors cursor-pointer"
+            >
+              <Search className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Botón + Añadir marcador */}
+          <TooltipSign
+            label="Añadir marcador en el mapa"
+            position="top"
+            delayMs={500}
+          >
+            <button
+              type="button"
+              onClick={onCreateMarker}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 bg-white/50 text-zinc-700 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </TooltipSign>
+
+          {/* Botón Basura con estados — perfectamente redondo con h-9 w-9 y sombra uniforme */}
+          <div className="flex items-center gap-1.5 transition-all duration-200">
             <TooltipSign
-              label="Añadir marcador en el mapa"
+              label="Eliminar un marcador"
               position="top"
               delayMs={500}
             >
               <button
                 type="button"
-                onClick={onCreateMarker}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer shrink-0"
+                onClick={handleTrashButtonClick}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 cursor-pointer shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md active:scale-95 shrink-0 ${
+                  isDeleteMode
+                    ? "border-red-200 bg-red-50/90 text-red-600 hover:bg-red-100"
+                    : "border-gray-200/60 bg-white/50 text-zinc-700 hover:bg-white hover:text-zinc-900"
+                }`}
               >
-                <Plus className="h-4 w-4" />
+                {isDeleteMode && selectedRowIds.size > 0 ? (
+                  <span className="text-[11px] font-bold animate-fade-kpi">
+                    {selectedRowIds.size}
+                  </span>
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
               </button>
             </TooltipSign>
 
-            {/* Botón Basura con estados */}
-            <div className="flex items-center gap-1.5 transition-all duration-200">
-              <TooltipSign
-                label="Eliminar un marcador"
-                position="top"
-                delayMs={500}
+            {isDeleteMode && (
+              <button
+                type="button"
+                onClick={handleCancelDeleteMode}
+                className="h-9 rounded-full border border-gray-200/60 bg-white/50 px-3.5 text-xs font-semibold text-zinc-600 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
               >
-                <button
-                  type="button"
-                  onClick={handleTrashButtonClick}
-                  className={`flex h-9 items-center justify-center rounded-full border px-3 transition-all duration-200 cursor-pointer shadow-xs ${
-                    isDeleteMode
-                      ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
-                      : "border-gray-300 bg-white text-zinc-800 hover:bg-gray-50"
-                  }`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  {isDeleteMode && selectedRowIds.size > 0 && (
-                    <span className="ml-1.5 text-xs font-bold animate-in fade-in duration-150">
-                      {selectedRowIds.size}
-                    </span>
-                  )}
-                </button>
-              </TooltipSign>
+                Cancelar
+              </button>
+            )}
+          </div>
 
-              {isDeleteMode && (
-                <button
-                  type="button"
-                  onClick={handleCancelDeleteMode}
-                  className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-gray-50 transition-all duration-150 animate-in fade-in cursor-pointer"
-                >
-                  Cancelar
-                </button>
-              )}
-            </div>
-
-            {/* Botón Exportar */}
+          {/* Botón Exportar — perfectamente redondo con icono y sombra uniforme */}
+          <TooltipSign label="Exportar listado" position="top" delayMs={500}>
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm font-semibold text-zinc-800 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 bg-white/50 text-zinc-700 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all active:scale-95 cursor-pointer shrink-0"
             >
-              <Download className="h-4 w-4" />
-              <span>Exportar</span>
+              <Download className="h-3.5 w-3.5" />
             </button>
-          </div>
+          </TooltipSign>
         </div>
       </div>
 
-      {/* Tabla de Marcadores */}
-      <div
-        id="marcadores-table-card"
-        className="flex-1 min-h-0 w-full rounded-3xl border border-gray-200 bg-white shadow-xs overflow-hidden flex flex-col"
-      >
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
-          <table className="w-full text-left text-sm relative border-collapse">
-            <thead className="sticky top-0 z-20 bg-white shadow-xs">
-              <tr className="border-b border-gray-200 bg-white select-none">
+      {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
+      <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
+        <div className="rounded-xl border border-gray-200/80 bg-white">
+          <table className="w-full text-left text-xs relative border-collapse">
+            <thead className="sticky top-0 z-20 bg-zinc-50/90 backdrop-blur-xs shadow-2xs">
+              <tr className="border-b border-gray-200 select-none">
                 {isDeleteMode && (
-                  <th className="w-12 px-4 py-3.5 text-center animate-in fade-in duration-200">
+                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 transition-colors animate-fade-kpi">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                     />
                   </th>
                 )}
 
-                {/* Nombre */}
+                {/* Nombre — sortable y hover */}
                 <th
                   onClick={() => handleSort("nombre")}
-                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[170px] ${
                     sortField === "nombre"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
+                      ? "text-zinc-900 bg-zinc-100/40"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Nombre</span>
                     {sortField === "nombre" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
-                {/* Localidad */}
+                {/* Localidad — sortable y hover */}
                 <th
                   onClick={() => handleSort("localidad")}
-                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[140px] ${
                     sortField === "localidad"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
+                      ? "text-zinc-900 bg-zinc-100/40"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Localidad</span>
                     {sortField === "localidad" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
-                {/* Tipo / Subtipo */}
+                {/* Región — sortable y hover */}
                 <th
-                  onClick={() => handleSort("subtipo")}
-                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
-                    sortField === "subtipo"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
+                  onClick={() => handleSort("region")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[140px] ${
+                    sortField === "region"
+                      ? "text-zinc-900 bg-zinc-100/40"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Región</span>
+                    {sortField === "region" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
+                </th>
+
+                {/* Tipo / Subtipo — sortable, hover y alineado izquierda */}
+                <th
+                  onClick={() => handleSort("subtipo")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[150px] ${
+                    sortField === "subtipo"
+                      ? "text-zinc-900 bg-zinc-100/40"
+                      : "text-zinc-600 hover:text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Tipo</span>
                     {sortField === "subtipo" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
-                {/* Dirección */}
-                <th
-                  onClick={() => handleSort("direccion")}
-                  className={`px-6 py-4 font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
-                    sortField === "direccion"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="leading-snug">Dirección</span>
-                    {sortField === "direccion" ? (
-                      sortOrder === "asc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
+                {/* Dirección — hover y alineado izquierda */}
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[170px]">
+                  Dirección
                 </th>
 
-                {/* Capacidad */}
-                <th
-                  onClick={() => handleSort("capacidad_maxima")}
-                  className={`px-4 py-4 font-bold text-center transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 ${
-                    sortField === "capacidad_maxima"
-                      ? "text-zinc-900"
-                      : "text-zinc-700 hover:text-zinc-900"
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span className="leading-snug text-center">
-                      Capacidad
-                      <br />
-                      máxima
-                    </span>
-                    {sortField === "capacidad_maxima" ? (
-                      sortOrder === "desc" ? (
-                        <ArrowDown className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3.5 w-3.5 text-zinc-900 shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
-                </th>
+                {/* Capacidad — SOLO visible si es Centros de Evacuación */}
+                {selectedType === "EVACUACION" && (
+                  <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[130px]">
+                    Capacidad
+                  </th>
+                )}
 
-                {/* Acciones */}
-                <th className="w-16 px-4 py-4 font-bold text-center text-zinc-400">
-                  ...
-                </th>
+                {/* Acciones — hover en cabecera */}
+                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 transition-colors" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 bg-white">
               {sortedMarkers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isDeleteMode ? 7 : 6}
-                    className="py-12 text-center text-zinc-400 font-medium"
+                    colSpan={
+                      (isDeleteMode ? 1 : 0) +
+                      5 +
+                      (selectedType === "EVACUACION" ? 1 : 0) +
+                      1
+                    }
+                    className="py-12 text-center text-xs text-zinc-400 font-medium"
                   >
                     No se encontraron marcadores.
                   </td>
@@ -664,15 +863,19 @@ export function MarcadoresTableUI({
                 sortedMarkers.map((marker) => {
                   const isSelected = selectedMarkerId === marker.id;
                   const isChecked = selectedRowIds.has(marker.id);
+                  const isEditing = editingRowId === marker.id;
                   const locDisplay =
                     marker.localidad ||
                     resolvedLocalities[marker.id] ||
                     "Corrientes Capital";
+                  const regionDisplay =
+                    markerRegionMap.get(marker.id) || "Fuera de rango";
 
                   return (
                     <tr
                       key={marker.id}
                       onClick={() => {
+                        if (isEditing) return;
                         if (isDeleteMode) {
                           toggleSelectRow(marker.id);
                         } else {
@@ -680,96 +883,205 @@ export function MarcadoresTableUI({
                         }
                       }}
                       className={`group transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-zinc-100 font-semibold"
-                          : isChecked
-                            ? "bg-red-50/50"
-                            : "hover:bg-zinc-50"
+                        isEditing
+                          ? "bg-amber-50/60"
+                          : isSelected
+                            ? "bg-blue-50/90 font-bold"
+                            : isChecked
+                              ? "bg-red-50/50"
+                              : "hover:bg-zinc-50/80"
                       }`}
                     >
                       {isDeleteMode && (
                         <td
-                          className="px-4 py-3.5 text-center"
+                          className="px-4 py-3 text-left"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleSelectRow(marker.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                            className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                           />
                         </td>
                       )}
 
-                      {/* Nombre */}
-                      <td className="px-6 py-4 font-medium text-zinc-900">
-                        {marker.nombre}
+                      {/* Nombre — alineado a la izquierda */}
+                      <td className="px-5 py-3 font-bold text-zinc-900 text-left">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editNombre}
+                            onChange={(e) => setEditNombre(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 font-bold outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                            autoFocus
+                          />
+                        ) : (
+                          marker.nombre
+                        )}
                       </td>
 
-                      {/* Localidad */}
-                      <td className="px-6 py-4 text-zinc-600">{locDisplay}</td>
-
-                      {/* Tipo */}
-                      <td className="px-6 py-4 text-zinc-600">
-                        {marker.subtipo}
+                      {/* Localidad — alineado a la izquierda */}
+                      <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                        {locDisplay}
                       </td>
 
-                      {/* Dirección */}
-                      <td className="px-6 py-4 text-zinc-600">
-                        {marker.direccion || "-"}
+                      {/* Región — polígono calculado o Fuera de rango */}
+                      <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                        <span
+                          className={
+                            regionDisplay === "Fuera de rango"
+                              ? "text-zinc-400 italic"
+                              : "text-zinc-700 font-semibold"
+                          }
+                        >
+                          {regionDisplay}
+                        </span>
                       </td>
 
-                      {/* Capacidad */}
-                      <td className="px-4 py-4 text-center text-zinc-600">
-                        {marker.capacidad_maxima !== null &&
-                        marker.capacidad_maxima !== undefined
-                          ? marker.capacidad_maxima
-                          : "-"}
+                      {/* Tipo — Custom Dropdown estilizado */}
+                      <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                        {isEditing ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isTypeDropdownOpen) {
+                                setIsTypeDropdownOpen(false);
+                                setTypeDropdownPos(null);
+                              } else {
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                const spaceBelow =
+                                  window.innerHeight - rect.bottom;
+                                const showAbove = spaceBelow < 220;
+                                setTypeDropdownPos({
+                                  top: showAbove
+                                    ? rect.top - 210
+                                    : rect.bottom + 4,
+                                  left: rect.left,
+                                  width: Math.max(rect.width, 180),
+                                  marker,
+                                });
+                                setIsTypeDropdownOpen(true);
+                              }
+                            }}
+                            className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 bg-white shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all cursor-pointer hover:border-gray-400"
+                          >
+                            <span className="truncate">
+                              {marker.category === "EVACUACION"
+                                ? (
+                                    SAFE_ZONE_TYPE_LABELS as Record<
+                                      string,
+                                      string
+                                    >
+                                  )[editTipo] || editTipo
+                                : (
+                                    HEALTH_CENTER_TYPE_LABELS as Record<
+                                      string,
+                                      string
+                                    >
+                                  )[editTipo] || editTipo}
+                            </span>
+                            <ChevronDown
+                              className={`h-3.5 w-3.5 text-zinc-500 shrink-0 transition-transform duration-200 ${
+                                isTypeDropdownOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        ) : (
+                          marker.subtipo
+                        )}
                       </td>
 
-                      {/* Acciones */}
+                      {/* Dirección — alineado a la izquierda */}
+                      <td className="px-5 py-3 text-zinc-500 font-medium text-left">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editDireccion}
+                            onChange={(e) => setEditDireccion(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-700 font-medium outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                          />
+                        ) : (
+                          marker.direccion || "-"
+                        )}
+                      </td>
+
+                      {/* Capacidad — SOLO visible si es Centros de Evacuación */}
+                      {selectedType === "EVACUACION" && (
+                        <td className="px-5 py-3 text-zinc-700 font-bold text-left">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              min="0"
+                              value={editCapacidad}
+                              onChange={(e) => setEditCapacidad(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              placeholder="0"
+                              className="w-24 rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-700 font-bold outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                            />
+                          ) : marker.capacidad_maxima !== null &&
+                            marker.capacidad_maxima !== undefined ? (
+                            marker.capacidad_maxima.toLocaleString("es-AR")
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                      )}
+
+                      {/* Acciones — botones redondos con color de fuente normal */}
                       <td
-                        className="px-4 py-4 text-center relative"
+                        className="px-3 py-3 text-left relative"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActiveRowMenuId((prev) =>
-                              prev === marker.id ? null : marker.id
-                            )
-                          }
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 transition-colors cursor-pointer mx-auto"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-
-                        {activeRowMenuId === marker.id && (
-                          <div
-                            ref={rowMenuRef}
-                            className="absolute right-4 top-10 z-50 w-36 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150"
-                          >
+                        {isEditing ? (
+                          <div className="flex items-center justify-start gap-1.5">
                             <button
-                              onClick={() => {
-                                onSelectMarker(marker);
-                                setActiveRowMenuId(null);
-                              }}
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+                              type="button"
+                              onClick={() => handleConfirmEdit(marker)}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                              title="Confirmar edición"
                             >
-                              <MapPin className="h-3.5 w-3.5 text-zinc-500" />
-                              <span>Ver en mapa</span>
+                              <Check className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={async () => {
-                                setActiveRowMenuId(null);
-                                await onDeleteMarkers([marker.id]);
-                              }}
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                              type="button"
+                              onClick={handleCancelEdit}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                              title="Cancelar edición"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span>Eliminar</span>
+                              <X className="h-3.5 w-3.5" />
                             </button>
                           </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect =
+                                e.currentTarget.getBoundingClientRect();
+                              if (activeMenuData?.marker.id === marker.id) {
+                                setActiveMenuData(null);
+                              } else {
+                                const spaceBelow =
+                                  window.innerHeight - rect.bottom;
+                                const showAbove = spaceBelow < 140;
+                                setActiveMenuData({
+                                  marker,
+                                  top: showAbove
+                                    ? rect.top - 120
+                                    : rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                });
+                              }
+                            }}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 transition-colors cursor-pointer"
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -781,30 +1093,145 @@ export function MarcadoresTableUI({
         </div>
       </div>
 
+      {/* Menú contextual flotante fijo (Portal libre de recortes o límites de tabla) */}
+      {activeMenuData && (
+        <div
+          ref={rowMenuRef}
+          style={{
+            position: "fixed",
+            top: `${activeMenuData.top}px`,
+            right: `${activeMenuData.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-36 rounded-xl border border-gray-200 bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              onSelectMarker(activeMenuData.marker);
+              setActiveMenuData(null);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+          >
+            <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+            <span>Ver en mapa</span>
+          </button>
+          {onUpdateMarker && (
+            <button
+              onClick={() => {
+                handleStartEdit(activeMenuData.marker);
+                setActiveMenuData(null);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+            >
+              <Pencil className="h-3.5 w-3.5 text-zinc-500" />
+              <span>Editar</span>
+            </button>
+          )}
+          <button
+            onClick={async () => {
+              const idToDelete = activeMenuData.marker.id;
+              setActiveMenuData(null);
+              await onDeleteMarkers([idToDelete]);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Eliminar</span>
+          </button>
+        </div>
+      )}
+
+      {/* Menú desplegable flotante fijo para Tipo (libre de recortes de tabla) */}
+      {isTypeDropdownOpen && typeDropdownPos && editingRowId && (
+        <div
+          ref={typeDropdownRef}
+          style={{
+            position: "fixed",
+            top: `${typeDropdownPos.top}px`,
+            left: `${typeDropdownPos.left}px`,
+            width: `${typeDropdownPos.width}px`,
+            zIndex: 9999,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-56 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 bg-white/95 backdrop-blur-md shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
+        >
+          {typeDropdownPos.marker.category === "EVACUACION"
+            ? Object.entries(SAFE_ZONE_TYPE_LABELS).map(([key, label]) => {
+                const isSelected = editTipo === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setEditTipo(key);
+                      setIsTypeDropdownOpen(false);
+                      setTypeDropdownPos(null);
+                    }}
+                    className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-zinc-100 font-bold text-zinc-950 shadow-2xs"
+                        : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 font-medium"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                    )}
+                  </button>
+                );
+              })
+            : Object.entries(HEALTH_CENTER_TYPE_LABELS).map(([key, label]) => {
+                const isSelected = editTipo === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setEditTipo(key);
+                      setIsTypeDropdownOpen(false);
+                      setTypeDropdownPos(null);
+                    }}
+                    className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-zinc-100 font-bold text-zinc-950 shadow-2xs"
+                        : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 font-medium"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                    )}
+                  </button>
+                );
+              })}
+        </div>
+      )}
+
       {/* Modal de confirmación de eliminación masiva */}
       {showConfirmDeleteModal && (
-        <div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-zinc-900 mb-2">
+        <div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-3">
+            <h3 className="text-base font-bold text-zinc-900">
               ¿Eliminar marcadores?
             </h3>
-            <p className="text-xs text-zinc-600 mb-5 leading-relaxed">
+            <p className="text-xs text-zinc-600 leading-relaxed">
               Estás por eliminar{" "}
               <strong>{selectedRowIds.size} marcadores</strong> seleccionados.
               Esta acción no se puede deshacer.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5 mt-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-zinc-700 shadow-xs hover:bg-gray-50 transition-all cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-red-300 bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-red-700 transition-all cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-red-500 bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition-all active:scale-95 cursor-pointer"
               >
                 Confirmar
               </button>

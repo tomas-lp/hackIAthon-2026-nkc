@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 export const regionService = {
-  async getLists(): Promise<RegionLista[]> {
-    const supabase = createClient();
+  async getLists(client?: SupabaseClient): Promise<RegionLista[]> {
+    const supabase = client || createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -48,8 +49,8 @@ export const regionService = {
     return data;
   },
 
-  async getRegions(): Promise<RegionPersonalizada[]> {
-    const supabase = createClient();
+  async getRegions(client?: SupabaseClient): Promise<RegionPersonalizada[]> {
+    const supabase = client || createClient();
     const { data, error } = await supabase
       .from("regiones_personalizadas_view")
       .select("*")
@@ -129,6 +130,22 @@ export const regionService = {
       .eq("id", id);
 
     if (error) throw error;
+  },
+
+  async updateRegion(
+    id: string,
+    dto: { nombre?: string; lista_id?: string }
+  ): Promise<void> {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("regiones_personalizadas")
+      .update(dto)
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating region:", error);
+      throw error;
+    }
   },
 
   async deleteRegions(ids: string[]): Promise<void> {

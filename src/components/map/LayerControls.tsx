@@ -84,21 +84,23 @@ export function LayerControls({
                   }`}
                 />
               </button>
-              {/* Plus Button */}
-              <TooltipSign
-                label="Añadir centro de evacuación"
-                position="top"
-                delayMs={500}
-              >
-                <button
-                  onClick={() => {
-                    onCreateEvacuationCenter?.();
-                  }}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+              {/* Plus Button — solo visible si se pasa handler (Admin) */}
+              {onCreateEvacuationCenter && (
+                <TooltipSign
+                  label="Añadir centro de evacuación"
+                  position="top"
+                  delayMs={500}
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </TooltipSign>
+                  <button
+                    onClick={() => {
+                      onCreateEvacuationCenter();
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipSign>
+              )}
             </div>
           </div>
 
@@ -138,41 +140,43 @@ export function LayerControls({
                   }`}
                 />
               </button>
-              {/* Plus Button */}
-              <TooltipSign
-                label="Añadir centro de at. médica"
-                position="top"
-                delayMs={500}
-              >
-                <button
-                  onClick={() => {
-                    onCreateMedicalCenter?.();
-                  }}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+              {/* Plus Button — solo visible si se pasa handler (Admin) */}
+              {onCreateMedicalCenter && (
+                <TooltipSign
+                  label="Añadir centro de at. médica"
+                  position="top"
+                  delayMs={500}
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </TooltipSign>
+                  <button
+                    onClick={() => {
+                      onCreateMedicalCenter();
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipSign>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* References Legend Capsule */}
-      <div className="flex items-center gap-3 rounded-full border border-white/50 bg-white/70 px-4 py-2 text-xs font-bold text-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md">
+      {/* References Legend Capsule (Unificada con mapa de calor) */}
+      <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/50 bg-white/75 px-4 py-2 text-xs font-bold text-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md">
         <span className="text-zinc-900 font-extrabold">Referencias</span>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs">
             <Info className="h-2.5 w-2.5 stroke-[3]" />
           </div>
-          <span className="text-[11px] font-medium text-zinc-700">
+          <span className="text-[11px] font-semibold text-zinc-700">
             Centros de evacuación
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white">
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white shadow-2xs">
             <svg
               viewBox="0 0 24 24"
               fill="currentColor"
@@ -181,9 +185,28 @@ export function LayerControls({
               <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
             </svg>
           </div>
-          <span className="text-[11px] font-medium text-zinc-700">
+          <span className="text-[11px] font-semibold text-zinc-700">
             Centros de at. médica
           </span>
+        </div>
+
+        {/* Separador vertical */}
+        <div className="h-3.5 w-px bg-zinc-300/80 mx-0.5" />
+
+        {/* Escala de Calor / Riesgo */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-zinc-700">
+            Riesgo:
+          </span>
+          <span className="text-[10px] font-mono text-zinc-400">Bajo</span>
+          <div
+            className="h-2 w-16 sm:w-20 rounded-full shadow-2xs"
+            style={{
+              background:
+                "linear-gradient(to right, #3b82f6, #22c55e, #eab308, #f97316, #ef4444)",
+            }}
+          />
+          <span className="text-[10px] font-mono text-zinc-400">Alto</span>
         </div>
       </div>
     </div>

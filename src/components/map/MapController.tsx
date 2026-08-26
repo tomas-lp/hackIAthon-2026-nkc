@@ -5,12 +5,14 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
+import { HealthCenter } from "@/types/healthCenter";
 
 interface MapControllerProps {
   selectedReport: Report | null;
   reports: Report[];
   markerRefs: MutableRefObject<Record<string, L.Marker | null>>;
   selectedSafeZone?: SafeZone | null;
+  selectedHealthCenter?: HealthCenter | null;
 }
 
 function isValidLatLng(lat: number, lng: number): boolean {
@@ -56,6 +58,7 @@ export function MapController({
   reports,
   markerRefs,
   selectedSafeZone,
+  selectedHealthCenter,
 }: MapControllerProps) {
   const map = useMap();
   const popupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,6 +124,31 @@ export function MapController({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedSafeZone?.id]);
+
+  // Focus on selected health center
+  useEffect(() => {
+    if (
+      !selectedHealthCenter ||
+      selectedHealthCenter.lat === null ||
+      selectedHealthCenter.lon === null ||
+      !isValidLatLng(selectedHealthCenter.lat, selectedHealthCenter.lon)
+    ) {
+      return;
+    }
+
+    const bounds = L.latLngBounds([
+      [selectedHealthCenter.lat, selectedHealthCenter.lon],
+    ]);
+
+    const targetMaxZoom = Math.max(map.getZoom(), 16);
+    map.fitBounds(bounds, {
+      padding: [50, 50],
+      duration: FLY_DURATION,
+      animate: true,
+      maxZoom: targetMaxZoom,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedHealthCenter?.id]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

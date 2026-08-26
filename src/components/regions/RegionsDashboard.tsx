@@ -24,6 +24,7 @@ interface RegionsDashboardProps {
   initialReports: Report[];
   initialAllReports?: Report[];
   initialRegiones: RegionPersonalizada[];
+  initialListas?: RegionLista[];
   user: User | null;
 }
 
@@ -31,15 +32,16 @@ export function RegionsDashboard({
   initialReports,
   initialAllReports = [],
   initialRegiones,
+  initialListas = [],
   user,
 }: RegionsDashboardProps) {
   const router = useRouter();
   const [regiones, setRegiones] =
     useState<RegionPersonalizada[]>(initialRegiones);
-  const [allReports] = useState<Report[]>(
+  const [allReports, setAllReports] = useState<Report[]>(
     initialAllReports.length > 0 ? initialAllReports : initialReports
   );
-  const [listas, setListas] = useState<RegionLista[]>([]);
+  const [listas, setListas] = useState<RegionLista[]>(initialListas);
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<BarriosFeatureCollection | null>(null);
   const [activeAdminTab, setActiveAdminTab] = useState<string>("Regiones");
@@ -77,10 +79,22 @@ export function RegionsDashboard({
       setRegiones(fetchedRegiones);
       setListas(fetchedListas);
       setBarriosGeoJson(fetchedBarrios);
+
+      if (allReports.length === 0) {
+        try {
+          const res = await fetch("/api/reports?all=true");
+          if (res.ok) {
+            const data = await res.json();
+            setAllReports(data);
+          }
+        } catch {
+          // ignore
+        }
+      }
     } catch (err) {
       console.error("Error refreshing regions data:", err);
     }
-  }, []);
+  }, [allReports.length]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -167,6 +181,17 @@ export function RegionsDashboard({
     } catch (e) {
       console.error(e);
       alert("Error eliminando la(s) región(es)");
+    }
+  };
+
+  // Actualizar región (nombre)
+  const handleUpdateRegion = async (id: string, data: { nombre: string }) => {
+    try {
+      await regionService.updateRegion(id, data);
+      await refreshData();
+    } catch (e) {
+      console.error("Error actualizando región:", e);
+      alert("Error actualizando la región");
     }
   };
 
@@ -281,17 +306,18 @@ export function RegionsDashboard({
         />
       </div>
 
-      {/* Widget de Usuario (arriba a la derecha) */}
-      <AuthWidget
-        isAdmin={!!user}
-        onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={async () => {
-          const { logoutFromSession } = await import("@/app/auth/actions");
-          await logoutFromSession();
-          window.location.href = "/";
-        }}
-        isHidden={isDrawing || showNamePopup}
-      />
+      {/* Widget de Usuario cuando está en vista de mapa */}
+      {isMapVisible && !isDrawing && !showNamePopup && (
+        <AuthWidget
+          isAdmin={!!user}
+          onLoginClick={() => setShowLoginModal(true)}
+          onLogoutClick={async () => {
+            const { logoutFromSession } = await import("@/app/auth/actions");
+            await logoutFromSession();
+            window.location.href = "/";
+          }}
+        />
+      )}
 
       <LoginModal
         isOpen={showLoginModal}
@@ -306,27 +332,52 @@ export function RegionsDashboard({
         onSave={handleCreateNewList}
       />
 
-      {/* Contenido Principal: Tabla de Regiones o Mapa Limpio Enfolcado */}
+      {/* Contenido Principal: Tabla de Regiones o Mapa Limpio Enfocado */}
       {!isMapVisible ? (
-        <main
-          className={`absolute inset-0 pt-20 pb-6 px-4 z-10 flex justify-center transition-all duration-300 ease-in-out ${
+        <div
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${
             sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
           }`}
         >
-          <RegionsTableUI
-            regiones={regiones}
-            listas={listas}
-            reports={reports}
-            allReports={allReports}
-            barriosGeoJson={barriosGeoJson}
-            activeListFilter={activeHeaderTab}
-            onListFilterChange={(listName) => setActiveHeaderTab(listName)}
-            onSelectRegion={handleSelectRegion}
-            onCreateRegion={handleCreateRegion}
-            onDeleteRegions={handleDeleteRegions}
-            selectedRegionId={selectedRegionId}
-          />
-        </main>
+          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
+            {/* Encabezado Superior */}
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <div>
+                <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                  Regiones
+                </h1>
+              </div>
+
+              <AuthWidget
+                isAdmin={!!user}
+                onLoginClick={() => setShowLoginModal(true)}
+                onLogoutClick={async () => {
+                  const { logoutFromSession } =
+                    await import("@/app/auth/actions");
+                  await logoutFromSession();
+                  window.location.href = "/";
+                }}
+              />
+            </div>
+
+            {/* Contenido: Tabla de Regiones */}
+            <RegionsTableUI
+              regiones={regiones}
+              listas={listas}
+              reports={reports}
+              allReports={allReports}
+              barriosGeoJson={barriosGeoJson}
+              activeListFilter={activeHeaderTab}
+              onListFilterChange={(listName) => setActiveHeaderTab(listName)}
+              onSelectRegion={handleSelectRegion}
+              onCreateRegion={handleCreateRegion}
+              onDeleteRegions={handleDeleteRegions}
+              onUpdateRegion={handleUpdateRegion}
+              selectedRegionId={selectedRegionId}
+              onOpenNewListModal={() => setShowNewListModal(true)}
+            />
+          </div>
+        </div>
       ) : (
         <section className="absolute inset-0 h-full w-full">
           <RegionsMap

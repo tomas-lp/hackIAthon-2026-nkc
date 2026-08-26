@@ -22,15 +22,21 @@ import { healthCenterService } from "@/services/healthCenterService";
 import { useReports } from "@/hooks/useReports";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
-import { resolveLocationDetails } from "@/lib/geocode";
+import { resolveLocationDetails, geocodeAddress } from "@/lib/geocode";
 import { SafeZoneDetailSidebar } from "@/components/map/SafeZoneDetailSidebar";
 import { SafeZoneModal } from "@/components/map/SafeZoneModal";
 import { HealthCenterModal } from "@/components/map/HealthCenterModal";
+
+import { BarriosFeatureCollection } from "@/services/barrioService";
+import { RegionLista, RegionPersonalizada } from "@/types/region";
 
 interface MarcadoresDashboardProps {
   initialSafeZones: SafeZone[];
   initialHealthCenters: HealthCenter[];
   initialReports: Report[];
+  initialBarriosGeoJson?: BarriosFeatureCollection | null;
+  initialRegionLists?: RegionLista[];
+  initialCustomRegions?: RegionPersonalizada[];
   user: User | null;
 }
 
@@ -38,12 +44,18 @@ export function MarcadoresDashboard({
   initialSafeZones,
   initialHealthCenters,
   initialReports,
+  initialBarriosGeoJson,
+  initialRegionLists,
+  initialCustomRegions,
   user,
 }: MarcadoresDashboardProps) {
   const router = useRouter();
   const [safeZones, setSafeZones] = useState<SafeZone[]>(initialSafeZones);
   const [healthCenters, setHealthCenters] =
     useState<HealthCenter[]>(initialHealthCenters);
+  const barriosGeoJson = initialBarriosGeoJson || null;
+  const regionLists = initialRegionLists || [];
+  const customRegions = initialCustomRegions || [];
 
   const [activeAdminTab, setActiveAdminTab] = useState<string>("Marcadores");
   const [activeCategoryFilter, setActiveCategoryFilter] =
@@ -251,6 +263,85 @@ export function MarcadoresDashboard({
     }
   };
 
+  // Actualizar marcador (nombre, dirección, tipo, capacidad_maxima)
+  // Si la dirección fue editada, se geocodifica automáticamente para reubicar el marcador en el mapa
+  const handleUpdateMarker = async (
+    id: string,
+    data: {
+      nombre: string;
+      direccion: string;
+      tipo?: string;
+      capacidad_maxima?: number | null;
+    }
+  ) => {
+    try {
+      const isSafeZone = safeZones.some((sz) => sz.id === id);
+      const existingMarker = isSafeZone
+        ? safeZones.find((sz) => sz.id === id)
+        : healthCenters.find((hc) => hc.id === id);
+
+      const oldAddress = existingMarker?.direccion || "";
+      const isAddressChanged =
+        data.direccion && data.direccion.trim() !== oldAddress.trim();
+
+      let newCoords: {
+        lat: number;
+        lon: number;
+        localidad?: string;
+        departamento?: string;
+      } | null = null;
+
+      if (isAddressChanged && data.direccion.trim()) {
+        const geo = await geocodeAddress(data.direccion.trim());
+        if (geo) {
+          newCoords = {
+            lat: geo.lat,
+            lon: geo.lon,
+            localidad: geo.localidad,
+            departamento: geo.departamento,
+          };
+        }
+      }
+
+      if (isSafeZone) {
+        await safeZoneService.updateSafeZone(id, {
+          nombre: data.nombre,
+          direccion: data.direccion,
+          ...(newCoords
+            ? {
+                latitud: newCoords.lat,
+                longitud: newCoords.lon,
+                localidad: newCoords.localidad,
+                departamento: newCoords.departamento,
+              }
+            : {}),
+          ...(data.tipo ? { tipo: data.tipo as SafeZoneType } : {}),
+          ...(data.capacidad_maxima !== undefined
+            ? { capacidad_maxima: data.capacidad_maxima }
+            : {}),
+        });
+      } else {
+        await healthCenterService.updateHealthCenter(id, {
+          nombre: data.nombre,
+          direccion: data.direccion,
+          ...(newCoords
+            ? {
+                lat: newCoords.lat,
+                lon: newCoords.lon,
+                localidad: newCoords.localidad,
+                departamento: newCoords.departamento,
+              }
+            : {}),
+          ...(data.tipo ? { tipo: data.tipo as HealthCenterType } : {}),
+        });
+      }
+      await refreshData();
+    } catch (err) {
+      console.error("Error al actualizar marcador:", err);
+      alert("Error al actualizar marcador.");
+    }
+  };
+
   // Seleccionar marcador y enfocar en mapa
   const handleSelectMarker = (marker: MarkerRow) => {
     setSelectedMarker(marker);
@@ -322,17 +413,18 @@ export function MarcadoresDashboard({
         />
       </div>
 
-      {/* Widget de Usuario (arriba a la derecha) */}
-      <AuthWidget
-        isAdmin={!!user}
-        onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={async () => {
-          const { logoutFromSession } = await import("@/app/auth/actions");
-          await logoutFromSession();
-          window.location.href = "/";
-        }}
-        isHidden={isCreating}
-      />
+      {/* Widget de Usuario cuando está en vista de mapa */}
+      {isMapVisible && !isCreating && (
+        <AuthWidget
+          isAdmin={!!user}
+          onLoginClick={() => setShowLoginModal(true)}
+          onLogoutClick={async () => {
+            const { logoutFromSession } = await import("@/app/auth/actions");
+            await logoutFromSession();
+            window.location.href = "/";
+          }}
+        />
+      )}
 
       <LoginModal
         isOpen={showLoginModal}
@@ -355,21 +447,48 @@ export function MarcadoresDashboard({
 
       {/* Contenido Principal: Tabla de Marcadores o Mapa Limpio */}
       {!isMapVisible ? (
-        <main
-          className={`absolute inset-0 pt-20 pb-6 px-4 z-10 flex justify-center transition-all duration-300 ease-in-out ${
+        <div
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${
             sidebarCollapsed ? "pl-14 pr-6" : "pl-80 pr-6"
           }`}
         >
-          <MarcadoresTableUI
-            markers={unifiedMarkers}
-            activeCategoryFilter={activeCategoryFilter}
-            onCategoryFilterChange={setActiveCategoryFilter}
-            onSelectMarker={handleSelectMarker}
-            onCreateMarker={handleStartCreateMarker}
-            onDeleteMarkers={handleDeleteMarkers}
-            selectedMarkerId={selectedMarker?.id || null}
-          />
-        </main>
+          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
+            {/* Encabezado Superior */}
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <div>
+                <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                  Marcadores
+                </h1>
+              </div>
+
+              <AuthWidget
+                isAdmin={!!user}
+                onLoginClick={() => setShowLoginModal(true)}
+                onLogoutClick={async () => {
+                  const { logoutFromSession } =
+                    await import("@/app/auth/actions");
+                  await logoutFromSession();
+                  window.location.href = "/";
+                }}
+              />
+            </div>
+
+            {/* Contenido: Tabla de Marcadores */}
+            <MarcadoresTableUI
+              markers={unifiedMarkers}
+              activeCategoryFilter={activeCategoryFilter}
+              onCategoryFilterChange={setActiveCategoryFilter}
+              barriosGeoJson={barriosGeoJson}
+              regionLists={regionLists}
+              customRegions={customRegions}
+              onSelectMarker={handleSelectMarker}
+              onCreateMarker={handleStartCreateMarker}
+              onDeleteMarkers={handleDeleteMarkers}
+              onUpdateMarker={handleUpdateMarker}
+              selectedMarkerId={selectedMarker?.id || null}
+            />
+          </div>
+        </div>
       ) : (
         <section className="absolute inset-0 h-full w-full">
           <MarcadoresMap

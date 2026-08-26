@@ -193,3 +193,32 @@ export async function resolveAddress(
   inFlight.set(key, promise);
   return promise;
 }
+
+export interface GeocodeResult {
+  lat: number;
+  lon: number;
+  direccion: string;
+  localidad: string;
+  departamento: string;
+  display_name: string;
+}
+
+export async function geocodeAddress(
+  address: string
+): Promise<GeocodeResult | null> {
+  if (!address || !address.trim()) return null;
+  try {
+    const res = await fetch(
+      `/api/geocode?q=${encodeURIComponent(address.trim())}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Number.isFinite(data.lat) && Number.isFinite(data.lon)) {
+      return data as GeocodeResult;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error geocoding address:", e);
+    return null;
+  }
+}

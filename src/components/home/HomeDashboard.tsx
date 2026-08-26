@@ -351,6 +351,7 @@ export function HomeDashboard({
           safeZones={safeZoneSel.safeZones}
           selectedSafeZone={safeZoneSel.selectedSafeZone}
           onSelectSafeZone={(zone) => {
+            setShowEvacuationCenters(true);
             safeZoneSel.setSelectedSafeZone(zone);
             setSelectedReport(null);
             healthSel.setSelectedHealthCenter(null);
@@ -362,6 +363,7 @@ export function HomeDashboard({
           healthCenters={healthSel.healthCenters}
           selectedHealthCenter={healthSel.selectedHealthCenter}
           onSelectHealthCenter={(center) => {
+            setShowMedicalCenters(true);
             healthSel.setSelectedHealthCenter(center);
             setSelectedReport(null);
             safeZoneSel.setSelectedSafeZone(null);
@@ -491,16 +493,18 @@ export function HomeDashboard({
         />
       </section>
 
-      {isAdmin && activeListTab === "Mapa de calor" && (
+      {(!isAdmin || activeListTab === "Mapa de calor") && (
         <LayerControls
           showEvacuationCenters={showEvacuationCenters}
           setShowEvacuationCenters={setShowEvacuationCenters}
           showMedicalCenters={showMedicalCenters}
           setShowMedicalCenters={setShowMedicalCenters}
-          onCreateEvacuationCenter={() =>
-            safeZoneSel.setIsCreatingSafeZone(true)
+          onCreateEvacuationCenter={
+            isAdmin ? () => safeZoneSel.setIsCreatingSafeZone(true) : undefined
           }
-          onCreateMedicalCenter={() => safeZoneSel.setIsCreatingSafeZone(true)}
+          onCreateMedicalCenter={
+            isAdmin ? () => safeZoneSel.setIsCreatingSafeZone(true) : undefined
+          }
           isHidden={hideMainUI}
         />
       )}

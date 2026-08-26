@@ -23,8 +23,8 @@ export default async function EstadisticasPage() {
     await Promise.all([
       reportService.getAllReports(),
       barrioService.getBarriosGeoJson(),
-      regionService.getLists(),
-      regionService.getRegions(),
+      regionService.getLists(supabase),
+      regionService.getRegions(supabase),
     ]);
 
   return (
