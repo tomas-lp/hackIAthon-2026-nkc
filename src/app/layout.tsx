@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AppShell } from "@/components/common/AppShell";
 
 const manrope = localFont({
   src: "./fonts/Manrope.ttf",
@@ -20,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${manrope.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

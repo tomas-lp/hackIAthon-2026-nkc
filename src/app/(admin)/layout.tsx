@@ -11,5 +11,5 @@ export default async function AdminLayout({
 
   if (!user) redirect("/");
 
-  return <AdminShell user={user}>{children}</AdminShell>;
+  return <AdminShell>{children}</AdminShell>;
 }

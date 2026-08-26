@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
@@ -14,6 +12,7 @@ import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
 import { TooltipSign } from "@/components/ui/TooltipSign";
+import { SidebarAdmin } from "@/components/common/SidebarAdmin";
 import {
   ChevronLeft,
   ChevronDown,
@@ -334,15 +333,6 @@ export function Sidebar({
   isNavigatingNearestHealthCenter = false,
   fullHeight = false,
 }: SidebarProps) {
-  const pathname = usePathname();
-  const pathToTab: Record<string, string> = {
-    "/": "Mapa",
-    "/marcadores": "Marcadores",
-    "/regiones-personalizadas": "Regiones",
-    "/estadisticas": "Panel de Administración",
-  };
-  const activeAdminTab = pathToTab[pathname] ?? "Mapa";
-
   // Buscador de marcadores (Evacuación y Salud)
   const [markerSearchQuery, setMarkerSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -455,13 +445,6 @@ export function Sidebar({
     });
   }, [filters.tipo, reports]);
 
-  const adminMenuOptions = [
-    { label: "Mapa", href: "/" },
-    { label: "Marcadores", href: "/marcadores" },
-    { label: "Regiones", href: "/regiones-personalizadas" },
-    { label: "Panel de Administración", href: "/estadisticas" },
-  ];
-
   const [isExpanded, setIsExpanded] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       if (
@@ -528,24 +511,7 @@ export function Sidebar({
 
       {isAdmin ? (
         /* Admin Navigation View */
-        <div className="flex flex-col gap-1.5 py-0.5">
-          {adminMenuOptions.map((option) => {
-            const isSelected = activeAdminTab === option.label;
-            return (
-              <Link
-                key={option.href}
-                href={option.href}
-                className={`w-full rounded-xl border px-3.5 py-2.5 text-left font-medium text-xs transition-all duration-200 cursor-pointer shadow-2xs ${
-                  isSelected
-                    ? "border-zinc-400 bg-white text-zinc-950 font-bold shadow-xs scale-[1.01]"
-                    : "border-gray-200/80 bg-white/90 text-zinc-700 hover:bg-gray-50 hover:border-gray-300"
-                }`}
-              >
-                {option.label}
-              </Link>
-            );
-          })}
-        </div>
+        <SidebarAdmin />
       ) : (
         /* User Normal View */
         <div className="flex flex-col flex-1 w-full gap-3.5 min-h-0">

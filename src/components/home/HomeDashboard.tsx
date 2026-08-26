@@ -32,6 +32,7 @@ import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeMapView } from "./HomeMapView";
+import { useAdminSidebar } from "@/components/common/AppShell";
 
 interface HomeDashboardProps {
   initialReports: Report[];
@@ -45,8 +46,20 @@ export function HomeDashboard({
   user: initialUser,
 }: HomeDashboardProps) {
   const { isAdmin } = useAuth(initialUser);
+  const {
+    collapsed: adminSidebarCollapsed,
+    setCollapsed: setAdminSidebarCollapsed,
+    setHidden: setAdminSidebarHidden,
+  } = useAdminSidebar();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [localSidebarCollapsed, setLocalSidebarCollapsed] = useState(false);
+  const sidebarCollapsed = isAdmin
+    ? adminSidebarCollapsed
+    : localSidebarCollapsed;
+  const setSidebarCollapsed = (collapsed: boolean) => {
+    if (isAdmin) setAdminSidebarCollapsed(collapsed);
+    else setLocalSidebarCollapsed(collapsed);
+  };
   const [showEvacuationCenters, setShowEvacuationCentersState] =
     useState<boolean>(true);
   const [showMedicalCenters, setShowMedicalCentersState] =
@@ -308,6 +321,10 @@ export function HomeDashboard({
     safeZoneSel.isCreatingSafeZone || safeZoneSel.isEditingSafeZones;
 
   useEffect(() => {
+    setAdminSidebarHidden(isAdmin && hideMainUI);
+  }, [hideMainUI, isAdmin, setAdminSidebarHidden]);
+
+  useEffect(() => {
     syncUrl(
       selectedReport?.id ?? null,
       safeZoneSel.selectedSafeZone?.id ?? null
@@ -327,81 +344,87 @@ export function HomeDashboard({
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-950 font-sans">
-      <HomeSidebar
-        collapsed={sidebarCollapsed}
-        hidden={hideMainUI}
-        reports={reports}
-        filters={filters}
-        loading={loading}
-        error={error}
-        selectedReport={selectedReport}
-        onSelectReport={(report) => {
-          setSelectedReport(report);
-          safeZoneSel.setSelectedSafeZone(null);
-          healthSel.setSelectedHealthCenter(null);
-        }}
-        onUpdateFilter={updateFilter}
-        onResetFilters={resetFilters}
-        isAdmin={isAdmin}
-        safeZones={safeZoneSel.safeZones}
-        selectedSafeZone={safeZoneSel.selectedSafeZone}
-        onSelectSafeZone={(zone) => {
-          setShowEvacuationCenters(true);
-          safeZoneSel.setSelectedSafeZone(zone);
-          setSelectedReport(null);
-          healthSel.setSelectedHealthCenter(null);
-          safeZoneSel.setIsEditingSafeZones(false);
-          safeZoneSel.setIsCreatingSafeZone(false);
-          safeZoneSel.setDraftLocation(null);
-        }}
-        onCreateSafeZone={() => safeZoneSel.setIsCreatingSafeZone(true)}
-        healthCenters={healthSel.healthCenters}
-        selectedHealthCenter={healthSel.selectedHealthCenter}
-        onSelectHealthCenter={(center) => {
-          setShowMedicalCenters(true);
-          healthSel.setSelectedHealthCenter(center);
-          setSelectedReport(null);
-          safeZoneSel.setSelectedSafeZone(null);
-          safeZoneSel.setIsEditingSafeZones(false);
-          safeZoneSel.setIsCreatingSafeZone(false);
-          safeZoneSel.setDraftLocation(null);
-        }}
-        onCollapse={() => setSidebarCollapsed(true)}
-        onNavigateToNearest={
-          !isAdmin ? () => mapRouting.startRouting(null, "nearest") : undefined
-        }
-        isNavigatingNearest={
-          mapRouting.routingState.status === "loading" &&
-          mapRouting.navigatingTargetId === "nearest"
-        }
-        onNavigateToNearestHealthCenter={() =>
-          mapRouting.startRouting(null, "nearest-hc", healthSel.healthZones)
-        }
-        isNavigatingNearestHealthCenter={
-          mapRouting.routingState.status === "loading" &&
-          mapRouting.navigatingTargetId === "nearest-hc"
-        }
-      />
-
-      <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
-        <button
-          id="sidebar-expand-btn"
-          onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
-          style={{
-            transform:
-              sidebarCollapsed && !hideMainUI
-                ? "translateX(0)"
-                : "translateX(-100%)",
-            transition:
-              sidebarCollapsed && !hideMainUI
-                ? "transform 200ms ease-out 350ms"
-                : "transform 200ms ease-in",
+      {!isAdmin && (
+        <HomeSidebar
+          collapsed={sidebarCollapsed}
+          hidden={hideMainUI}
+          reports={reports}
+          filters={filters}
+          loading={loading}
+          error={error}
+          selectedReport={selectedReport}
+          onSelectReport={(report) => {
+            setSelectedReport(report);
+            safeZoneSel.setSelectedSafeZone(null);
+            healthSel.setSelectedHealthCenter(null);
           }}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </TooltipSign>
+          onUpdateFilter={updateFilter}
+          onResetFilters={resetFilters}
+          isAdmin={isAdmin}
+          safeZones={safeZoneSel.safeZones}
+          selectedSafeZone={safeZoneSel.selectedSafeZone}
+          onSelectSafeZone={(zone) => {
+            setShowEvacuationCenters(true);
+            safeZoneSel.setSelectedSafeZone(zone);
+            setSelectedReport(null);
+            healthSel.setSelectedHealthCenter(null);
+            safeZoneSel.setIsEditingSafeZones(false);
+            safeZoneSel.setIsCreatingSafeZone(false);
+            safeZoneSel.setDraftLocation(null);
+          }}
+          onCreateSafeZone={() => safeZoneSel.setIsCreatingSafeZone(true)}
+          healthCenters={healthSel.healthCenters}
+          selectedHealthCenter={healthSel.selectedHealthCenter}
+          onSelectHealthCenter={(center) => {
+            setShowMedicalCenters(true);
+            healthSel.setSelectedHealthCenter(center);
+            setSelectedReport(null);
+            safeZoneSel.setSelectedSafeZone(null);
+            safeZoneSel.setIsEditingSafeZones(false);
+            safeZoneSel.setIsCreatingSafeZone(false);
+            safeZoneSel.setDraftLocation(null);
+          }}
+          onCollapse={() => setSidebarCollapsed(true)}
+          onNavigateToNearest={
+            !isAdmin
+              ? () => mapRouting.startRouting(null, "nearest")
+              : undefined
+          }
+          isNavigatingNearest={
+            mapRouting.routingState.status === "loading" &&
+            mapRouting.navigatingTargetId === "nearest"
+          }
+          onNavigateToNearestHealthCenter={() =>
+            mapRouting.startRouting(null, "nearest-hc", healthSel.healthZones)
+          }
+          isNavigatingNearestHealthCenter={
+            mapRouting.routingState.status === "loading" &&
+            mapRouting.navigatingTargetId === "nearest-hc"
+          }
+        />
+      )}
+
+      {!isAdmin && (
+        <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
+          <button
+            id="sidebar-expand-btn"
+            onClick={() => setSidebarCollapsed(false)}
+            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            style={{
+              transform:
+                sidebarCollapsed && !hideMainUI
+                  ? "translateX(0)"
+                  : "translateX(-100%)",
+              transition:
+                sidebarCollapsed && !hideMainUI
+                  ? "transform 200ms ease-out 350ms"
+                  : "transform 200ms ease-in",
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </TooltipSign>
+      )}
 
       {isAdmin && (
         <AdminTopBar

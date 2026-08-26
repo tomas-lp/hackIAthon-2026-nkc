@@ -7,7 +7,7 @@ function Skeleton({ className }: { className: string }) {
 export default function HomeLoading() {
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
-      <div className="absolute left-0 top-0 z-10 m-4 flex h-[min(88vh,680px)] w-[min(370px,calc(100vw-2rem))] flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
+      {/* <div className="absolute left-0 top-0 z-10 m-4 flex h-[min(88vh,680px)] w-[min(370px,calc(100vw-2rem))] flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-2">
           <Skeleton className="h-12 w-20 rounded-xl bg-zinc-300" />
           <div className="flex flex-col gap-1">
@@ -27,7 +27,7 @@ export default function HomeLoading() {
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
         </div>
-      </div>
+      </div> */}
 
       <Skeleton className="absolute inset-0 rounded-none bg-zinc-300/70" />
 
