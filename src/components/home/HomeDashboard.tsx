@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
-import { Sidebar } from "@/components/common/Sidebar";
-import { ReportMap } from "@/components/map/ReportMap";
 import { ReportDetailSidebar } from "@/components/map/ReportDetailSidebar";
 import { AuthWidget, LoginModal } from "@/components/common/AuthWidget";
 import { BotQRWidget } from "@/components/common/BotQRWidget";
@@ -32,6 +30,8 @@ import { useMapRouting } from "@/hooks/home/useMapRouting";
 import { AdminTopBar } from "./_parts/AdminTopBar";
 import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
+import { HomeSidebar } from "./HomeSidebar";
+import { HomeMapView } from "./HomeMapView";
 
 interface HomeDashboardProps {
   initialReports: Report[];
@@ -327,71 +327,61 @@ export function HomeDashboard({
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-950 font-sans">
-      <div
-        className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
-        style={{
-          transform:
-            sidebarCollapsed || hideMainUI
-              ? "translateX(-110%)"
-              : "translateX(0)",
+      <HomeSidebar
+        collapsed={sidebarCollapsed}
+        hidden={hideMainUI}
+        reports={reports}
+        filters={filters}
+        loading={loading}
+        error={error}
+        selectedReport={selectedReport}
+        onSelectReport={(report) => {
+          setSelectedReport(report);
+          safeZoneSel.setSelectedSafeZone(null);
+          healthSel.setSelectedHealthCenter(null);
         }}
-      >
-        <Sidebar
-          reports={reports}
-          filters={filters}
-          loading={loading}
-          error={error}
-          selectedReport={selectedReport}
-          onSelectReport={(report) => {
-            setSelectedReport(report);
-            safeZoneSel.setSelectedSafeZone(null);
-            healthSel.setSelectedHealthCenter(null);
-          }}
-          onUpdateFilter={updateFilter}
-          onResetFilters={resetFilters}
-          isAdmin={isAdmin}
-          safeZones={safeZoneSel.safeZones}
-          selectedSafeZone={safeZoneSel.selectedSafeZone}
-          onSelectSafeZone={(zone) => {
-            setShowEvacuationCenters(true);
-            safeZoneSel.setSelectedSafeZone(zone);
-            setSelectedReport(null);
-            healthSel.setSelectedHealthCenter(null);
-            safeZoneSel.setIsEditingSafeZones(false);
-            safeZoneSel.setIsCreatingSafeZone(false);
-            safeZoneSel.setDraftLocation(null);
-          }}
-          onCreateSafeZone={() => safeZoneSel.setIsCreatingSafeZone(true)}
-          healthCenters={healthSel.healthCenters}
-          selectedHealthCenter={healthSel.selectedHealthCenter}
-          onSelectHealthCenter={(center) => {
-            setShowMedicalCenters(true);
-            healthSel.setSelectedHealthCenter(center);
-            setSelectedReport(null);
-            safeZoneSel.setSelectedSafeZone(null);
-            safeZoneSel.setIsEditingSafeZones(false);
-            safeZoneSel.setIsCreatingSafeZone(false);
-            safeZoneSel.setDraftLocation(null);
-          }}
-          onCollapse={() => setSidebarCollapsed(true)}
-          onNavigateToNearest={
-            !isAdmin
-              ? () => mapRouting.startRouting(null, "nearest")
-              : undefined
-          }
-          isNavigatingNearest={
-            mapRouting.routingState.status === "loading" &&
-            mapRouting.navigatingTargetId === "nearest"
-          }
-          onNavigateToNearestHealthCenter={() =>
-            mapRouting.startRouting(null, "nearest-hc", healthSel.healthZones)
-          }
-          isNavigatingNearestHealthCenter={
-            mapRouting.routingState.status === "loading" &&
-            mapRouting.navigatingTargetId === "nearest-hc"
-          }
-        />
-      </div>
+        onUpdateFilter={updateFilter}
+        onResetFilters={resetFilters}
+        isAdmin={isAdmin}
+        safeZones={safeZoneSel.safeZones}
+        selectedSafeZone={safeZoneSel.selectedSafeZone}
+        onSelectSafeZone={(zone) => {
+          setShowEvacuationCenters(true);
+          safeZoneSel.setSelectedSafeZone(zone);
+          setSelectedReport(null);
+          healthSel.setSelectedHealthCenter(null);
+          safeZoneSel.setIsEditingSafeZones(false);
+          safeZoneSel.setIsCreatingSafeZone(false);
+          safeZoneSel.setDraftLocation(null);
+        }}
+        onCreateSafeZone={() => safeZoneSel.setIsCreatingSafeZone(true)}
+        healthCenters={healthSel.healthCenters}
+        selectedHealthCenter={healthSel.selectedHealthCenter}
+        onSelectHealthCenter={(center) => {
+          setShowMedicalCenters(true);
+          healthSel.setSelectedHealthCenter(center);
+          setSelectedReport(null);
+          safeZoneSel.setSelectedSafeZone(null);
+          safeZoneSel.setIsEditingSafeZones(false);
+          safeZoneSel.setIsCreatingSafeZone(false);
+          safeZoneSel.setDraftLocation(null);
+        }}
+        onCollapse={() => setSidebarCollapsed(true)}
+        onNavigateToNearest={
+          !isAdmin ? () => mapRouting.startRouting(null, "nearest") : undefined
+        }
+        isNavigatingNearest={
+          mapRouting.routingState.status === "loading" &&
+          mapRouting.navigatingTargetId === "nearest"
+        }
+        onNavigateToNearestHealthCenter={() =>
+          mapRouting.startRouting(null, "nearest-hc", healthSel.healthZones)
+        }
+        isNavigatingNearestHealthCenter={
+          mapRouting.routingState.status === "loading" &&
+          mapRouting.navigatingTargetId === "nearest-hc"
+        }
+      />
 
       <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
         <button
@@ -438,62 +428,55 @@ export function HomeDashboard({
         </div>
       )}
 
-      <section className="absolute inset-0 h-full w-full">
-        <ReportMap
-          reports={reports}
-          selectedReport={selectedReport}
-          onSelectReport={(report) => {
-            setSelectedReport(report);
-            safeZoneSel.setSelectedSafeZone(null);
-            healthSel.setSelectedHealthCenter(null);
-            if (mapRouting.draftCustomPin)
-              mapRouting.handleCloseDraftCustomPin();
-          }}
-          safeZones={safeZoneSel.safeZones}
-          selectedSafeZone={safeZoneSel.selectedSafeZone}
-          onSelectSafeZone={(zone) => {
-            safeZoneSel.setSelectedSafeZone(zone);
-            setSelectedReport(null);
-            healthSel.setSelectedHealthCenter(null);
-            if (mapRouting.draftCustomPin)
-              mapRouting.handleCloseDraftCustomPin();
-          }}
-          healthCenters={healthSel.healthCenters}
-          selectedHealthCenter={healthSel.selectedHealthCenter}
-          onSelectHealthCenter={(center) => {
-            healthSel.setSelectedHealthCenter(center);
-            setSelectedReport(null);
-            safeZoneSel.setSelectedSafeZone(null);
-            if (mapRouting.draftCustomPin)
-              mapRouting.handleCloseDraftCustomPin();
-          }}
-          onMapClick={handleMapClick}
-          isCreatingSafeZone={safeZoneSel.isCreatingSafeZone}
-          draftLocation={safeZoneSel.draftLocation}
-          draftCustomPin={!isAdmin ? mapRouting.draftCustomPin : null}
-          activeRouteCustomPin={
-            !isAdmin ? mapRouting.activeRouteCustomPin : null
-          }
-          closingCustomPin={!isAdmin ? mapRouting.closingCustomPin : null}
-          activeRoute={!isAdmin ? mapRouting.displayRoute : null}
-          isClosingRoute={mapRouting.isClosingRoute}
-          isAdmin={isAdmin}
-          showEvacuationCenters={showEvacuationCenters}
-          showMedicalCenters={showMedicalCenters}
-          showBarrios={isAdmin ? activeListTab === "Barrios" : false}
-          regiones={regiones}
-          newlyAddedDraftZones={newlyAddedDraftZones}
-          activeHeaderTab={activeListTab}
-          isDrawing={isDrawingRegions}
-          draftPoints={draftRegionPoints}
-          onAddDraftPoint={handleAddDraftRegionPoint}
-          onFinishDrawing={handleFinishDrawingRegion}
-          onCancelDrawing={handleCancelDrawingRegion}
-          showNamePopup={showRegionNamePopup}
-          isEditingRegions={isEditingRegions}
-          onDeleteRegion={handleDeleteSingleRegion}
-        />
-      </section>
+      <HomeMapView
+        reports={reports}
+        selectedReport={selectedReport}
+        onSelectReport={(report) => {
+          setSelectedReport(report);
+          safeZoneSel.setSelectedSafeZone(null);
+          healthSel.setSelectedHealthCenter(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        safeZones={safeZoneSel.safeZones}
+        selectedSafeZone={safeZoneSel.selectedSafeZone}
+        onSelectSafeZone={(zone) => {
+          safeZoneSel.setSelectedSafeZone(zone);
+          setSelectedReport(null);
+          healthSel.setSelectedHealthCenter(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        healthCenters={healthSel.healthCenters}
+        selectedHealthCenter={healthSel.selectedHealthCenter}
+        onSelectHealthCenter={(center) => {
+          healthSel.setSelectedHealthCenter(center);
+          setSelectedReport(null);
+          safeZoneSel.setSelectedSafeZone(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        onMapClick={handleMapClick}
+        isCreatingSafeZone={safeZoneSel.isCreatingSafeZone}
+        draftLocation={safeZoneSel.draftLocation}
+        draftCustomPin={!isAdmin ? mapRouting.draftCustomPin : null}
+        activeRouteCustomPin={!isAdmin ? mapRouting.activeRouteCustomPin : null}
+        closingCustomPin={!isAdmin ? mapRouting.closingCustomPin : null}
+        activeRoute={!isAdmin ? mapRouting.displayRoute : null}
+        isClosingRoute={mapRouting.isClosingRoute}
+        isAdmin={isAdmin}
+        showEvacuationCenters={showEvacuationCenters}
+        showMedicalCenters={showMedicalCenters}
+        showBarrios={isAdmin ? activeListTab === "Barrios" : false}
+        regiones={regiones}
+        newlyAddedDraftZones={newlyAddedDraftZones}
+        activeHeaderTab={activeListTab}
+        isDrawing={isDrawingRegions}
+        draftPoints={draftRegionPoints}
+        onAddDraftPoint={handleAddDraftRegionPoint}
+        onFinishDrawing={handleFinishDrawingRegion}
+        onCancelDrawing={handleCancelDrawingRegion}
+        showNamePopup={showRegionNamePopup}
+        isEditingRegions={isEditingRegions}
+        onDeleteRegion={handleDeleteSingleRegion}
+      />
 
       {(!isAdmin || activeListTab === "Mapa de calor") && (
         <LayerControls
