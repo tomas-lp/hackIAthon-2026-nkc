@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Necesario para compatibilidad con Cloudflare Workers / Pages
-export const runtime = "edge";
-
 const IGN_TMS_BASE =
   "https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/mapabase_gris@EPSG%3A3857@png";
 
