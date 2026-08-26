@@ -206,14 +206,14 @@ export function MarcadoresTableUI({
   const uniqueListas = useMemo(() => {
     const seen = new Set<string>();
     const res: RegionLista[] = [];
-    for (const l of internalRegionLists) {
+    for (const l of regionLists) {
       if (l.nombre && !seen.has(l.nombre)) {
         seen.add(l.nombre);
         res.push(l);
       }
     }
     return res;
-  }, [internalRegionLists]);
+  }, [regionLists]);
 
   const activeCustomList = useMemo(() => {
     return (
@@ -239,13 +239,13 @@ export function MarcadoresTableUI({
       }
 
       if (selectedRegionFilter === "Barrios") {
-        if (!internalBarriosGeoJson?.features) {
+        if (!barriosGeoJson?.features) {
           map.set(m.id, "Fuera de rango");
           continue;
         }
 
         let foundBarrio: string | null = null;
-        for (const feature of internalBarriosGeoJson.features) {
+        for (const feature of barriosGeoJson.features) {
           if (
             feature.geometry &&
             isPointInGeoJSONGeometry([m.lat, m.lon], feature.geometry)
@@ -261,7 +261,7 @@ export function MarcadoresTableUI({
         );
       } else {
         // Lista personalizada seleccionada
-        const targetListRegions = internalCustomRegions.filter(
+        const targetListRegions = customRegions.filter(
           (r) =>
             r.lista_nombre === selectedRegionFilter ||
             r.lista_id === selectedRegionFilter
@@ -283,12 +283,7 @@ export function MarcadoresTableUI({
     }
 
     return map;
-  }, [
-    markers,
-    selectedRegionFilter,
-    internalBarriosGeoJson,
-    internalCustomRegions,
-  ]);
+  }, [markers, selectedRegionFilter, barriosGeoJson, customRegions]);
 
   // Filtrado
   const filteredMarkers = useMemo(() => {
