@@ -13,7 +13,11 @@ async function sendTelegramMessage(chatId: number, text: string) {
   await fetch(`${TELEGRAM_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      reply_markup: { remove_keyboard: true },
+    }),
   });
 }
 

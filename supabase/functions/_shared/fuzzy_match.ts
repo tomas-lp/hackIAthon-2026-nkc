@@ -1,4 +1,4 @@
-import { callesResistencia, callesCorrientes } from "./data.ts";
+﻿import { callesResistencia, callesCorrientes } from "./data.ts";
 
 // Función de distancia de Levenshtein
 export function levenshteinDistance(a: string, b: string): number {
@@ -105,13 +105,16 @@ export function findBestStreetMatch(
   if (!rawExtractedText || rawExtractedText.trim() === "") return null;
 
   // Extraemos la altura (número) del final del texto si existe
-  const numberMatch = rawExtractedText.match(/(\d+)$/);
+  const numberMatch = rawExtractedText.trim().match(/(\d+)$/);
   let streetName = rawExtractedText;
   let height = "";
 
   if (numberMatch) {
     height = numberMatch[1];
-    streetName = rawExtractedText.replace(/\s*\d+$/, "").trim();
+    streetName = rawExtractedText
+      .trim()
+      .replace(/\s*\d+$/, "")
+      .trim();
   }
 
   // Removemos palabras genéricas que a veces extrae la IA (ej: "calle", "avenida") para mejorar el matching
@@ -187,8 +190,7 @@ export function findBestStreetMatch(
     console.warn(
       `Fuzzy match descartado por distancia muy alta (${bestGlobalMatch.distance}): input="${cleanStreetName}", match="${bestGlobalMatch.matchedStreet}"`
     );
-    // Podríamos devolver null, pero asumamos que el usuario pudo haber escrito MUY mal, lo probaremos
-    // return null;
+    return null;
   }
 
   let fullAddress = bestGlobalMatch.matchedStreet;

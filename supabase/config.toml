@@ -11,5 +11,11 @@ verify_jwt = false
 import_map = "./functions/whatsapp-bot/deno.json"
 entrypoint = "./functions/whatsapp-bot/index.ts"
 
+[functions.update-health-centers]
+enabled = true
+verify_jwt = false
+import_map = "./functions/update-health-centers/deno.json"
+entrypoint = "./functions/update-health-centers/index.ts"
+
 [analytics]
 enabled = false

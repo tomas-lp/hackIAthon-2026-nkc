@@ -13,7 +13,8 @@ export const SUPABASE_KEY =
   "";
 
 export const MAP_BASE_URL =
-  Deno.env.get("MAP_BASE_URL") ?? "http://localhost:3000/?report=";
+  Deno.env.get("MAP_BASE_URL") ??
+  "https://inu-app.inu-bdc.workers.dev/?report=";
 
 // ==========================================
 // CONFIGURACIÓN DE MODELOS E IAs

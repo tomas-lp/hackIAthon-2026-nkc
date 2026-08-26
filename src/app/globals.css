@@ -1,0 +1,318 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-inu: #303870;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #8fcdff;
+  --color-border: #e5e7eb;
+  --radius-default: 1rem;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+}
+
+.dark {
+  /* Dark colors to be implemented  */
+  --color-primary: #3276ae;
+  --color-border: #333333;
+  --radius-default: 1rem;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Custom Leaflet Map Popup Styling for Clean Aesthetic */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #09090b !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  padding: 2px !important;
+  border: 1px solid #e4e4e7 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 8px !important;
+  line-height: 1.3 !important;
+}
+
+.leaflet-popup-content p {
+  margin: 0 !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  padding: 0 !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #71717a !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #18181b !important;
+  background-color: #f4f4f5 !important;
+}
+
+.leaflet-container {
+  font-family: inherit !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* Remove default focus outline from interactive SVG paths (polygons) */
+path.leaflet-interactive:focus {
+  outline: none;
+}
+
+/* Pulsing animation for the "My Location" blue dot */
+@keyframes locate-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Custom modern rounded scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.custom-scrollbar {
+  scrollbar-gutter: stable;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* When selected: scale up, thicker border, strong shadow, and strong bounce */
+.custom-report-marker.is-selected .marker-inner {
+  transform: scale(1.5);
+  border-width: 2px !important;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-safe-zone-marker.is-selected .marker-inner {
+  transform: scale(1.33);
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.8)) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-health-center-marker.is-selected .marker-inner {
+  transform: scale(1.33);
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8)) !important;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-safe-zone-marker.is-selected .marker-inner svg {
+  stroke-width: 1.25 !important;
+}
+
+/* Base state (used when shrinking/deselecting) */
+.marker-inner {
+  /* Negative start bezier creates a "pop up" anticipation. 
+     When shrinking from 1.5 to 1.0, it pops to ~1.65 first.
+     When growing from 1.0 to 1.15 (hover), it has a tiny 5% imperceptible anticipation shrink. */
+  transition: all 0.25s cubic-bezier(0.4, -0.8, 0.7, 1);
+  width: 100%;
+  height: 100%;
+}
+
+/* Hover for UNSELECTED markers only */
+.custom-report-marker:not(.is-selected):hover .marker-inner,
+.custom-safe-zone-marker:not(.is-selected):hover .marker-inner,
+.custom-health-center-marker:not(.is-selected):hover .marker-inner {
+  transform: scale(1.22) translateY(-2px) !important;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+/* Active for UNSELECTED markers only */
+.custom-report-marker:not(.is-selected):active .marker-inner,
+.custom-safe-zone-marker:not(.is-selected):active .marker-inner,
+.custom-health-center-marker:not(.is-selected):active .marker-inner {
+  transform: scale(0.95);
+  transition: all 0.1s ease-out;
+}
+
+/* ── Safe Route animations ───────────────────────────────────────────────── */
+
+/* "Marching ants" animation for the animated white dashes on the safe route */
+@keyframes safe-route-dash {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+.safe-route-animated {
+  animation: safe-route-dash 0.8s linear infinite;
+}
+
+/* Destination marker pulse ring */
+@keyframes safe-route-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Tooltip for safe zone destination */
+.safe-zone-tooltip {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+}
+
+.safe-zone-tooltip::before {
+  border-top-color: #10b981 !important;
+}
+
+/* Fade in animation for KPI metric numeric values */
+@keyframes fade-in-val {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-kpi {
+  animation: fade-in-val 0.55s ease-out forwards;
+}
+
+/* Bounce animation for chart legend: subtle & strictly vertical */
+@keyframes legend-bounce-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-legend-bounce {
+  animation: legend-bounce-down 0.28s cubic-bezier(0.25, 1.25, 0.5, 1) forwards;
+}
+
+/* Smooth map displacement animations */
+@keyframes map-slide-expand {
+  0% {
+    opacity: 0.82;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes map-slide-contract {
+  0% {
+    opacity: 0.82;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-map-expand {
+  animation: map-slide-expand 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-map-contract {
+  animation: map-slide-contract 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes list-slide-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-list-slide-left {
+  animation: list-slide-left 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -3,14 +3,60 @@
 const VIEWBOX = "-59.05,-27.40,-58.70,-27.55";
 const CITIES = ["Corrientes", "Resistencia"];
 
+export type GeoDetails = {
+  lat: number;
+  lon: number;
+  barrio?: string;
+  localidad?: string;
+  provincia?: string;
+  departamento?: string;
+  direccion?: string;
+};
+
+function extractGeoDetails(addrDetails: Record<string, string>): {
+  barrio?: string;
+  localidad?: string;
+  provincia?: string;
+  departamento?: string;
+  direccion?: string;
+} {
+  const barrio =
+    addrDetails.neighbourhood ||
+    addrDetails.suburb ||
+    addrDetails.residential ||
+    addrDetails.city_district ||
+    undefined;
+
+  const localidad =
+    addrDetails.city ||
+    addrDetails.town ||
+    addrDetails.village ||
+    addrDetails.municipality ||
+    undefined;
+
+  // provincia = nivel estado/provincia (ej. "Corrientes", "Chaco")
+  const provincia = addrDetails.state || addrDetails.province || undefined;
+
+  // departamento = nivel county/partido (ej. "Departamento Capital")
+  const departamento =
+    addrDetails.county || addrDetails.state_district || undefined;
+
+  const road = addrDetails.road || addrDetails.pedestrian || addrDetails.path;
+  const house = addrDetails.house_number;
+  const direccion = road ? (house ? `${road} ${house}` : road) : undefined;
+
+  return { barrio, localidad, provincia, departamento, direccion };
+}
+
 async function nominatimSearch(
   query: string,
   bounded: boolean
-): Promise<{ lat: number; lon: number } | null> {
+): Promise<GeoDetails | null> {
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", query);
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", "1");
+  url.searchParams.set("addressdetails", "1");
   url.searchParams.set("viewbox", VIEWBOX);
   url.searchParams.set("bounded", bounded ? "1" : "0");
   url.searchParams.set("countrycodes", "ar");
@@ -24,9 +70,12 @@ async function nominatimSearch(
     if (data && data.length > 0) {
       const lat = parseFloat(data[0].lat);
       const lon = parseFloat(data[0].lon);
+      const addrDetails = data[0].address ?? {};
+      const details = extractGeoDetails(addrDetails);
+
       // Verificar que caiga dentro de la región ampliada
       if (lat >= -27.6 && lat <= -27.35 && lon >= -59.1 && lon <= -58.65) {
-        return { lat, lon };
+        return { lat, lon, ...details };
       }
     }
   } catch (error) {
@@ -37,7 +86,7 @@ async function nominatimSearch(
 
 export async function geocodeAddress(
   address: string
-): Promise<{ lat: number; lon: number } | null> {
+): Promise<GeoDetails | null> {
   const tryGeocode = async (addr: string) => {
     if (addr.toLowerCase().includes("argentina")) {
       const exact = await nominatimSearch(addr, true);
@@ -71,11 +120,10 @@ export async function geocodeAddress(
   let coords = await tryGeocode(address);
   if (coords) return coords;
 
-  // FALLBACK SEGURO: Si falló la búsqueda con la altura exacta (ej: "Salta 211"),
-  // lo reintentamos quitando el número para al menos encontrar la cuadra/calle (ej: "Salta")
-  // Esto NO rompe las calles que sí tienen altura válida en la base (ej: "San Bernardo 223").
+  // FALLBACK SEGURO
   const addrWithoutNumber = address
     .replace(/\b\d+\b/g, "")
+    .replace(/\s*,\s*/g, ", ")
     .replace(/\s+/g, " ")
     .trim();
   if (addrWithoutNumber !== address && addrWithoutNumber.length > 3) {
@@ -84,5 +132,30 @@ export async function geocodeAddress(
   }
 
   console.warn(`Geocode: No se encontró "${address}" en ninguna estrategia.`);
+  return null;
+}
+
+export async function reverseGeocodeAddress(
+  lat: number,
+  lon: number
+): Promise<Omit<GeoDetails, "lat" | "lon"> | null> {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("lat", lat.toString());
+  url.searchParams.set("lon", lon.toString());
+  url.searchParams.set("addressdetails", "1");
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "HackathonBot/1.0", "Accept-Language": "es" },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.address) {
+      return extractGeoDetails(data.address);
+    }
+  } catch (error) {
+    console.error("Nominatim reverse geocode error:", error);
+  }
   return null;
 }
