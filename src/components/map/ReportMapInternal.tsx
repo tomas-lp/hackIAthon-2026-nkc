@@ -717,6 +717,7 @@ export default function ReportMapInternal({
           reports={validReports}
           markerRefs={markerRefs}
           selectedSafeZone={selectedSafeZone}
+          selectedHealthCenter={selectedHealthCenter}
         />
 
         {/* Capa de calor y marcadores — solo visibles en la vista "Mapa de calor" */}
@@ -908,25 +909,6 @@ export default function ReportMapInternal({
           <DraftFitter draftPoints={draftPoints} active={true} />
         )}
       </MapContainer>
-
-      {/* Legend for User view */}
-      {!isAdmin && (
-        <div className="absolute bottom-4 left-4 z-1000 bg-white/50 backdrop-blur-xs border border-gray-200 rounded-xl px-4 py-3 text-xs flex flex-col gap-1.5">
-          <span className="font-medium text-zinc-600 flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-orange-500" /> Riesgo por intensidad:
-          </span>
-          <div
-            className="h-3 w-52 rounded-full mt-1"
-            style={{
-              background: `linear-gradient(to right, ${heatGradientCss})`,
-            }}
-          />
-          <div className="flex justify-between font-mono text-[11px] text-zinc-400">
-            <span>Bajo</span>
-            <span>Alto</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

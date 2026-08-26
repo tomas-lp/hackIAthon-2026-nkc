@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
-import { SafeZone } from "@/types/safeZone";
+import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
+import {
+  SAFE_ZONE_TYPE_LABELS,
+  HEALTH_CENTER_TYPE_LABELS,
+} from "@/types/marker";
 import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
@@ -14,8 +18,10 @@ import {
   ChevronDown,
   Check,
   Filter,
-  Navigation,
-  Loader2,
+  Search,
+  X,
+  MapPin,
+  Info,
 } from "lucide-react";
 
 function FilterDropdown({
@@ -364,24 +370,101 @@ export function Sidebar({
     }
   };
 
-  const [categoryMode, setCategoryMode] = useState<"EVACUACION" | "SALUD">(
-    "EVACUACION"
-  );
-  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
-  const categoryMenuRef = useRef<HTMLDivElement>(null);
+  // Buscador de marcadores (Evacuación y Salud)
+  const [markerSearchQuery, setMarkerSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        categoryMenuRef.current &&
-        !categoryMenuRef.current.contains(event.target as Node)
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
       ) {
-        setIsCategoryMenuOpen(false);
+        setIsSearchFocused(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const searchableMarkers = useMemo(() => {
+    const res: Array<{
+      id: string;
+      nombre: string;
+      tipo: string;
+      category: "EVACUACION" | "SALUD";
+      ubicacion: string;
+      lat: number;
+      lon: number;
+      rawSafeZone?: SafeZone;
+      rawHealthCenter?: HealthCenter;
+    }> = [];
+
+    for (const sz of safeZones) {
+      res.push({
+        id: `sz-${sz.id}`,
+        nombre: sz.nombre,
+        tipo:
+          (sz.tipo && (sz.tipo as SafeZoneType) in SAFE_ZONE_TYPE_LABELS
+            ? SAFE_ZONE_TYPE_LABELS[sz.tipo as SafeZoneType]
+            : null) || "Centro de Evacuación",
+        category: "EVACUACION",
+        ubicacion: sz.direccion || sz.localidad || "Corrientes Capital",
+        lat: sz.latitud,
+        lon: sz.longitud,
+        rawSafeZone: sz,
+      });
+    }
+
+    for (const hc of healthCenters) {
+      if (hc.lat !== null && hc.lon !== null) {
+        res.push({
+          id: `hc-${hc.id}`,
+          nombre: hc.nombre,
+          tipo: HEALTH_CENTER_TYPE_LABELS[hc.tipo] || hc.tipo,
+          category: "SALUD",
+          ubicacion: hc.direccion || hc.localidad || "Corrientes Capital",
+          lat: hc.lat,
+          lon: hc.lon,
+          rawHealthCenter: hc,
+        });
+      }
+    }
+
+    return res;
+  }, [safeZones, healthCenters]);
+
+  const searchResults = useMemo(() => {
+    const q = markerSearchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return searchableMarkers
+      .filter(
+        (m) =>
+          m.nombre.toLowerCase().includes(q) ||
+          m.tipo.toLowerCase().includes(q) ||
+          m.ubicacion.toLowerCase().includes(q)
+      )
+      .slice(0, 8);
+  }, [markerSearchQuery, searchableMarkers]);
+
+  const handleSelectSearchResult = (item: (typeof searchableMarkers)[0]) => {
+    if (
+      item.category === "EVACUACION" &&
+      item.rawSafeZone &&
+      onSelectSafeZone
+    ) {
+      onSelectSafeZone(item.rawSafeZone);
+    } else if (
+      item.category === "SALUD" &&
+      item.rawHealthCenter &&
+      onSelectHealthCenter
+    ) {
+      onSelectHealthCenter(item.rawHealthCenter);
+    }
+    setMarkerSearchQuery("");
+    setIsSearchFocused(false);
+  };
 
   const visibleReports = useMemo(() => {
     const sortedReports = [...reports].sort(
@@ -408,7 +491,10 @@ export function Sidebar({
 
   const [isExpanded, setIsExpanded] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
-      if (!fullHeight && sessionStorage.getItem("sidebar_was_expanded") === "true") {
+      if (
+        !fullHeight &&
+        sessionStorage.getItem("sidebar_was_expanded") === "true"
+      ) {
         return true;
       }
     }
@@ -437,14 +523,14 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex flex-col gap-3 z-100 transition-all duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+      className={`flex flex-col gap-3 z-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         isExpanded
           ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white border-r border-gray-200/80 shadow-md"
-          : "w-72 max-w-72 m-4 rounded-2xl border border-gray-200/80 bg-white/95 p-3.5 backdrop-blur-xs max-h-[85vh]"
+          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 bg-white/95 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center">
+        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center shadow-xs">
           <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
             INU
           </div>
@@ -459,7 +545,7 @@ export function Sidebar({
             <button
               id="sidebar-collapse-btn"
               onClick={onCollapse}
-              className="rounded-lg border border-gray-200 bg-white p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0"
+              className="rounded-xl border border-gray-200 bg-white p-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0 shadow-2xs"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -489,143 +575,93 @@ export function Sidebar({
         </div>
       ) : (
         /* User Normal View */
-        <div className="flex flex-col flex-1 w-full gap-4 min-h-0">
-          {/* Sección Selector: Centros de evacuación / Centros de salud */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <div ref={categoryMenuRef} className="relative">
+        <div className="flex flex-col flex-1 w-full gap-3.5 min-h-0">
+          {/* Buscador de Marcadores y Centros */}
+          <div ref={searchContainerRef} className="relative w-full">
+            <div className="relative flex items-center w-full">
+              <Search className="absolute left-3.5 h-4 w-4 text-zinc-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar centros o marcadores..."
+                value={markerSearchQuery}
+                onChange={(e) => {
+                  setMarkerSearchQuery(e.target.value);
+                  setIsSearchFocused(true);
+                }}
+                onFocus={() => setIsSearchFocused(true)}
+                className="w-full h-10 rounded-2xl border border-gray-200/90 bg-white/90 shadow-2xs pl-9.5 pr-8 text-xs font-semibold text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-200/60 transition-all"
+              />
+              {markerSearchQuery && (
                 <button
                   type="button"
-                  onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
-                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
+                  onClick={() => {
+                    setMarkerSearchQuery("");
+                    setIsSearchFocused(false);
+                  }}
+                  className="absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
                 >
-                  <span>
-                    {categoryMode === "EVACUACION"
-                      ? "Centros de evacuación"
-                      : "Centros de salud"}
-                  </span>
-                  <ChevronDown
-                    className={`h-3 w-3 ml-1 transition-transform duration-200 ${
-                      isCategoryMenuOpen ? "rotate-180" : ""
-                    }`}
-                  />
+                  <X className="h-3.5 w-3.5" />
                 </button>
-
-                <div
-                  className={`absolute left-0 top-full mt-2 z-50 w-56 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
-                    isCategoryMenuOpen
-                      ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
-                      : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryMode("EVACUACION");
-                      setIsCategoryMenuOpen(false);
-                    }}
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
-                      categoryMode === "EVACUACION"
-                        ? "bg-gray-100 font-semibold text-zinc-900"
-                        : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
-                    }`}
-                  >
-                    <span>Centros de evacuación</span>
-                    {categoryMode === "EVACUACION" && (
-                      <Check className="h-4 w-4 text-zinc-700" />
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryMode("SALUD");
-                      setIsCategoryMenuOpen(false);
-                    }}
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
-                      categoryMode === "SALUD"
-                        ? "bg-gray-100 font-semibold text-zinc-900"
-                        : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
-                    }`}
-                  >
-                    <span>Centros de salud</span>
-                    {categoryMode === "SALUD" && (
-                      <Check className="h-4 w-4 text-zinc-700" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {categoryMode === "EVACUACION" && onNavigateToNearest ? (
-                <button
-                  onClick={onNavigateToNearest}
-                  disabled={isNavigatingNearest}
-                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {isNavigatingNearest ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  {isNavigatingNearest ? "Calculando…" : "Ir al más cercano"}
-                </button>
-              ) : categoryMode === "SALUD" &&
-                onNavigateToNearestHealthCenter ? (
-                <button
-                  onClick={onNavigateToNearestHealthCenter}
-                  disabled={isNavigatingNearestHealthCenter}
-                  className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {isNavigatingNearestHealthCenter ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  {isNavigatingNearestHealthCenter
-                    ? "Calculando…"
-                    : "Ir al más cercano"}
-                </button>
-              ) : null}
+              )}
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[30vh]">
-              <div className="gap-2 flex flex-col overflow-auto pr-2">
-                {categoryMode === "EVACUACION" ? (
-                  safeZones.length > 0 ? (
-                    safeZones.map((sz) => (
-                      <SafeZoneCard
-                        key={sz.id}
-                        safeZone={sz}
-                        isSelected={selectedSafeZone?.id === sz.id}
-                        onSelect={onSelectSafeZone || (() => {})}
-                      />
-                    ))
-                  ) : (
-                    <div className="px-3 py-6 text-center text-xs text-zinc-500">
-                      No hay centros de evacuación cargados.
-                    </div>
-                  )
-                ) : healthCenters.length > 0 ? (
-                  healthCenters.map((hc) => (
-                    <HealthCenterCard
-                      key={hc.id}
-                      healthCenter={hc}
-                      isSelected={selectedHealthCenter?.id === hc.id}
-                      onSelect={onSelectHealthCenter || (() => {})}
-                    />
+            {/* Menú desplegable con coincidencias de búsqueda */}
+            {isSearchFocused && markerSearchQuery.trim().length > 0 && (
+              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 bg-white/98 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+                {searchResults.length > 0 ? (
+                  searchResults.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelectSearchResult(item)}
+                      className="flex flex-col gap-1 rounded-xl p-2.5 text-left transition-colors cursor-pointer hover:bg-zinc-100/80 border border-transparent hover:border-gray-200/60 group"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-zinc-900 group-hover:text-black truncate">
+                          {item.nombre}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
+                            item.category === "EVACUACION"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-red-50 text-red-700 border border-red-200"
+                          }`}
+                        >
+                          {item.category === "EVACUACION" ? (
+                            <Info className="h-2.5 w-2.5 stroke-[2.5]" />
+                          ) : (
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              className="h-2.5 w-2.5"
+                            >
+                              <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
+                            </svg>
+                          )}
+                          <span>{item.tipo}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-medium truncate">
+                        <MapPin className="h-3 w-3 shrink-0 text-zinc-400" />
+                        <span className="truncate">{item.ubicacion}</span>
+                      </div>
+                    </button>
                   ))
                 ) : (
-                  <div className="px-3 py-6 text-center text-xs text-zinc-500">
-                    No hay centros de salud disponibles.
+                  <div className="px-3 py-6 text-center text-xs text-zinc-400 font-medium">
+                    No se encontraron marcadores para &quot;{markerSearchQuery}
+                    &quot;
                   </div>
                 )}
               </div>
-            </div>
+            )}
           </div>
 
+          {/* Lista de Reclamos Recientes (Últimas alertas) */}
           <div className="flex flex-col flex-1 min-h-0 gap-2">
             <div className="w-full flex items-center justify-between relative z-20">
-              <span className="text-md font-medium text-black text-nowrap">
+              <span className="text-sm font-bold text-zinc-900 text-nowrap">
                 Últimas alertas
               </span>
               <FilterDropdown
@@ -634,27 +670,27 @@ export function Sidebar({
               />
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden">
+            <div className="flex flex-col flex-1 rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[56vh]">
               {loading && (
-                <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
+                <div className="rounded-xl border border-dashed border-zinc-200 px-3 py-16 text-center text-xs text-zinc-400 font-medium">
                   Cargando alertas...
                 </div>
               )}
 
               {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600   ">
+                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600 font-medium">
                   {error}
                 </div>
               )}
 
               {!loading && !error && visibleReports.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-zinc-300 px-3 py-20 text-center text-xs text-zinc-500  ">
+                <div className="rounded-xl border border-dashed border-zinc-200 px-3 py-16 text-center text-xs text-zinc-400 font-medium">
                   No hay alertas de este tipo.
                 </div>
               )}
 
               {!loading && !error && visibleReports.length > 0 && (
-                <div className="gap-2 flex flex-col overflow-auto pr-2">
+                <div className="gap-2 flex flex-col overflow-y-auto custom-scrollbar pr-1">
                   {visibleReports.map((report) => (
                     <ReportCard
                       key={report.id}
