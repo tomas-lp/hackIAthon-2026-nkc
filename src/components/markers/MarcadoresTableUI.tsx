@@ -721,7 +721,7 @@ export function MarcadoresTableUI({
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
       <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
-        <div className="rounded-xl border border-gray-200/80 bg-white">
+        <div className="rounded-xl border border-gray-200/80 bg-white overflow-hidden">
           <table className="w-full text-left text-xs relative border-collapse">
             <thead className="sticky top-0 z-20 bg-zinc-50/90 backdrop-blur-xs shadow-2xs">
               <tr className="border-b border-gray-200 select-none">

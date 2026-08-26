@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
@@ -13,6 +12,7 @@ import { formatDate, formatReportAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
 import { TooltipSign } from "@/components/ui/TooltipSign";
+import { SidebarAdmin } from "@/components/common/SidebarAdmin";
 import {
   ChevronLeft,
   ChevronDown,
@@ -131,115 +131,7 @@ interface SidebarProps {
   isNavigatingNearest?: boolean;
   onNavigateToNearestHealthCenter?: () => void;
   isNavigatingNearestHealthCenter?: boolean;
-  activeAdminTab?: string;
-  onAdminTabChange?: (tab: string) => void;
   fullHeight?: boolean;
-}
-
-function HealthCenterCard({
-  healthCenter,
-  isSelected,
-  onSelect,
-}: {
-  healthCenter: HealthCenter;
-  isSelected: boolean;
-  onSelect: (hc: HealthCenter) => void;
-}) {
-  const address = healthCenter.direccion
-    ? healthCenter.localidad
-      ? `${healthCenter.direccion}, ${healthCenter.localidad}`
-      : healthCenter.direccion
-    : healthCenter.localidad || "Corrientes";
-
-  return (
-    <div
-      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
-        isSelected
-          ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80"
-      }`}
-    >
-      <button
-        onClick={() => onSelect(healthCenter)}
-        className="w-full text-left hover:bg-zinc-50 transition rounded-2xl p-3 cursor-pointer"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-black">
-              {healthCenter.nombre}
-            </span>
-            <span className="text-xs font-medium text-black/50">
-              {healthCenter.tipo}
-            </span>
-            <span className="text-xs font-medium text-black/80">{address}</span>
-          </div>
-        </div>
-      </button>
-    </div>
-  );
-}
-
-function SafeZoneCard({
-  safeZone,
-  isSelected,
-  onSelect,
-}: {
-  safeZone: SafeZone;
-  isSelected: boolean;
-  onSelect: (safeZone: SafeZone) => void;
-}) {
-  const [address, setAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    resolveAddress(safeZone.latitud, safeZone.longitud)
-      .then((resolved) => {
-        if (!isCancelled) setAddress(resolved);
-      })
-      .catch(() => {
-        if (!isCancelled) setAddress("Ubicación no disponible");
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [safeZone.latitud, safeZone.longitud]);
-
-  return (
-    <div
-      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
-        isSelected
-          ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80"
-      }`}
-    >
-      <button
-        onClick={() => onSelect(safeZone)}
-        className="w-full text-left hover:bg-zinc-50 transition rounded-2xl"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col p-3">
-            <span className="text-sm font-medium text-black">
-              {safeZone.nombre}
-            </span>
-            <span
-              className="text-xs font-medium text-black/50"
-              suppressHydrationWarning
-            >
-              {formatDate(safeZone.created_at)}
-            </span>
-            <span
-              className="text-xs font-medium text-black/80"
-              title={address ?? safeZone.descripcion ?? undefined}
-            >
-              {address ?? "Dirección no disponible"}
-            </span>
-          </div>
-        </div>
-      </button>
-    </div>
-  );
 }
 
 function ReportCard({
@@ -323,53 +215,12 @@ export function Sidebar({
   onUpdateFilter,
   isAdmin,
   safeZones = [],
-  selectedSafeZone,
   onSelectSafeZone,
   healthCenters = [],
-  selectedHealthCenter,
   onSelectHealthCenter,
   onCollapse,
-  onNavigateToNearest,
-  isNavigatingNearest = false,
-  onNavigateToNearestHealthCenter,
-  isNavigatingNearestHealthCenter = false,
-  activeAdminTab: activeAdminTabProp,
-  onAdminTabChange,
   fullHeight = false,
 }: SidebarProps) {
-  const router = useRouter();
-  const [internalActiveAdminTab, setInternalActiveAdminTab] =
-    useState<string>("Mapa");
-  const activeAdminTab = activeAdminTabProp ?? internalActiveAdminTab;
-
-  const handleAdminTabClick = (option: string) => {
-    if (onAdminTabChange) {
-      onAdminTabChange(option);
-    } else {
-      setInternalActiveAdminTab(option);
-    }
-
-    if (option === "Regiones") {
-      router.push("/regiones-personalizadas");
-      return;
-    }
-    if (option === "Marcadores") {
-      router.push("/marcadores");
-      return;
-    }
-    if (option === "Mapa") {
-      router.push("/");
-      return;
-    }
-    if (
-      option === "Panel de Administración" ||
-      option === "Panel de Estadísticas"
-    ) {
-      router.push("/estadisticas");
-      return;
-    }
-  };
-
   // Buscador de marcadores (Evacuación y Salud)
   const [markerSearchQuery, setMarkerSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -482,13 +333,6 @@ export function Sidebar({
     });
   }, [filters.tipo, reports]);
 
-  const adminMenuOptions = [
-    "Mapa",
-    "Marcadores",
-    "Regiones",
-    "Panel de Administración",
-  ];
-
   const [isExpanded, setIsExpanded] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       if (
@@ -555,24 +399,7 @@ export function Sidebar({
 
       {isAdmin ? (
         /* Admin Navigation View */
-        <div className="flex flex-col gap-1.5 py-0.5">
-          {adminMenuOptions.map((option) => {
-            const isSelected = activeAdminTab === option;
-            return (
-              <button
-                key={option}
-                onClick={() => handleAdminTabClick(option)}
-                className={`w-full rounded-xl border px-3.5 py-2.5 text-left font-medium text-xs transition-all duration-200 cursor-pointer shadow-2xs ${
-                  isSelected
-                    ? "border-zinc-400 bg-white text-zinc-950 font-bold shadow-xs scale-[1.01]"
-                    : "border-gray-200/80 bg-white/90 text-zinc-700 hover:bg-gray-50 hover:border-gray-300"
-                }`}
-              >
-                {option}
-              </button>
-            );
-          })}
-        </div>
+        <SidebarAdmin />
       ) : (
         /* User Normal View */
         <div className="flex flex-col flex-1 w-full gap-3.5 min-h-0">

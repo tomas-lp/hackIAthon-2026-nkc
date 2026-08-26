@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
-import { Sidebar } from "@/components/common/Sidebar";
-import { ReportMap } from "@/components/map/ReportMap";
 import { ReportDetailSidebar } from "@/components/map/ReportDetailSidebar";
 import { AuthWidget, LoginModal } from "@/components/common/AuthWidget";
 import { BotQRWidget } from "@/components/common/BotQRWidget";
@@ -19,7 +17,7 @@ import { DeleteListModal } from "@/components/ui/DeleteListModal";
 import { RegionNamePopup } from "@/components/regions/RegionNamePopup";
 import { Report } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
-import { RegionPersonalizada } from "@/types/region";
+import { RegionLista, RegionPersonalizada } from "@/types/region";
 import { regionService } from "@/services/regionService";
 import { ChevronRight } from "lucide-react";
 import { User } from "@supabase/supabase-js";
@@ -32,19 +30,36 @@ import { useMapRouting } from "@/hooks/home/useMapRouting";
 import { AdminTopBar } from "./_parts/AdminTopBar";
 import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
+import { HomeSidebar } from "./HomeSidebar";
+import { HomeMapView } from "./HomeMapView";
+import { useAdminSidebar } from "@/components/common/AppShell";
 
 interface HomeDashboardProps {
   initialReports: Report[];
+  initialListas?: RegionLista[];
   user?: User | null;
 }
 
 export function HomeDashboard({
   initialReports,
+  initialListas,
   user: initialUser,
 }: HomeDashboardProps) {
   const { isAdmin } = useAuth(initialUser);
+  const {
+    collapsed: adminSidebarCollapsed,
+    setCollapsed: setAdminSidebarCollapsed,
+    setHidden: setAdminSidebarHidden,
+  } = useAdminSidebar();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [localSidebarCollapsed, setLocalSidebarCollapsed] = useState(false);
+  const sidebarCollapsed = isAdmin
+    ? adminSidebarCollapsed
+    : localSidebarCollapsed;
+  const setSidebarCollapsed = (collapsed: boolean) => {
+    if (isAdmin) setAdminSidebarCollapsed(collapsed);
+    else setLocalSidebarCollapsed(collapsed);
+  };
   const [showEvacuationCenters, setShowEvacuationCentersState] =
     useState<boolean>(true);
   const [showMedicalCenters, setShowMedicalCentersState] =
@@ -95,7 +110,7 @@ export function HomeDashboard({
     setIsAddListModalOpen,
     handleAddList,
     refreshLists,
-  } = useAdminTabs();
+  } = useAdminTabs(initialListas);
 
   const [regiones, setRegiones] = useState<RegionPersonalizada[]>([]);
   const [isEditingRegions, setIsEditingRegions] = useState(false);
@@ -306,6 +321,10 @@ export function HomeDashboard({
     safeZoneSel.isCreatingSafeZone || safeZoneSel.isEditingSafeZones;
 
   useEffect(() => {
+    setAdminSidebarHidden(isAdmin && hideMainUI);
+  }, [hideMainUI, isAdmin, setAdminSidebarHidden]);
+
+  useEffect(() => {
     syncUrl(
       selectedReport?.id ?? null,
       safeZoneSel.selectedSafeZone?.id ?? null
@@ -325,16 +344,10 @@ export function HomeDashboard({
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-zinc-950 font-sans">
-      <div
-        className="absolute left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
-        style={{
-          transform:
-            sidebarCollapsed || hideMainUI
-              ? "translateX(-110%)"
-              : "translateX(0)",
-        }}
-      >
-        <Sidebar
+      {!isAdmin && (
+        <HomeSidebar
+          collapsed={sidebarCollapsed}
+          hidden={hideMainUI}
           reports={reports}
           filters={filters}
           loading={loading}
@@ -389,27 +402,29 @@ export function HomeDashboard({
             mapRouting.navigatingTargetId === "nearest-hc"
           }
         />
-      </div>
+      )}
 
-      <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
-        <button
-          id="sidebar-expand-btn"
-          onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
-          style={{
-            transform:
-              sidebarCollapsed && !hideMainUI
-                ? "translateX(0)"
-                : "translateX(-100%)",
-            transition:
-              sidebarCollapsed && !hideMainUI
-                ? "transform 200ms ease-out 350ms"
-                : "transform 200ms ease-in",
-          }}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </TooltipSign>
+      {!isAdmin && (
+        <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
+          <button
+            id="sidebar-expand-btn"
+            onClick={() => setSidebarCollapsed(false)}
+            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            style={{
+              transform:
+                sidebarCollapsed && !hideMainUI
+                  ? "translateX(0)"
+                  : "translateX(-100%)",
+              transition:
+                sidebarCollapsed && !hideMainUI
+                  ? "transform 200ms ease-out 350ms"
+                  : "transform 200ms ease-in",
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </TooltipSign>
+      )}
 
       {isAdmin && (
         <AdminTopBar
@@ -436,62 +451,55 @@ export function HomeDashboard({
         </div>
       )}
 
-      <section className="absolute inset-0 h-full w-full">
-        <ReportMap
-          reports={reports}
-          selectedReport={selectedReport}
-          onSelectReport={(report) => {
-            setSelectedReport(report);
-            safeZoneSel.setSelectedSafeZone(null);
-            healthSel.setSelectedHealthCenter(null);
-            if (mapRouting.draftCustomPin)
-              mapRouting.handleCloseDraftCustomPin();
-          }}
-          safeZones={safeZoneSel.safeZones}
-          selectedSafeZone={safeZoneSel.selectedSafeZone}
-          onSelectSafeZone={(zone) => {
-            safeZoneSel.setSelectedSafeZone(zone);
-            setSelectedReport(null);
-            healthSel.setSelectedHealthCenter(null);
-            if (mapRouting.draftCustomPin)
-              mapRouting.handleCloseDraftCustomPin();
-          }}
-          healthCenters={healthSel.healthCenters}
-          selectedHealthCenter={healthSel.selectedHealthCenter}
-          onSelectHealthCenter={(center) => {
-            healthSel.setSelectedHealthCenter(center);
-            setSelectedReport(null);
-            safeZoneSel.setSelectedSafeZone(null);
-            if (mapRouting.draftCustomPin)
-              mapRouting.handleCloseDraftCustomPin();
-          }}
-          onMapClick={handleMapClick}
-          isCreatingSafeZone={safeZoneSel.isCreatingSafeZone}
-          draftLocation={safeZoneSel.draftLocation}
-          draftCustomPin={!isAdmin ? mapRouting.draftCustomPin : null}
-          activeRouteCustomPin={
-            !isAdmin ? mapRouting.activeRouteCustomPin : null
-          }
-          closingCustomPin={!isAdmin ? mapRouting.closingCustomPin : null}
-          activeRoute={!isAdmin ? mapRouting.displayRoute : null}
-          isClosingRoute={mapRouting.isClosingRoute}
-          isAdmin={isAdmin}
-          showEvacuationCenters={showEvacuationCenters}
-          showMedicalCenters={showMedicalCenters}
-          showBarrios={isAdmin ? activeListTab === "Barrios" : false}
-          regiones={regiones}
-          newlyAddedDraftZones={newlyAddedDraftZones}
-          activeHeaderTab={activeListTab}
-          isDrawing={isDrawingRegions}
-          draftPoints={draftRegionPoints}
-          onAddDraftPoint={handleAddDraftRegionPoint}
-          onFinishDrawing={handleFinishDrawingRegion}
-          onCancelDrawing={handleCancelDrawingRegion}
-          showNamePopup={showRegionNamePopup}
-          isEditingRegions={isEditingRegions}
-          onDeleteRegion={handleDeleteSingleRegion}
-        />
-      </section>
+      <HomeMapView
+        reports={reports}
+        selectedReport={selectedReport}
+        onSelectReport={(report) => {
+          setSelectedReport(report);
+          safeZoneSel.setSelectedSafeZone(null);
+          healthSel.setSelectedHealthCenter(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        safeZones={safeZoneSel.safeZones}
+        selectedSafeZone={safeZoneSel.selectedSafeZone}
+        onSelectSafeZone={(zone) => {
+          safeZoneSel.setSelectedSafeZone(zone);
+          setSelectedReport(null);
+          healthSel.setSelectedHealthCenter(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        healthCenters={healthSel.healthCenters}
+        selectedHealthCenter={healthSel.selectedHealthCenter}
+        onSelectHealthCenter={(center) => {
+          healthSel.setSelectedHealthCenter(center);
+          setSelectedReport(null);
+          safeZoneSel.setSelectedSafeZone(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        onMapClick={handleMapClick}
+        isCreatingSafeZone={safeZoneSel.isCreatingSafeZone}
+        draftLocation={safeZoneSel.draftLocation}
+        draftCustomPin={!isAdmin ? mapRouting.draftCustomPin : null}
+        activeRouteCustomPin={!isAdmin ? mapRouting.activeRouteCustomPin : null}
+        closingCustomPin={!isAdmin ? mapRouting.closingCustomPin : null}
+        activeRoute={!isAdmin ? mapRouting.displayRoute : null}
+        isClosingRoute={mapRouting.isClosingRoute}
+        isAdmin={isAdmin}
+        showEvacuationCenters={showEvacuationCenters}
+        showMedicalCenters={showMedicalCenters}
+        showBarrios={isAdmin ? activeListTab === "Barrios" : false}
+        regiones={regiones}
+        newlyAddedDraftZones={newlyAddedDraftZones}
+        activeHeaderTab={activeListTab}
+        isDrawing={isDrawingRegions}
+        draftPoints={draftRegionPoints}
+        onAddDraftPoint={handleAddDraftRegionPoint}
+        onFinishDrawing={handleFinishDrawingRegion}
+        onCancelDrawing={handleCancelDrawingRegion}
+        showNamePopup={showRegionNamePopup}
+        isEditingRegions={isEditingRegions}
+        onDeleteRegion={handleDeleteSingleRegion}
+      />
 
       {(!isAdmin || activeListTab === "Mapa de calor") && (
         <LayerControls

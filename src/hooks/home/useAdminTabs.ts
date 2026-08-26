@@ -4,12 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import { regionService } from "@/services/regionService";
 import { RegionLista } from "@/types/region";
 
-export function useAdminTabs() {
-  const [listas, setListas] = useState<RegionLista[]>([]);
-  const [listTabs, setListTabs] = useState<string[]>([
+export function useAdminTabs(initialListas?: RegionLista[]) {
+  const listasIniciales = initialListas ?? [];
+  const initialTabs = [
     "Mapa de calor",
     "Barrios",
-  ]);
+    ...listasIniciales.map((lista) => lista.nombre),
+  ];
+  const [listas, setListas] = useState<RegionLista[]>(listasIniciales);
+  const [listTabs, setListTabs] = useState<string[]>(
+    Array.from(new Set(initialTabs))
+  );
   const [activeListTab, setActiveListTab] = useState<string>("Mapa de calor");
   const [isAddListModalOpen, setIsAddListModalOpen] = useState(false);
 
@@ -28,9 +33,10 @@ export function useAdminTabs() {
   }, []);
 
   useEffect(() => {
+    if (initialListas !== undefined) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshLists();
-  }, [refreshLists]);
+  }, [initialListas, refreshLists]);
 
   // Restaurar última vista guardada
   useEffect(() => {

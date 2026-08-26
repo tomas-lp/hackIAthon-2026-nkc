@@ -6,16 +6,13 @@ import { regionService } from "@/services/regionService";
 import { MarcadoresDashboard } from "@/components/markers/MarcadoresDashboard";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
-
-export const dynamic = "force-dynamic";
 
 export default async function MarcadoresPage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   // Si no está logueado, redirigir al home
   if (!user) {
@@ -40,7 +37,7 @@ export default async function MarcadoresPage() {
   ]);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-zinc-100">
       <MarcadoresDashboard
         initialSafeZones={safeZones}
         initialHealthCenters={healthCenters}
@@ -50,6 +47,6 @@ export default async function MarcadoresPage() {
         initialCustomRegions={customRegions}
         user={user}
       />
-    </main>
+    </div>
   );
 }

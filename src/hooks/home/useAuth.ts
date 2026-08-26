@@ -17,13 +17,24 @@ export function useAuth(initialUser?: User | null) {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUser(user);
+      // Only update if the user identity actually changed to avoid no-op re-renders
+      setCurrentUser((prev) => {
+        if (prev?.id === user?.id) return prev;
+        return user ?? null;
+      });
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user ?? null);
+      const nextUser = session?.user ?? null;
+      // Deduplicate: skip state update when the user object hasn't changed.
+      // This prevents rapid token-refresh events from flooding history.replaceState
+      // via AppShell's usePathname, which triggers Chromium's navigation throttle.
+      setCurrentUser((prev) => {
+        if (prev?.id === nextUser?.id) return prev;
+        return nextUser;
+      });
     });
 
     return () => subscription.unsubscribe();
