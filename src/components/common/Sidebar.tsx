@@ -134,112 +134,6 @@ interface SidebarProps {
   fullHeight?: boolean;
 }
 
-function HealthCenterCard({
-  healthCenter,
-  isSelected,
-  onSelect,
-}: {
-  healthCenter: HealthCenter;
-  isSelected: boolean;
-  onSelect: (hc: HealthCenter) => void;
-}) {
-  const address = healthCenter.direccion
-    ? healthCenter.localidad
-      ? `${healthCenter.direccion}, ${healthCenter.localidad}`
-      : healthCenter.direccion
-    : healthCenter.localidad || "Corrientes";
-
-  return (
-    <div
-      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
-        isSelected
-          ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80"
-      }`}
-    >
-      <button
-        onClick={() => onSelect(healthCenter)}
-        className="w-full text-left hover:bg-zinc-50 transition rounded-2xl p-3 cursor-pointer"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-black">
-              {healthCenter.nombre}
-            </span>
-            <span className="text-xs font-medium text-black/50">
-              {healthCenter.tipo}
-            </span>
-            <span className="text-xs font-medium text-black/80">{address}</span>
-          </div>
-        </div>
-      </button>
-    </div>
-  );
-}
-
-function SafeZoneCard({
-  safeZone,
-  isSelected,
-  onSelect,
-}: {
-  safeZone: SafeZone;
-  isSelected: boolean;
-  onSelect: (safeZone: SafeZone) => void;
-}) {
-  const [address, setAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    resolveAddress(safeZone.latitud, safeZone.longitud)
-      .then((resolved) => {
-        if (!isCancelled) setAddress(resolved);
-      })
-      .catch(() => {
-        if (!isCancelled) setAddress("Ubicación no disponible");
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [safeZone.latitud, safeZone.longitud]);
-
-  return (
-    <div
-      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
-        isSelected
-          ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80"
-      }`}
-    >
-      <button
-        onClick={() => onSelect(safeZone)}
-        className="w-full text-left hover:bg-zinc-50 transition rounded-2xl"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col p-3">
-            <span className="text-sm font-medium text-black">
-              {safeZone.nombre}
-            </span>
-            <span
-              className="text-xs font-medium text-black/50"
-              suppressHydrationWarning
-            >
-              {formatDate(safeZone.created_at)}
-            </span>
-            <span
-              className="text-xs font-medium text-black/80"
-              title={address ?? safeZone.descripcion ?? undefined}
-            >
-              {address ?? "Dirección no disponible"}
-            </span>
-          </div>
-        </div>
-      </button>
-    </div>
-  );
-}
-
 function ReportCard({
   report,
   isSelected,
@@ -321,16 +215,10 @@ export function Sidebar({
   onUpdateFilter,
   isAdmin,
   safeZones = [],
-  selectedSafeZone,
   onSelectSafeZone,
   healthCenters = [],
-  selectedHealthCenter,
   onSelectHealthCenter,
   onCollapse,
-  onNavigateToNearest,
-  isNavigatingNearest = false,
-  onNavigateToNearestHealthCenter,
-  isNavigatingNearestHealthCenter = false,
   fullHeight = false,
 }: SidebarProps) {
   // Buscador de marcadores (Evacuación y Salud)

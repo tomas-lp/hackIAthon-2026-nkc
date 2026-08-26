@@ -19,12 +19,12 @@ import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
 import { RegionPersonalizada } from "@/types/region";
-import { buildHeatPoints, HEATMAP_CONFIG } from "@/lib/heatmap";
+import { buildHeatPoints } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { LocateButton } from "./LocateButton";
 import { SafeRoute } from "./SafeRoute";
-import { Flame, ShieldCheck, PlusSquare } from "lucide-react";
+import { ShieldCheck, PlusSquare } from "lucide-react";
 import { RouteResult } from "@/lib/routing";
 import {
   DrawingOverlay,
@@ -677,15 +677,6 @@ export default function ReportMapInternal({
   const heatPoints = useMemo(
     () => buildHeatPoints(validReports),
     [validReports]
-  );
-
-  const heatGradientCss = useMemo(
-    () =>
-      Object.entries(HEATMAP_CONFIG.gradient)
-        .sort(([a], [b]) => Number(a) - Number(b))
-        .map(([stop, color]) => `${color} ${Number(stop) * 100}%`)
-        .join(", "),
-    []
   );
 
   // eslint-disable-next-line react-hooks/purity
