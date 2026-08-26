@@ -10,6 +10,7 @@ import {
   GeoJSON,
   useMap,
   Polygon,
+  AttributionControl,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -689,11 +690,13 @@ export default function ReportMapInternal({
         zoom={INITIAL_ZOOM}
         scrollWheelZoom={true}
         zoomControl={false}
+        attributionControl={false}
         className="w-full h-full z-0"
       >
+        <AttributionControl prefix='🇦🇷 <a href="https://leafletjs.com">Leaflet</a>' />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.ign.gob.ar/">Instituto Geográfico Nacional</a> (IGN)'
+          url="/api/tile/{z}/{x}/{-y}.png"
         />
 
         {/* Capa de polígonos de barrios — solo cuando Barrios está activo (variante interna) */}

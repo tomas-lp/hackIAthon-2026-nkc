@@ -118,7 +118,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
       >
         <TileLayer
           attribution="&copy; OpenStreetMap"
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          url="/api/tile/{z}/{x}/{-y}.png"
         />
 
         {!props.hideHeatmap && <HeatLayer points={heatPoints} />}

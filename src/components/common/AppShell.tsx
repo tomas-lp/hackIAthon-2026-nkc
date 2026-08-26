@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {isAdmin && !showAdminSidebar && (
+      {isAdmin && (
         <button
           type="button"
           onClick={() => {
@@ -69,7 +69,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             setCollapsed(false);
           }}
           title="Mostrar panel"
-          className="fixed left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-transform duration-200 hover:bg-gray-50 hover:text-gray-600"
+          className="fixed left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-all duration-300 ease-in-out hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+          style={{
+            transform:
+              collapsed || !showAdminSidebar
+                ? "translateX(0)"
+                : "translateX(-100%)",
+            pointerEvents: collapsed || !showAdminSidebar ? "auto" : "none",
+            transitionDelay: collapsed || !showAdminSidebar ? "300ms" : "0ms",
+          }}
         >
           <ChevronRight className="h-4 w-4" />
         </button>

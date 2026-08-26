@@ -387,10 +387,7 @@ export function MinimapInternal({
         className="w-full h-full z-0"
         attributionControl={false}
       >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          maxZoom={19}
-        />
+        <TileLayer url="/api/tile/{z}/{x}/{-y}.png" maxZoom={19} />
 
         {/* Controladores de mapa */}
         <CustomMapControls />
