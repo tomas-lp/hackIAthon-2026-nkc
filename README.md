@@ -1,4 +1,4 @@
-# HackIAthon Devlights 2026 - Grupo 11 ⭐️ — Inu
+# HackIAthon Devlights 2026 - Grupo 11 ⭐️ — Inu.
 
 Repositorio oficial del Grupo 11. Plataforma de reportes ciudadanos e inundaciones para Corrientes/Resistencia (Next.js 16 + Supabase + Bots Telegram/WhatsApp).
 
