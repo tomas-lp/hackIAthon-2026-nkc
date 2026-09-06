@@ -22,7 +22,7 @@ export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
             : "translate-y-0 opacity-100"
         }`}
       >
-        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-xs p-3 rounded-2xl border border-zinc-200/80 transition-all hover:bg-white">
+        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-xs p-3 rounded-2xl border border-zinc-200/80 dark:bg-[#161f36]/70 dark:border-[#2b395b] transition-all hover:bg-white dark:hover:bg-[#1e2a4a]">
           <button
             onClick={() => setActiveBot("whatsapp")}
             className="group relative flex w-12 h-12 items-center justify-center transition-transform hover:scale-110 active:scale-95 focus:outline-none"
@@ -39,7 +39,7 @@ export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
             />
           </button>
 
-          <div className="w-px h-8 bg-zinc-200" />
+          <div className="w-px h-8 bg-zinc-200 dark:bg-[#2b395b]" />
 
           <button
             onClick={() => setActiveBot("telegram")}
@@ -62,16 +62,16 @@ export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
       {/* Modal Popup con Glassmorphism */}
       {activeBot && (
         <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-zinc-900/30 backdrop-blur-sm transition-all duration-300"
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-zinc-900/30 dark:bg-black/50 backdrop-blur-sm transition-all duration-300"
           onClick={() => setActiveBot(null)}
         >
           <div
-            className="relative flex flex-col items-center bg-white/70 backdrop-blur-xs p-8 rounded-[2rem] border border-white/50 animate-in fade-in zoom-in-95 duration-200 ease-out max-w-sm w-full mx-4"
+            className="relative flex flex-col items-center bg-white/70 backdrop-blur-xs p-8 rounded-[2rem] border border-white/50 dark:bg-[#161f36]/90 dark:border-[#2b395b] dark:shadow-[0_12px_40px_rgba(0,0,0,0.45)] animate-in fade-in zoom-in-95 duration-200 ease-out max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setActiveBot(null)}
-              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100 rounded-full transition-colors focus:outline-none"
+              className="absolute top-4 right-4 p-2 text-zinc-400 dark:text-slate-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] rounded-full transition-colors focus:outline-none"
             >
               <X className="w-5 h-5" />
             </button>
@@ -87,12 +87,12 @@ export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
                 width={36}
                 height={36}
               />
-              <h3 className="text-xl font-bold text-zinc-800 tracking-tight">
+              <h3 className="text-xl font-bold text-zinc-800 dark:text-white tracking-tight">
                 Bot de {activeBot === "whatsapp" ? "WhatsApp" : "Telegram"}
               </h3>
             </div>
 
-            <div className="bg-white p-4 rounded-3xl border border-zinc-100 flex items-center justify-center">
+            <div className="bg-white p-4 rounded-3xl border border-zinc-100 dark:border-[#2b395b] flex items-center justify-center">
               {activeBot === "whatsapp" ? (
                 <div className="w-[220px] h-[220px] bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-center p-4 gap-2">
                   <span className="text-2xl mb-1 opacity-70">⏳</span>
@@ -116,7 +116,7 @@ export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
               )}
             </div>
 
-            <p className="mt-6 text-sm text-zinc-500 font-medium max-w-[260px] text-center leading-relaxed">
+            <p className="mt-6 text-sm text-zinc-500 dark:text-slate-400 font-medium max-w-[260px] text-center leading-relaxed">
               {activeBot === "whatsapp"
                 ? "Estamos trabajando en la integración oficial con WhatsApp. ¡Estará disponible pronto!"
                 : "Escanea este código QR para empezar a reportar incidentes directamente desde Telegram."}

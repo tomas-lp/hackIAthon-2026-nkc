@@ -29,6 +29,8 @@ export function Switch({
     width: number;
     opacity: number;
   }>({ left: 0, width: 0, opacity: 0 });
+  const [squish, setSquish] = useState(false);
+  const prevValueRef = useRef<string | null>(null);
 
   const register = (optionValue: string, el: HTMLElement | null) => {
     if (el) optionRefs.current.set(optionValue, el);
@@ -48,6 +50,19 @@ export function Switch({
     }
   }, [value, children]);
 
+  // Re-trigger the liquid squish on every value change (skipped on mount)
+  useEffect(() => {
+    if (prevValueRef.current === null) {
+      prevValueRef.current = value;
+      return;
+    }
+    if (prevValueRef.current === value) return;
+    prevValueRef.current = value;
+    setSquish(false);
+    const raf = requestAnimationFrame(() => setSquish(true));
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+
   return (
     <SwitchContext.Provider value={{ value, onValueChange, register }}>
       <div
@@ -57,7 +72,10 @@ export function Switch({
         }
       >
         <div
-          className="absolute left-0 top-1 bottom-1 rounded-full bg-white/95 dark:bg-slate-700 shadow-sm backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none"
+          className={`absolute left-0 top-1 bottom-1 rounded-full bg-white/95 dark:bg-slate-700 shadow-sm backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.34,1.22,0.64,1)] pointer-events-none ${
+            squish ? "animate-pill-liquid" : ""
+          }`}
+          onAnimationEnd={() => setSquish(false)}
           style={{
             transform: `translateX(${indicatorStyle.left}px)`,
             width: `${indicatorStyle.width}px`,
@@ -100,14 +118,21 @@ function SwitchOption({
         "relative z-10 h-7 px-3.5 text-xs cursor-pointer select-none whitespace-nowrap flex items-center justify-center transition-colors duration-200"
       }
     >
-      <span
-        className={`transition-colors duration-200 leading-none ${
-          isSelected
-            ? "font-bold text-zinc-950 dark:text-white"
-            : "font-medium text-zinc-600 dark:text-slate-400 hover:text-zinc-900 dark:hover:text-slate-200"
-        }`}
-      >
-        {children}
+      <span className="relative inline-flex items-center justify-center leading-none">
+        {/* Ghost bold copy reserves max width so the font-weight swap
+            never resizes the option (avoids switch jitter on change) */}
+        <span className="invisible font-bold leading-none" aria-hidden>
+          {children}
+        </span>
+        <span
+          className={`absolute inset-0 flex items-center justify-center leading-none transition-colors duration-200 ${
+            isSelected
+              ? "font-bold text-zinc-950 dark:text-white"
+              : "font-medium text-zinc-600 dark:text-slate-400 hover:text-zinc-900 dark:hover:text-slate-200"
+          }`}
+        >
+          {children}
+        </span>
       </span>
     </button>
   );
