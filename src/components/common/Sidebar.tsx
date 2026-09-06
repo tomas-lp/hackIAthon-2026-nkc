@@ -374,7 +374,7 @@ export function Sidebar({
       className={`flex flex-col gap-3 z-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         isExpanded
           ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
-          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/95 dark:bg-[#0b101d]/95 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
+          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
