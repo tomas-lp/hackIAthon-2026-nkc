@@ -149,12 +149,13 @@ export function AdminTopBar({
         )}
       </div>
 
-      {/* Botones de acción normal (Editar y Eliminar) con animación sliding + bounce (800ms) */}
+      {/* Botones de acción normal (Editar y Eliminar): absolutos a la derecha
+          del switch para no afectar el ancho del contenedor (sin layout shift) */}
       <div
-        className={`flex items-center gap-2 transition-all duration-800 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left ${
+        className={`absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-2 origin-left transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           showEditButton && !isEditingRegions
             ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
-            : "translate-x-6 opacity-0 scale-90 pointer-events-none w-0 overflow-hidden"
+            : "translate-x-6 opacity-0 scale-90 pointer-events-none"
         }`}
       >
         <button
@@ -176,12 +177,13 @@ export function AdminTopBar({
         </button>
       </div>
 
-      {/* Botones de confirmación/cancelación durante el modo edición con animación sliding + bounce (800ms) */}
+      {/* Botones de confirmación/cancelación durante el modo edición:
+          misma ancla absoluta, entran desde la izquierda */}
       <div
-        className={`flex items-center gap-2 transition-all duration-800 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left ${
+        className={`absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-2 origin-left transition-all duration-800 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           isEditingRegions
             ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
-            : "-translate-x-4 opacity-0 scale-90 pointer-events-none w-0 overflow-hidden"
+            : "-translate-x-4 opacity-0 scale-90 pointer-events-none"
         }`}
       >
         <button
