@@ -443,8 +443,10 @@ export function MinimapInternal({
               >
                 <Tooltip opacity={0.95}>
                   <div className="text-xs font-sans p-0.5">
-                    <p className="font-bold text-zinc-900">{barrio.nombre}</p>
-                    <p className="text-zinc-600">
+                    <p className="font-bold text-zinc-900 dark:text-white">
+                      {barrio.nombre}
+                    </p>
+                    <p className="text-zinc-600 dark:text-slate-300">
                       Reclamos:{" "}
                       <span className="font-semibold">
                         {barrio.reportCount}
@@ -488,8 +490,10 @@ export function MinimapInternal({
               >
                 <Tooltip opacity={0.95}>
                   <div className="text-xs font-sans p-0.5">
-                    <p className="font-bold text-zinc-900">{region.nombre}</p>
-                    <p className="text-zinc-600">
+                    <p className="font-bold text-zinc-900 dark:text-white">
+                      {region.nombre}
+                    </p>
+                    <p className="text-zinc-600 dark:text-slate-300">
                       Reclamos:{" "}
                       <span className="font-semibold">
                         {region.reportCount}
@@ -534,15 +538,15 @@ export function MinimapInternal({
             >
               <Tooltip opacity={0.95}>
                 <div className="text-xs font-sans p-0.5">
-                  <p className="font-bold text-zinc-900">
+                  <p className="font-bold text-zinc-900 dark:text-white">
                     {formatReportType(r.tipo)}
                   </p>
                   {r.descripcion && (
-                    <p className="text-zinc-600 text-[11px] font-medium line-clamp-1">
+                    <p className="text-zinc-600 dark:text-slate-300 text-[11px] font-medium line-clamp-1">
                       {r.descripcion}
                     </p>
                   )}
-                  <p className="text-zinc-500 text-[10px]">
+                  <p className="text-zinc-500 dark:text-slate-400 text-[10px]">
                     {new Date(r.fecha).toLocaleDateString("es-AR")}
                   </p>
                 </div>
