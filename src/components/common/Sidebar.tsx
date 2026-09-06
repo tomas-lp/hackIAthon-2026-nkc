@@ -60,7 +60,7 @@ function FilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
+        className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-slate-200 transition hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer"
       >
         <Filter className="h-4 w-4" />
         Filtrar
@@ -72,7 +72,7 @@ function FilterDropdown({
       </button>
 
       <div
-        className={`absolute right-0 top-full mt-2 z-50 w-48 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
+        className={`absolute right-0 top-full mt-2 z-50 w-48 flex flex-col rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
           isOpen
             ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
             : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
@@ -90,12 +90,14 @@ function FilterDropdown({
               }}
               className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
                 isSelected
-                  ? "bg-gray-100 font-semibold text-zinc-900"
-                  : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                  ? "bg-gray-100 dark:bg-slate-700 font-semibold text-zinc-900 dark:text-white"
+                  : "text-zinc-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
               <span>{opt.label}</span>
-              {isSelected && <Check className="h-4 w-4 text-zinc-700" />}
+              {isSelected && (
+                <Check className="h-4 w-4 text-zinc-700 dark:text-slate-300" />
+              )}
             </button>
           );
         })}
@@ -171,23 +173,25 @@ function ReportCard({
   return (
     <button
       onClick={() => onSelect(report)}
-      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
+      className={`shrink-0 w-full rounded-2xl border text-left transition overflow-hidden ${
         isSelected
-          ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80 hover:border-zinc-300 hover:bg-zinc-100"
+          ? "border-slate-500 dark:border-slate-500 bg-gray-200 dark:bg-slate-700"
+          : "border-gray-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 hover:border-zinc-300 dark:hover:border-slate-500 hover:bg-zinc-100 dark:hover:bg-slate-700"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col p-3">
-          <span className="text-sm font-medium text-black">{typeLabel}</span>
+          <span className="text-sm font-medium text-black dark:text-slate-100">
+            {typeLabel}
+          </span>
           <span
-            className="text-xs font-medium text-black/50"
+            className="text-xs font-medium text-black/50 dark:text-slate-400"
             suppressHydrationWarning
           >
             {formatDate(report.fecha)}
           </span>
           <span
-            className="text-xs font-medium text-black/80"
+            className="text-xs font-medium text-black/80 dark:text-slate-300"
             title={storedAddress ?? address ?? report.descripcion}
           >
             {storedAddress ?? address ?? "Dirección no disponible"}
@@ -195,7 +199,7 @@ function ReportCard({
         </div>
         {isAdmin && (
           <div className="flex flex-col items-end p-3 gap-1">
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600 w-fit text-nowrap">
+            <span className="rounded-full bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-300 w-fit text-nowrap">
               {report.puntajeBase} pts
             </span>
           </div>
@@ -369,8 +373,8 @@ export function Sidebar({
     <aside
       className={`flex flex-col gap-3 z-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         isExpanded
-          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white border-r border-gray-200/80 shadow-md"
-          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 bg-white/95 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
+          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
+          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/95 dark:bg-[#0b101d]/95 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -389,7 +393,7 @@ export function Sidebar({
             <button
               id="sidebar-collapse-btn"
               onClick={onCollapse}
-              className="rounded-xl border border-gray-200 bg-white p-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0 shadow-2xs"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-1.5 text-gray-400 dark:text-slate-400 transition-colors hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer shrink-0 shadow-2xs"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -416,7 +420,7 @@ export function Sidebar({
                   setIsSearchFocused(true);
                 }}
                 onFocus={() => setIsSearchFocused(true)}
-                className="w-full h-10 rounded-2xl border border-gray-200/90 bg-white/90 shadow-2xs pl-9.5 pr-8 text-xs font-semibold text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-200/60 transition-all"
+                className="w-full h-10 rounded-2xl border border-gray-200/90 dark:border-slate-600/90 bg-white/90 dark:bg-slate-800/90 shadow-2xs pl-9.5 pr-8 text-xs font-semibold text-zinc-800 dark:text-slate-100 placeholder:text-zinc-400 dark:placeholder:text-slate-500 outline-none focus:border-zinc-400 dark:focus:border-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-zinc-200/60 dark:focus:ring-slate-600/60 transition-all"
               />
               {markerSearchQuery && (
                 <button
@@ -434,7 +438,7 @@ export function Sidebar({
 
             {/* Menú desplegable con coincidencias de búsqueda */}
             {isSearchFocused && markerSearchQuery.trim().length > 0 && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 bg-white/98 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 dark:border-slate-600/90 bg-white/98 dark:bg-slate-800/98 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
                 {searchResults.length > 0 ? (
                   searchResults.map((item) => (
                     <button
@@ -442,10 +446,10 @@ export function Sidebar({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectSearchResult(item)}
-                      className="flex flex-col gap-1 rounded-xl p-2.5 text-left transition-colors cursor-pointer hover:bg-zinc-100/80 border border-transparent hover:border-gray-200/60 group"
+                      className="flex flex-col gap-1 rounded-xl p-2.5 text-left transition-colors cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-slate-700/80 border border-transparent hover:border-gray-200/60 dark:hover:border-slate-600/60 group"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-zinc-900 group-hover:text-black truncate">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-slate-100 group-hover:text-black dark:group-hover:text-white truncate">
                           {item.nombre}
                         </span>
                         <span
@@ -488,7 +492,7 @@ export function Sidebar({
           {/* Lista de Reclamos Recientes (Últimas alertas) */}
           <div className="flex flex-col flex-1 min-h-0 gap-2">
             <div className="w-full flex items-center justify-between relative z-20">
-              <span className="text-sm font-bold text-zinc-900 text-nowrap">
+              <span className="text-sm font-bold text-zinc-900 dark:text-slate-100 text-nowrap">
                 Últimas alertas
               </span>
               <FilterDropdown
@@ -497,7 +501,7 @@ export function Sidebar({
               />
             </div>
 
-            <div className="flex flex-col flex-1 rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[56vh]">
+            <div className="flex flex-col flex-1 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 overflow-hidden max-h-[56vh]">
               {loading && (
                 <div className="rounded-xl border border-dashed border-zinc-200 px-3 py-16 text-center text-xs text-zinc-400 font-medium">
                   Cargando alertas...
