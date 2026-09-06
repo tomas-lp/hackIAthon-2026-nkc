@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Tooltip,
   useMapEvents,
@@ -23,6 +22,7 @@ import { RegionPersonalizada } from "@/types/region";
 import { buildHeatPoints } from "@/lib/heatmap";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
+import { MapSizeInvalidator } from "./MapSizeInvalidator";
 import { LocateButton } from "./LocateButton";
 import { SafeRoute } from "./SafeRoute";
 import { ShieldCheck, PlusSquare } from "lucide-react";
@@ -33,6 +33,8 @@ import {
   RegionShape,
   DraftFitter,
 } from "./PolygonDrawingOverlay";
+import { useDarkMode } from "@/hooks/useDarkMode";
+import { MapTileLayers } from "./MapTileLayers";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -252,6 +254,7 @@ interface BarrioTooltipInfo {
 
 function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
   const map = useMap();
+  const { isDark } = useDarkMode();
   const isDragging = useRef(false);
   const isAnimating = useRef(false);
   const [tooltip, setTooltip] = useState<BarrioTooltipInfo | null>(null);
@@ -315,13 +318,13 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
   return (
     <>
       <GeoJSON
-        key="barrios-layer"
+        key={`barrios-layer-${isDark ? "dark" : "light"}`}
         data={data}
         style={() => ({
-          color: "#2563eb",
+          color: isDark ? "#38bdf8" : "#2563eb",
           weight: 1.5,
-          opacity: 0.7,
-          fillColor: "#3b82f6",
+          opacity: isDark ? 0.8 : 0.7,
+          fillColor: isDark ? "#0284c7" : "#3b82f6",
           fillOpacity: 0.08,
         })}
         onEachFeature={(feature, layer) => {
@@ -332,7 +335,10 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
           (layer as L.Path).on({
             mouseover(e) {
               if (isDragging.current || isAnimating.current) return;
-              (e.target as L.Path).setStyle({ fillOpacity: 0.3, weight: 2.5 });
+              (e.target as L.Path).setStyle({
+                fillOpacity: isDark ? 0.32 : 0.3,
+                weight: 2.5,
+              });
               (e.target as L.Path).bringToFront();
               const containerRect = map.getContainer().getBoundingClientRect();
               const orig = e.originalEvent as MouseEvent;
@@ -399,7 +405,7 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
                   });
                   // Resaltar el polígono para dar feedback visual
                   (target as L.Path).setStyle({
-                    fillOpacity: 0.3,
+                    fillOpacity: isDark ? 0.32 : 0.3,
                     weight: 2.5,
                   });
                 }
@@ -416,18 +422,23 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
             left: tooltip.x,
             top: tooltip.y,
             zIndex: 9999,
-            background: "white",
-            border: "1px solid #ccc",
+            background: isDark ? "#161f36" : "white",
+            border: isDark ? "1px solid #2b395b" : "1px solid #ccc",
+            color: isDark ? "#f1f5f9" : "#09090b",
             borderRadius: 6,
             padding: "6px 10px",
             pointerEvents: "none",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            boxShadow: isDark
+              ? "0 4px 20px rgba(0,0,0,0.5)"
+              : "0 2px 8px rgba(0,0,0,0.15)",
             whiteSpace: "nowrap",
           }}
         >
           <strong style={{ fontSize: 13 }}>{tooltip.nombre}</strong>
           <br />
-          <span style={{ fontSize: 11, color: "#666" }}>{tooltip.tipo}</span>
+          <span style={{ fontSize: 11, color: isDark ? "#94a3b8" : "#666" }}>
+            {tooltip.tipo}
+          </span>
           {tooltip.reportCount > 0 ? (
             <>
               <br />
@@ -490,6 +501,7 @@ export default function ReportMapInternal({
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<GeoJSON.FeatureCollection | null>(null);
   const supabase = createClient();
+  const { isDark } = useDarkMode();
 
   const displayedRegiones = useMemo(() => {
     if (!regiones || regiones.length === 0) return [];
@@ -694,10 +706,9 @@ export default function ReportMapInternal({
         className="w-full h-full z-0"
       >
         <AttributionControl prefix='🇦🇷 <a href="https://leafletjs.com">Leaflet</a>' />
-        <TileLayer
-          attribution='&copy; <a href="https://www.ign.gob.ar/">Instituto Geográfico Nacional</a> (IGN)'
-          url="/api/tile/{z}/{x}/{-y}.png"
-        />
+        <MapTileLayers isDark={isDark} />
+
+        <MapSizeInvalidator />
 
         {/* Capa de polígonos de barrios — solo cuando Barrios está activo (variante interna) */}
         {showBarrios && barriosGeoJson && (

@@ -114,25 +114,25 @@ export function RangeCalendarModal({
   };
 
   return (
-    <div className="absolute left-0 top-full mt-2 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 flex flex-col gap-3.5 w-72 animate-fadeIn font-sans">
+    <div className="absolute left-0 top-full mt-2 z-50 bg-white dark:bg-[#1c2744] border border-gray-200 dark:border-[#2b395b] rounded-2xl shadow-xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.45)] p-4 flex flex-col gap-3.5 w-72 animate-fadeIn font-sans">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="text-xs font-bold text-zinc-900">
+        <div className="text-xs font-bold text-zinc-900 dark:text-white">
           <span>Seleccionar rango de fechas</span>
         </div>
         <button
           onClick={onClose}
-          className="text-zinc-400 hover:text-zinc-700 transition"
+          className="text-zinc-400 dark:text-slate-400 hover:text-zinc-700 dark:hover:text-white transition cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Navegación Mes/Año */}
-      <div className="flex items-center justify-between text-xs font-bold text-zinc-800 bg-zinc-50 py-1.5 px-2 rounded-xl">
+      <div className="flex items-center justify-between text-xs font-bold text-zinc-800 dark:text-white bg-zinc-50 dark:bg-[#161f36] border border-transparent dark:border-[#2b395b]/60 py-1.5 px-2 rounded-xl">
         <button
           onClick={handlePrevMonth}
-          className="p-1 text-zinc-600 hover:text-zinc-900 rounded-lg hover:bg-zinc-200 transition"
+          className="p-1 text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white rounded-lg hover:bg-zinc-200 dark:hover:bg-[#25355d] transition cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -141,7 +141,7 @@ export function RangeCalendarModal({
         </span>
         <button
           onClick={handleNextMonth}
-          className="p-1 text-zinc-600 hover:text-zinc-900 rounded-lg hover:bg-zinc-200 transition"
+          className="p-1 text-zinc-600 dark:text-slate-300 hover:text-zinc-900 dark:hover:text-white rounded-lg hover:bg-zinc-200 dark:hover:bg-[#25355d] transition cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -152,7 +152,7 @@ export function RangeCalendarModal({
         {WEEKDAY_NAMES.map((wd) => (
           <div
             key={wd}
-            className="text-[10px] font-bold text-zinc-400 uppercase py-1"
+            className="text-[10px] font-bold text-zinc-400 dark:text-slate-400 uppercase py-1"
           >
             {wd}
           </div>
@@ -180,8 +180,8 @@ export function RangeCalendarModal({
                 isStart || isEnd
                   ? "bg-blue-600 text-white font-bold shadow-xs scale-105"
                   : inRange
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-zinc-700 hover:bg-zinc-100"
+                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200"
+                    : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-100 dark:hover:bg-[#25355d] dark:hover:text-white"
               }`}
             >
               {dayNum}
@@ -191,16 +191,16 @@ export function RangeCalendarModal({
       </div>
 
       {/* Footer Acciones */}
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-[#2b395b]">
         <button
           onClick={handleClear}
-          className="text-xs font-semibold text-zinc-500 hover:text-zinc-800 transition"
+          className="text-xs font-semibold text-zinc-500 dark:text-slate-400 hover:text-zinc-800 dark:hover:text-white transition cursor-pointer"
         >
           Limpiar
         </button>
         <button
           onClick={handleApply}
-          className="bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-2xs transition"
+          className="bg-zinc-900 dark:bg-blue-600 hover:bg-zinc-800 dark:hover:bg-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-2xs transition cursor-pointer"
         >
           Aplicar
         </button>

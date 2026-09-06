@@ -3,7 +3,6 @@
 import { useMemo, useEffect } from "react";
 import {
   MapContainer,
-  TileLayer,
   Polygon,
   Tooltip,
   CircleMarker,
@@ -17,6 +16,8 @@ import { HeatLayer } from "@/components/map/HeatLayer";
 import { buildHeatPoints, heatColor } from "@/lib/heatmap";
 import { isPointInGeoJSONGeometry, isPointInPolygon } from "@/lib/geometry";
 import { Target, Plus, Minus } from "lucide-react";
+import { useDarkMode } from "@/hooks/useDarkMode";
+import { MapTileLayers } from "@/components/map/MapTileLayers";
 
 interface MinimapInternalProps {
   reports: Report[];
@@ -54,14 +55,14 @@ function CustomMapControls() {
             console.error("Zoom center error:", err);
           }
         }}
-        className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 transition cursor-pointer"
+        className="w-8 h-8 rounded-full bg-white dark:bg-[#161f36] border border-gray-200 dark:border-[#2b395b] shadow-md flex items-center justify-center text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white transition cursor-pointer"
         title="Centrar en Corrientes Capital"
       >
         <Target className="w-4 h-4" />
       </button>
 
       {/* Botones de Zoom Redondos con íconos finos */}
-      <div className="w-8 flex flex-col items-center bg-white border border-gray-200 rounded-full py-1 shadow-md">
+      <div className="w-8 flex flex-col items-center bg-white dark:bg-[#161f36] border border-gray-200 dark:border-[#2b395b] rounded-full py-1 shadow-md">
         <button
           type="button"
           onClick={(e) => {
@@ -72,12 +73,12 @@ function CustomMapControls() {
               console.error("Zoom in error:", err);
             }
           }}
-          className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+          className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-700 dark:text-slate-200 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white transition cursor-pointer"
           title="Acercar"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
-        <div className="w-5 h-[1px] bg-gray-200 my-0.5" />
+        <div className="w-5 h-[1px] bg-gray-200 dark:bg-[#2b395b] my-0.5" />
         <button
           type="button"
           onClick={(e) => {
@@ -88,7 +89,7 @@ function CustomMapControls() {
               console.error("Zoom out error:", err);
             }
           }}
-          className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+          className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-700 dark:text-slate-200 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white transition cursor-pointer"
           title="Alejar"
         >
           <Minus className="w-3.5 h-3.5" />
@@ -308,6 +309,8 @@ export function MinimapInternal({
   selectedZoneFilter,
   selectedRegionName,
 }: MinimapInternalProps) {
+  const { isDark } = useDarkMode();
+
   // Puntos del mapa de calor
   const heatPoints = useMemo(() => {
     return buildHeatPoints(reports, { ignoreAgeMultiplier: true });
@@ -378,7 +381,7 @@ export function MinimapInternal({
   }, [customRegionPolygons]);
 
   return (
-    <div className="w-full h-full min-h-[350px] rounded-2xl overflow-hidden border border-gray-200 shadow-2xs relative">
+    <div className="w-full h-full min-h-[350px] rounded-2xl overflow-hidden border border-gray-200 dark:border-[#2b395b] shadow-2xs relative">
       <MapContainer
         center={CORRIENTES_CENTER}
         zoom={13}
@@ -387,7 +390,7 @@ export function MinimapInternal({
         className="w-full h-full z-0"
         attributionControl={false}
       >
-        <TileLayer url="/api/tile/{z}/{x}/{-y}.png" maxZoom={19} />
+        <MapTileLayers isDark={isDark} />
 
         {/* Controladores de mapa */}
         <CustomMapControls />
@@ -549,12 +552,18 @@ export function MinimapInternal({
       </MapContainer>
 
       {/* Leyenda Flotante de Colores de Afectación abajo en el minimapa */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-xs border border-gray-200 rounded-xl px-3 py-2 shadow-md flex items-center gap-1.5 text-[11px] font-medium text-zinc-700">
-        <span className="text-[11px] text-zinc-700 font-bold">Afectación:</span>
+      <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 dark:bg-[#161f36]/95 backdrop-blur-xs border border-gray-200 dark:border-[#2b395b] rounded-xl px-3 py-2 shadow-md flex items-center gap-1.5 text-[11px] font-medium text-zinc-700 dark:text-slate-200">
+        <span className="text-[11px] text-zinc-700 dark:text-white font-bold">
+          Afectación:
+        </span>
         <div className="flex items-center gap-1 ml-0.5">
-          <span className="text-[10px] text-zinc-400">Baja</span>
+          <span className="text-[10px] text-zinc-400 dark:text-slate-400">
+            Baja
+          </span>
           <div className="w-14 h-2 rounded-full bg-gradient-to-r from-[#3b82f6] via-[#eab308] to-[#ef4444]" />
-          <span className="text-[10px] text-zinc-400">Alta</span>
+          <span className="text-[10px] text-zinc-400 dark:text-slate-400">
+            Alta
+          </span>
         </div>
       </div>
     </div>

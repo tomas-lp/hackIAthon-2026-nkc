@@ -141,32 +141,32 @@ export function MarkerCreationModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
+      <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-800 cursor-pointer"
+          className="absolute right-4 top-4 rounded-full p-1.5 text-zinc-400 dark:text-slate-400 transition-colors hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-white cursor-pointer"
           disabled={isSubmitting}
         >
           <X className="h-4 w-4" />
         </button>
 
-        <h2 className="mb-4 text-lg font-bold text-zinc-900 tracking-tight">
+        <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
           Nuevo Marcador
         </h2>
 
         {/* Category selector pills */}
-        <div className="flex gap-1.5 p-1 bg-zinc-100/90 border border-gray-200/60 rounded-xl mb-4">
+        <div className="flex gap-1.5 p-1 bg-zinc-100/90 dark:bg-[#0b101d] border border-gray-200/60 dark:border-[#2b395b] rounded-xl mb-4">
           <button
             type="button"
             onClick={() => setCategory("EVACUACION")}
             disabled={isSubmitting}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               category === "EVACUACION"
-                ? "bg-white text-emerald-700 shadow-2xs font-bold"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-white dark:bg-[#161f36] text-emerald-700 dark:text-emerald-400 shadow-2xs font-bold"
+                : "text-zinc-600 dark:text-slate-400 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Evacuación</span>
           </button>
           <button
@@ -175,18 +175,18 @@ export function MarkerCreationModal({
             disabled={isSubmitting}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               category === "SALUD"
-                ? "bg-white text-blue-700 shadow-2xs font-bold"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-white dark:bg-[#161f36] text-blue-700 dark:text-blue-400 shadow-2xs font-bold"
+                : "text-zinc-600 dark:text-slate-400 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
-            <PlusSquare className="h-3.5 w-3.5 text-blue-600" />
+            <PlusSquare className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             <span>Atención Médica</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Nombre del centro *
             </label>
             <input
@@ -199,14 +199,14 @@ export function MarkerCreationModal({
               }
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
               disabled={isSubmitting}
             />
           </div>
 
           {/* Subtype dropdown */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Tipo de{" "}
               {category === "EVACUACION" ? "evacuación" : "centro de salud"} *
             </label>
@@ -216,11 +216,15 @@ export function MarkerCreationModal({
                 onChange={(e) =>
                   setTipoEvacuacion(e.target.value as SafeZoneType)
                 }
-                className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all cursor-pointer"
+                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all cursor-pointer"
                 disabled={isSubmitting}
               >
                 {SAFE_ZONE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    className="dark:bg-[#161f36] dark:text-white"
+                  >
                     {opt.label}
                   </option>
                 ))}
@@ -231,11 +235,15 @@ export function MarkerCreationModal({
                 onChange={(e) =>
                   setTipoSalud(e.target.value as HealthCenterType)
                 }
-                className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all cursor-pointer"
+                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all cursor-pointer"
                 disabled={isSubmitting}
               >
                 {HEALTH_CENTER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    className="dark:bg-[#161f36] dark:text-white"
+                  >
                     {opt.label}
                   </option>
                 ))}
@@ -246,7 +254,7 @@ export function MarkerCreationModal({
           {/* Capacidad máxima (solo en evacuación) */}
           {category === "EVACUACION" && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-700">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
                 Capacidad máxima de personas (Opcional)
               </label>
               <input
@@ -255,7 +263,7 @@ export function MarkerCreationModal({
                 placeholder="Ej. 150"
                 value={capacidadMaxima}
                 onChange={(e) => setCapacidadMaxima(e.target.value)}
-                className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                 disabled={isSubmitting}
               />
             </div>
@@ -264,7 +272,7 @@ export function MarkerCreationModal({
           {/* Descripción (evacuación) */}
           {category === "EVACUACION" && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-700">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
                 Descripción / Observaciones (Opcional)
               </label>
               <textarea
@@ -272,7 +280,7 @@ export function MarkerCreationModal({
                 rows={2}
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className="resize-none rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+                className="resize-none rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                 disabled={isSubmitting}
               />
             </div>
@@ -282,19 +290,19 @@ export function MarkerCreationModal({
           {initialLocation && (
             <div className="flex flex-col gap-2">
               {!isEditingLocation ? (
-                <div className="flex items-start justify-between gap-2.5 p-3 rounded-xl bg-zinc-50/80 border border-gray-200/80 text-xs">
+                <div className="flex items-start justify-between gap-2.5 p-3 rounded-xl bg-zinc-50/80 dark:bg-[#0b101d] border border-gray-200/80 dark:border-[#2b395b] text-xs">
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
+                    <MapPin className="h-4 w-4 text-zinc-500 dark:text-slate-400 mt-0.5 shrink-0" />
                     <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="font-semibold text-zinc-800 truncate">
+                      <span className="font-semibold text-zinc-800 dark:text-slate-200 truncate">
                         {detectedLocationText}
                       </span>
                       {detectedLocalityText && (
-                        <span className="text-[11px] text-zinc-500">
+                        <span className="text-[11px] text-zinc-500 dark:text-slate-400">
                           {detectedLocalityText}
                         </span>
                       )}
-                      <span className="text-[10px] text-zinc-400 mt-0.5">
+                      <span className="text-[10px] text-zinc-400 dark:text-slate-500 mt-0.5">
                         Ubicación calculada automáticamente según coordenadas
                       </span>
                     </div>
@@ -302,7 +310,7 @@ export function MarkerCreationModal({
                   <button
                     type="button"
                     onClick={() => setIsEditingLocation(true)}
-                    className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-100 hover:text-zinc-900 transition-colors cursor-pointer shrink-0 mt-0.5"
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-2.5 py-1 text-[11px] font-semibold text-zinc-700 dark:text-slate-200 shadow-2xs hover:bg-zinc-100 dark:hover:bg-[#25355d] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer shrink-0 mt-0.5"
                     title="Editar ubicación manualmente"
                   >
                     <Pencil className="h-3 w-3" />
@@ -310,23 +318,23 @@ export function MarkerCreationModal({
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-zinc-50 border border-gray-200 text-xs animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between border-b border-gray-200/70 pb-1.5">
-                    <div className="flex items-center gap-1.5 font-semibold text-zinc-800">
-                      <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+                <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-[#0b101d] border border-gray-200 dark:border-[#2b395b] text-xs animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between border-b border-gray-200/70 dark:border-[#2b395b] pb-1.5">
+                    <div className="flex items-center gap-1.5 font-semibold text-zinc-800 dark:text-slate-200">
+                      <MapPin className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
                       <span>Editar dirección manualmente</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsEditingLocation(false)}
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer"
                     >
                       Listo
                     </button>
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-medium text-zinc-600">
+                    <label className="text-[11px] font-medium text-zinc-600 dark:text-slate-300">
                       Dirección / Calle y altura
                     </label>
                     <input
@@ -334,13 +342,13 @@ export function MarkerCreationModal({
                       placeholder="Ej. Rafael Obligado 1200"
                       value={customDireccion}
                       onChange={(e) => setCustomDireccion(e.target.value)}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300"
+                      className="rounded-lg border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-3 py-1.5 text-xs text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-medium text-zinc-600">
+                      <label className="text-[11px] font-medium text-zinc-600 dark:text-slate-300">
                         Localidad
                       </label>
                       <input
@@ -348,11 +356,11 @@ export function MarkerCreationModal({
                         placeholder="Ej. Corrientes"
                         value={customLocalidad}
                         onChange={(e) => setCustomLocalidad(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300"
+                        className="rounded-lg border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-3 py-1.5 text-xs text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-medium text-zinc-600">
+                      <label className="text-[11px] font-medium text-zinc-600 dark:text-slate-300">
                         Departamento
                       </label>
                       <input
@@ -360,7 +368,7 @@ export function MarkerCreationModal({
                         placeholder="Ej. Capital"
                         value={customDepartamento}
                         onChange={(e) => setCustomDepartamento(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300"
+                        className="rounded-lg border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-3 py-1.5 text-xs text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                       />
                     </div>
                   </div>
@@ -374,7 +382,7 @@ export function MarkerCreationModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-4 py-2 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#25355d] hover:border-gray-300 dark:hover:border-slate-500 active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               Cancelar
             </button>

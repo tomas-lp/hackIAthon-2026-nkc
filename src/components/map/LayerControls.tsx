@@ -41,8 +41,8 @@ export function LayerControls({
             onClick={() => setIsPopoverOpen((prev) => !prev)}
             className={`flex items-center justify-center rounded-full border p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
               isPopoverOpen
-                ? "bg-zinc-200/90 text-zinc-950 border-zinc-300 shadow-sm"
-                : "bg-white/70 text-zinc-700 hover:bg-white/90 border-white/50"
+                ? "bg-zinc-200/90 dark:bg-slate-700/90 text-zinc-950 dark:text-white border-zinc-300 dark:border-slate-500 shadow-sm"
+                : "bg-white/70 dark:bg-slate-800/70 text-zinc-700 dark:text-slate-200 hover:bg-white/90 dark:hover:bg-slate-700/90 border-white/50 dark:border-white/10"
             }`}
           >
             <Layers className="h-5 w-5" />
@@ -51,7 +51,7 @@ export function LayerControls({
 
         {/* Popover Panel with Spring Bounce Slide Animation */}
         <div
-          className={`absolute bottom-14 left-0 w-72 rounded-2xl border border-gray-200/80 bg-white/60 p-3.5 shadow-xl backdrop-blur-md flex flex-col gap-3 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          className={`absolute bottom-14 left-0 w-72 rounded-2xl border border-gray-200/80 dark:border-slate-600/80 bg-white/60 dark:bg-slate-800/90 p-3.5 shadow-xl backdrop-blur-md flex flex-col gap-3 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             isPopoverOpen
               ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
               : "translate-y-8 opacity-0 scale-95 pointer-events-none"
@@ -63,7 +63,7 @@ export function LayerControls({
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                 <Info className="h-3.5 w-3.5 stroke-[2.5]" />
               </div>
-              <span className="text-xs font-semibold text-zinc-800">
+              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
                 Centros de evacuación
               </span>
             </div>
@@ -104,7 +104,7 @@ export function LayerControls({
             </div>
           </div>
 
-          <div className="h-[1px] w-full bg-gray-100" />
+          <div className="h-[1px] w-full bg-gray-100 dark:bg-slate-700" />
 
           {/* Centros de At. Médica */}
           <div className="flex items-center justify-between gap-2 p-1">
@@ -119,7 +119,7 @@ export function LayerControls({
                   <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
                 </svg>
               </div>
-              <span className="text-xs font-semibold text-zinc-800">
+              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
                 Centros de at. médica
               </span>
             </div>
@@ -163,14 +163,16 @@ export function LayerControls({
       </div>
 
       {/* References Legend Capsule (Unificada con mapa de calor) */}
-      <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/50 bg-white/75 px-4 py-2 text-xs font-bold text-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md">
-        <span className="text-zinc-900 font-extrabold">Referencias</span>
+      <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/50 dark:border-white/10 bg-white/75 dark:bg-slate-800/85 px-4 py-2 text-xs font-bold text-zinc-800 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md">
+        <span className="text-zinc-900 dark:text-white font-extrabold">
+          Referencias
+        </span>
 
         <div className="flex items-center gap-1.5">
           <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs">
             <Info className="h-2.5 w-2.5 stroke-[3]" />
           </div>
-          <span className="text-[11px] font-semibold text-zinc-700">
+          <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Centros de evacuación
           </span>
         </div>
@@ -185,7 +187,7 @@ export function LayerControls({
               <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
             </svg>
           </div>
-          <span className="text-[11px] font-semibold text-zinc-700">
+          <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Centros de at. médica
           </span>
         </div>
@@ -195,10 +197,12 @@ export function LayerControls({
 
         {/* Escala de Calor / Riesgo */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-zinc-700">
+          <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Riesgo:
           </span>
-          <span className="text-[10px] font-mono text-zinc-400">Bajo</span>
+          <span className="text-[10px] font-mono text-zinc-400 dark:text-slate-500">
+            Bajo
+          </span>
           <div
             className="h-2 w-16 sm:w-20 rounded-full shadow-2xs"
             style={{
@@ -206,7 +210,9 @@ export function LayerControls({
                 "linear-gradient(to right, #3b82f6, #22c55e, #eab308, #f97316, #ef4444)",
             }}
           />
-          <span className="text-[10px] font-mono text-zinc-400">Alto</span>
+          <span className="text-[10px] font-mono text-zinc-400 dark:text-slate-500">
+            Alto
+          </span>
         </div>
       </div>
     </div>

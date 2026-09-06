@@ -25,7 +25,7 @@ export default async function EstadisticasPage() {
     ]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-zinc-100 dark:bg-[#0b101d]">
       <EstadisticasDashboard
         allReports={allReports}
         barriosGeoJson={barriosGeoJson}

@@ -237,14 +237,14 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
     { bg: string; text: string; border: string }
   > = {
     idle: {
-      bg: "bg-white/60",
-      text: "text-zinc-700",
-      border: "border-white/40",
+      bg: "bg-white/60 dark:bg-slate-800/70",
+      text: "text-zinc-700 dark:text-slate-200",
+      border: "border-white/40 dark:border-white/10",
     },
     loading: {
-      bg: "bg-white/60",
-      text: "text-zinc-700",
-      border: "border-white/40",
+      bg: "bg-white/60 dark:bg-slate-800/70",
+      text: "text-zinc-700 dark:text-slate-200",
+      border: "border-white/40 dark:border-white/10",
     },
     active: {
       bg: "bg-blue-500/90",
@@ -276,7 +276,7 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
         shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md
         cursor-pointer
         transition-colors duration-200
-        hover:bg-zinc-100 hover:text-zinc-900
+        hover:bg-zinc-100 dark:hover:bg-slate-700 hover:text-zinc-900 dark:hover:text-white
         active:scale-95
       `}
     >

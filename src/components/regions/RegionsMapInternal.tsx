@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { MapContainer, TileLayer, Polygon, GeoJSON } from "react-leaflet";
+import { MapContainer, Polygon, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { formatTitleCase } from "@/lib/format";
@@ -11,6 +11,8 @@ import { buildHeatPoints } from "@/lib/heatmap";
 import { HeatLayer } from "@/components/map/HeatLayer";
 import { isPointInGeoJSONGeometry } from "@/lib/geometry";
 import { BarriosFeatureCollection } from "@/services/barrioService";
+import { useDarkMode } from "@/hooks/useDarkMode";
+import { MapTileLayers } from "@/components/map/MapTileLayers";
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
 const INITIAL_ZOOM = 12;
@@ -39,9 +41,11 @@ import {
   DraftFitter,
   getListColor,
 } from "@/components/map/PolygonDrawingOverlay";
+import { MapSizeInvalidator } from "@/components/map/MapSizeInvalidator";
 
 // --- Componente principal ---
 export default function RegionsMapInternal(props: RegionsMapInternalProps) {
+  const { isDark } = useDarkMode();
   const {
     reports,
     regiones,
@@ -116,20 +120,28 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
         zoomControl={false}
         className="w-full h-full z-0"
       >
-        <TileLayer
-          attribution="&copy; OpenStreetMap"
-          url="/api/tile/{z}/{x}/{-y}.png"
-        />
+        <MapTileLayers isDark={isDark} />
+
+        <MapSizeInvalidator />
 
         {!props.hideHeatmap && <HeatLayer points={heatPoints} />}
 
         {/* Polígonos de barrios de la API PostGIS con resaltado y cantidad de reclamos */}
         {showBarriosLayer && barriosGeoJson && (
           <GeoJSON
-            key="barrios-layer-regiones"
+            key={`barrios-layer-regiones-${isDark ? "dark" : "light"}`}
             data={barriosGeoJson as unknown as GeoJSON.GeoJsonObject}
             style={(feature) => {
               const isSelected = feature?.properties?.id === selectedRegionId;
+              if (isDark) {
+                return {
+                  color: isSelected ? "#38bdf8" : "#38bdf8",
+                  weight: isSelected ? 3.5 : 1.5,
+                  opacity: isSelected ? 1 : 0.8,
+                  fillColor: isSelected ? "#0284c7" : "#0369a1",
+                  fillOpacity: isSelected ? 0.45 : 0.12,
+                };
+              }
               return {
                 color: isSelected ? "#1d4ed8" : "#2563eb",
                 weight: isSelected ? 3.5 : 1.5,
@@ -153,15 +165,20 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
 
                 const htmlContent = `
                   <div class="flex flex-col gap-0.5 font-sans p-0.5">
-                    <span class="font-bold text-sm text-zinc-900 leading-tight">${nombre}</span>
-                    <span class="text-xs font-medium text-zinc-600 leading-tight">${countText}</span>
+                    <span class="font-bold text-sm ${
+                      isDark ? "text-slate-100" : "text-zinc-900"
+                    } leading-tight">${nombre}</span>
+                    <span class="text-xs font-medium ${
+                      isDark ? "text-slate-300" : "text-zinc-600"
+                    } leading-tight">${countText}</span>
                   </div>
                 `;
 
                 layer.bindTooltip(htmlContent, {
                   sticky: true,
-                  className:
-                    "custom-tooltip font-sans rounded-xl border border-gray-200 bg-white/95 backdrop-blur-xs shadow-xl px-3 py-2 text-zinc-800",
+                  className: isDark
+                    ? "custom-tooltip font-sans rounded-xl border border-slate-700 bg-slate-900/95 backdrop-blur-xs shadow-xl px-3 py-2 text-slate-100"
+                    : "custom-tooltip font-sans rounded-xl border border-gray-200 bg-white/95 backdrop-blur-xs shadow-xl px-3 py-2 text-zinc-800",
                 });
               }
             }}
@@ -222,8 +239,8 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
       {/* Overlay de oscurecimiento mientras se dibuja */}
       {isDrawing && (
         <div className="absolute inset-0 bg-black/10 pointer-events-none z-[1000] transition-opacity duration-300">
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-200 pointer-events-auto">
-            <span className="font-semibold text-gray-800 text-sm">
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
+            <span className="font-semibold text-gray-800 dark:text-white text-sm">
               Dibuja la región · clickeá para añadir puntos · doble click al
               primer punto para cerrar
             </span>

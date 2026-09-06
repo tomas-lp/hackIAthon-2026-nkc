@@ -83,7 +83,7 @@ export function MetricCards({
         <div className="flex flex-wrap items-center gap-4">
           {/* Filtro Periodo */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-600">
+            <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
               Periodo:
             </span>
             <div className="relative">
@@ -106,7 +106,7 @@ export function MetricCards({
 
           {/* Filtro Tipo de Reclamo */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-600">
+            <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
               Tipo de reclamo:
             </span>
             <Switch
@@ -132,54 +132,56 @@ export function MetricCards({
       {/* Tarjetas de Métricas (3 tarjetas) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Tarjeta 1: Total de Reclamos */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col justify-between hover:border-gray-300 transition">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+        <div className="bg-white dark:bg-[#161f36] rounded-2xl p-5 border border-gray-200 dark:border-[#2b395b] shadow-2xs flex flex-col justify-between hover:border-gray-300 dark:hover:border-[#3d5691] transition">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-slate-400 uppercase tracking-wider">
             Total de reclamos
           </span>
           <div className="mt-3 flex items-baseline gap-2">
             <span
               key={`val-total-${totalReclamos}-${period}-${selectedType}-${startDate}-${endDate}`}
-              className="text-4xl font-extrabold text-zinc-900 tracking-tight animate-fade-kpi inline-block"
+              className="text-4xl font-extrabold text-zinc-900 dark:text-slate-100 tracking-tight animate-fade-kpi inline-block"
             >
               {totalReclamos.toLocaleString("es-AR")}
             </span>
-            <span className="text-xs font-medium text-zinc-400">
+            <span className="text-xs font-medium text-zinc-400 dark:text-slate-500">
               registrados
             </span>
           </div>
         </div>
 
         {/* Tarjeta 2: Porcentaje Afectado */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col justify-between hover:border-gray-300 transition">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+        <div className="bg-white dark:bg-[#161f36] rounded-2xl p-5 border border-gray-200 dark:border-[#2b395b] shadow-2xs flex flex-col justify-between hover:border-gray-300 dark:hover:border-[#3d5691] transition">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-slate-400 uppercase tracking-wider">
             Porcentaje de la ciudad afectada
           </span>
           <div className="mt-3 flex items-baseline gap-2">
             <span
               key={`val-porcentaje-${porcentajeAfectado}-${period}-${selectedType}-${startDate}-${endDate}`}
-              className="text-4xl font-extrabold text-zinc-900 tracking-tight animate-fade-kpi inline-block"
+              className="text-4xl font-extrabold text-zinc-900 dark:text-slate-100 tracking-tight animate-fade-kpi inline-block"
             >
               {porcentajeAfectado}%
             </span>
-            <span className="text-xs font-medium text-zinc-400">
+            <span className="text-xs font-medium text-zinc-400 dark:text-slate-500">
               de barrios con reclamos
             </span>
           </div>
         </div>
 
         {/* Tarjeta 3: Cantidad de Lluvia Caída */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col justify-between hover:border-gray-300 transition">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+        <div className="bg-white dark:bg-[#161f36] rounded-2xl p-5 border border-gray-200 dark:border-[#2b395b] shadow-2xs flex flex-col justify-between hover:border-gray-300 dark:hover:border-[#3d5691] transition">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-slate-400 uppercase tracking-wider">
             Lluvia acumulada
           </span>
           <div className="mt-3 flex items-baseline gap-2">
             <span
               key={`val-lluvia-${lluviaAcumulada}-${period}-${selectedType}-${startDate}-${endDate}`}
-              className="text-4xl font-extrabold text-zinc-900 tracking-tight animate-fade-kpi inline-block"
+              className="text-4xl font-extrabold text-zinc-900 dark:text-slate-100 tracking-tight animate-fade-kpi inline-block"
             >
               {lluviaAcumulada}
             </span>
-            <span className="text-sm font-bold text-zinc-600">mm</span>
+            <span className="text-sm font-bold text-zinc-600 dark:text-slate-300">
+              mm
+            </span>
           </div>
         </div>
       </div>
