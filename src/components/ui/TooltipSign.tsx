@@ -60,7 +60,7 @@ export function TooltipSign({
       {children}
       {isVisible && (
         <div
-          className={`absolute z-[3000] pointer-events-none rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-md whitespace-nowrap ${positionClasses[position]}`}
+          className={`absolute z-[3000] pointer-events-none rounded-lg border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-slate-200 shadow-md dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)] whitespace-nowrap ${positionClasses[position]}`}
         >
           {label}
         </div>

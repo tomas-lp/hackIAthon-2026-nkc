@@ -409,7 +409,7 @@ export function HomeDashboard({
           <button
             id="sidebar-expand-btn"
             onClick={() => setSidebarCollapsed(false)}
-            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-1.5 py-3 text-gray-400 dark:text-slate-400 shadow-md transition-colors hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
             style={{
               transform:
                 sidebarCollapsed && !hideMainUI
