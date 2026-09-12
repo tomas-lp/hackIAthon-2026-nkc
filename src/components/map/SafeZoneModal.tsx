@@ -94,22 +94,22 @@ export function SafeZoneModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
+      <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-800 cursor-pointer"
+          className="absolute right-4 top-4 rounded-full p-1.5 text-zinc-400 dark:text-slate-400 transition-colors hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-white cursor-pointer"
           disabled={isSubmitting}
         >
           <X className="h-4 w-4" />
         </button>
 
-        <h2 className="mb-4 text-lg font-bold text-zinc-900 tracking-tight">
+        <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
           {title}
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Nombre de la zona *
             </label>
             <input
@@ -118,23 +118,27 @@ export function SafeZoneModal({
               placeholder="Ej. Refugio Escuela N°3"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
               disabled={isSubmitting}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Tipo de centro de evacuación *
             </label>
             <select
               value={tipo}
               onChange={(e) => setTipo(e.target.value as SafeZoneType)}
-              className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all cursor-pointer"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all cursor-pointer"
               disabled={isSubmitting}
             >
               {TIPO_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  className="dark:bg-[#161f36] dark:text-white"
+                >
                   {opt.label}
                 </option>
               ))}
@@ -142,7 +146,7 @@ export function SafeZoneModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Capacidad máxima (personas)
             </label>
             <input
@@ -151,13 +155,13 @@ export function SafeZoneModal({
               placeholder="Ej. 150"
               value={capacidadMaxima}
               onChange={(e) => setCapacidadMaxima(e.target.value)}
-              className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
               disabled={isSubmitting}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Dirección
             </label>
             <input
@@ -165,14 +169,14 @@ export function SafeZoneModal({
               placeholder="Ej. Av. Sarmiento 1200"
               value={direccion}
               onChange={(e) => setDireccion(e.target.value)}
-              className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
               disabled={isSubmitting}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-700">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
                 Localidad
               </label>
               <input
@@ -180,12 +184,12 @@ export function SafeZoneModal({
                 placeholder="Ej. Corrientes"
                 value={localidad}
                 onChange={(e) => setLocalidad(e.target.value)}
-                className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                 disabled={isSubmitting}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-zinc-700">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
                 Departamento
               </label>
               <input
@@ -193,14 +197,14 @@ export function SafeZoneModal({
                 placeholder="Ej. Capital"
                 value={departamento}
                 onChange={(e) => setDepartamento(e.target.value)}
-                className="rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
                 disabled={isSubmitting}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
               Descripción (Opcional)
             </label>
             <textarea
@@ -208,7 +212,7 @@ export function SafeZoneModal({
               rows={2}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="resize-none rounded-xl border border-gray-200 bg-zinc-50/60 px-3.5 py-2 text-xs text-zinc-900 outline-none focus:bg-white focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300 transition-all placeholder:text-zinc-400"
+              className="resize-none rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
               disabled={isSubmitting}
             />
           </div>
@@ -218,7 +222,7 @@ export function SafeZoneModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-4 py-2 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#25355d] hover:border-gray-300 dark:hover:border-slate-500 active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               Cancelar
             </button>

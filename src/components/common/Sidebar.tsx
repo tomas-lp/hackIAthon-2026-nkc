@@ -60,7 +60,7 @@ function FilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 cursor-pointer"
+        className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-slate-200 transition hover:bg-gray-50 dark:hover:bg-[#1e2a4a] cursor-pointer"
       >
         <Filter className="h-4 w-4" />
         Filtrar
@@ -72,7 +72,7 @@ function FilterDropdown({
       </button>
 
       <div
-        className={`absolute right-0 top-full mt-2 z-50 w-48 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-200 ease-out origin-top ${
+        className={`absolute right-0 top-full mt-2 z-50 w-48 flex flex-col rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-lg dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out origin-top ${
           isOpen
             ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
             : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
@@ -90,12 +90,14 @@ function FilterDropdown({
               }}
               className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
                 isSelected
-                  ? "bg-gray-100 font-semibold text-zinc-900"
-                  : "text-zinc-700 hover:bg-gray-50 hover:text-zinc-900"
+                  ? "bg-gray-100 dark:bg-[#233154] font-semibold text-zinc-900 dark:text-white"
+                  : "text-zinc-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
               <span>{opt.label}</span>
-              {isSelected && <Check className="h-4 w-4 text-zinc-700" />}
+              {isSelected && (
+                <Check className="h-4 w-4 text-zinc-700 dark:text-slate-300" />
+              )}
             </button>
           );
         })}
@@ -171,23 +173,25 @@ function ReportCard({
   return (
     <button
       onClick={() => onSelect(report)}
-      className={`shrink-0 w-full rounded-2xl border border-gray-200 text-left transition overflow-hidden ${
+      className={`shrink-0 w-full rounded-2xl border text-left transition overflow-hidden ${
         isSelected
-          ? "border-gray-200 bg-gray-200"
-          : "border-gray-200 bg-white/80 hover:border-zinc-300 hover:bg-zinc-100"
+          ? "border-slate-500 dark:border-[#3d5691] bg-gray-200 dark:bg-[#233154]"
+          : "border-gray-200 dark:border-[#2b395b] bg-white/80 dark:bg-[#161f36]/80 hover:border-zinc-300 dark:hover:border-[#3d5691]/60 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a]"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col p-3">
-          <span className="text-sm font-medium text-black">{typeLabel}</span>
+          <span className="text-sm font-medium text-black dark:text-slate-100">
+            {typeLabel}
+          </span>
           <span
-            className="text-xs font-medium text-black/50"
+            className="text-xs font-medium text-black/50 dark:text-slate-400"
             suppressHydrationWarning
           >
             {formatDate(report.fecha)}
           </span>
           <span
-            className="text-xs font-medium text-black/80"
+            className="text-xs font-medium text-black/80 dark:text-slate-300"
             title={storedAddress ?? address ?? report.descripcion}
           >
             {storedAddress ?? address ?? "Dirección no disponible"}
@@ -195,7 +199,7 @@ function ReportCard({
         </div>
         {isAdmin && (
           <div className="flex flex-col items-end p-3 gap-1">
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600 w-fit text-nowrap">
+            <span className="rounded-full bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-300 w-fit text-nowrap">
               {report.puntajeBase} pts
             </span>
           </div>
@@ -369,8 +373,8 @@ export function Sidebar({
     <aside
       className={`flex flex-col gap-3 z-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
         isExpanded
-          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white border-r border-gray-200/80 shadow-md"
-          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 bg-white/95 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
+          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
+          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -389,7 +393,7 @@ export function Sidebar({
             <button
               id="sidebar-collapse-btn"
               onClick={onCollapse}
-              className="rounded-xl border border-gray-200 bg-white p-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer shrink-0 shadow-2xs"
+              className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-1.5 text-gray-400 dark:text-slate-400 transition-colors hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer shrink-0 shadow-2xs"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -416,7 +420,7 @@ export function Sidebar({
                   setIsSearchFocused(true);
                 }}
                 onFocus={() => setIsSearchFocused(true)}
-                className="w-full h-10 rounded-2xl border border-gray-200/90 bg-white/90 shadow-2xs pl-9.5 pr-8 text-xs font-semibold text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-200/60 transition-all"
+                className="w-full h-10 rounded-2xl border border-gray-200/90 dark:border-[#2b395b] bg-white/90 dark:bg-[#161f36]/90 shadow-2xs pl-9.5 pr-8 text-xs font-semibold text-zinc-800 dark:text-slate-100 placeholder:text-zinc-400 dark:placeholder:text-slate-500 outline-none focus:border-zinc-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-[#161f36] focus:ring-2 focus:ring-zinc-200/60 dark:focus:ring-blue-500/30 transition-all"
               />
               {markerSearchQuery && (
                 <button
@@ -425,7 +429,7 @@ export function Sidebar({
                     setMarkerSearchQuery("");
                     setIsSearchFocused(false);
                   }}
-                  className="absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+                  className="absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 dark:text-slate-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] transition-colors cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -434,7 +438,7 @@ export function Sidebar({
 
             {/* Menú desplegable con coincidencias de búsqueda */}
             {isSearchFocused && markerSearchQuery.trim().length > 0 && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 bg-white/98 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 dark:border-[#2b395b] bg-white/98 dark:bg-[#161f36]/98 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
                 {searchResults.length > 0 ? (
                   searchResults.map((item) => (
                     <button
@@ -442,17 +446,17 @@ export function Sidebar({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectSearchResult(item)}
-                      className="flex flex-col gap-1 rounded-xl p-2.5 text-left transition-colors cursor-pointer hover:bg-zinc-100/80 border border-transparent hover:border-gray-200/60 group"
+                      className="flex flex-col gap-1 rounded-xl p-2.5 text-left transition-colors cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-[#1e2a4a] border border-transparent hover:border-gray-200/60 dark:hover:border-[#2b395b]/60 group"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-zinc-900 group-hover:text-black truncate">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-slate-100 group-hover:text-black dark:group-hover:text-white truncate">
                           {item.nombre}
                         </span>
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
                             item.category === "EVACUACION"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-red-50 text-red-700 border border-red-200"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800/60"
+                              : "bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800/60"
                           }`}
                         >
                           {item.category === "EVACUACION" ? (
@@ -469,14 +473,14 @@ export function Sidebar({
                           <span>{item.tipo}</span>
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-medium truncate">
-                        <MapPin className="h-3 w-3 shrink-0 text-zinc-400" />
+                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-slate-400 font-medium truncate">
+                        <MapPin className="h-3 w-3 shrink-0 text-zinc-400 dark:text-slate-500" />
                         <span className="truncate">{item.ubicacion}</span>
                       </div>
                     </button>
                   ))
                 ) : (
-                  <div className="px-3 py-6 text-center text-xs text-zinc-400 font-medium">
+                  <div className="px-3 py-6 text-center text-xs text-zinc-400 dark:text-slate-500 font-medium">
                     No se encontraron marcadores para &quot;{markerSearchQuery}
                     &quot;
                   </div>
@@ -488,7 +492,7 @@ export function Sidebar({
           {/* Lista de Reclamos Recientes (Últimas alertas) */}
           <div className="flex flex-col flex-1 min-h-0 gap-2">
             <div className="w-full flex items-center justify-between relative z-20">
-              <span className="text-sm font-bold text-zinc-900 text-nowrap">
+              <span className="text-sm font-bold text-zinc-900 dark:text-slate-100 text-nowrap">
                 Últimas alertas
               </span>
               <FilterDropdown
@@ -497,21 +501,21 @@ export function Sidebar({
               />
             </div>
 
-            <div className="flex flex-col flex-1 rounded-2xl border border-gray-200 bg-white p-2 overflow-hidden max-h-[56vh]">
+            <div className="flex flex-col flex-1 rounded-2xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-2 overflow-hidden max-h-[56vh]">
               {loading && (
-                <div className="rounded-xl border border-dashed border-zinc-200 px-3 py-16 text-center text-xs text-zinc-400 font-medium">
+                <div className="rounded-xl border border-dashed border-zinc-200 dark:border-[#2b395b] px-3 py-16 text-center text-xs text-zinc-400 dark:text-slate-500 font-medium">
                   Cargando alertas...
                 </div>
               )}
 
               {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-600 font-medium">
+                <div className="rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 px-3 py-3 text-xs text-red-600 dark:text-red-400 font-medium">
                   {error}
                 </div>
               )}
 
               {!loading && !error && visibleReports.length === 0 && (
-                <div className="rounded-xl border border-dashed border-zinc-200 px-3 py-16 text-center text-xs text-zinc-400 font-medium">
+                <div className="rounded-xl border border-dashed border-zinc-200 dark:border-[#2b395b] px-3 py-16 text-center text-xs text-zinc-400 dark:text-slate-500 font-medium">
                   No hay alertas de este tipo.
                 </div>
               )}

@@ -409,7 +409,7 @@ export function HomeDashboard({
           <button
             id="sidebar-expand-btn"
             onClick={() => setSidebarCollapsed(false)}
-            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+            className="absolute left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-1.5 py-3 text-gray-400 dark:text-slate-400 shadow-md transition-colors hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
             style={{
               transform:
                 sidebarCollapsed && !hideMainUI
@@ -443,8 +443,8 @@ export function HomeDashboard({
       )}
 
       {isEditingRegions && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-200 pointer-events-auto">
-          <span className="font-semibold text-gray-800 text-xs sm:text-sm">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[500] bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
+          <span className="font-semibold text-gray-800 dark:text-white text-xs sm:text-sm">
             Dibuja la región · clickeá para añadir puntos · doble click al
             primer punto para cerrar · presiona Esc para cancelar
           </span>

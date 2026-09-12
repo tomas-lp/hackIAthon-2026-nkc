@@ -69,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             setCollapsed(false);
           }}
           title="Mostrar panel"
-          className="fixed left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-white px-1.5 py-3 text-gray-400 shadow-md transition-all duration-300 ease-in-out hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+          className="fixed left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-1.5 py-3 text-gray-400 dark:text-slate-400 shadow-md transition-all duration-300 ease-in-out hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
           style={{
             transform:
               collapsed || !showAdminSidebar

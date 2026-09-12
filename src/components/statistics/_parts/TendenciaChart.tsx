@@ -5,6 +5,7 @@ import { ResponsiveLine } from "@nivo/line";
 import { Report } from "@/types/report";
 import { Switch } from "@/components/ui/Switch";
 import { ChevronDown, Plus } from "lucide-react";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 interface TendenciaChartProps {
   reports: Report[];
@@ -169,17 +170,21 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
     }
   }, [reports, availableYears, selectedYear]);
 
+  const { isDark } = useDarkMode();
+
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col gap-4">
+    <div className="bg-white dark:bg-[#161f36] rounded-2xl p-5 border border-gray-200 dark:border-[#2b395b] shadow-2xs flex flex-col gap-4">
       {/* Encabezado y Selector de Año con Switch */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-bold text-zinc-900">
+        <h3 className="text-lg font-bold text-zinc-900 dark:text-slate-100">
           Tendencia de reclamos
         </h3>
 
         {/* Filtro de Año */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-zinc-600">Año:</span>
+          <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
+            Año:
+          </span>
 
           <div className="flex items-center gap-1.5">
             <Switch
@@ -201,11 +206,11 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
               <div ref={yearOverflowRef} className="relative">
                 <button
                   onClick={() => setIsYearOverflowOpen((prev) => !prev)}
-                  className={`h-9 px-2.5 rounded-full border border-gray-200/60 bg-white/50 text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
+                  className={`h-9 px-2.5 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
                     typeof selectedYear === "number" &&
                     overflowYears.includes(selectedYear)
-                      ? "bg-white text-zinc-950 font-bold shadow-sm"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "bg-white dark:bg-[#233154] text-zinc-950 dark:text-white font-bold shadow-sm"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-[#1e2a4a]"
                   }`}
                   title="Más años"
                 >
@@ -214,7 +219,7 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
                 </button>
 
                 {isYearOverflowOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 z-50 w-32 bg-white rounded-xl border border-gray-200 shadow-lg p-1.5 flex flex-col gap-0.5">
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-32 bg-white dark:bg-[#161f36] rounded-xl border border-gray-200 dark:border-[#2b395b] shadow-lg dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-1.5 flex flex-col gap-0.5">
                     {overflowYears.map((yr) => (
                       <button
                         key={yr}
@@ -224,8 +229,8 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
                         }}
                         className={`text-left px-3 py-2 text-xs rounded-lg font-medium transition cursor-pointer ${
                           selectedYear === yr
-                            ? "bg-zinc-100 font-bold text-zinc-900"
-                            : "text-zinc-700 hover:bg-zinc-50"
+                            ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-900 dark:text-white"
+                            : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a]"
                         }`}
                       >
                         {yr}
@@ -357,29 +362,36 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
               ticks: {
                 text: {
                   fontSize: 11,
-                  fill: "#71717a",
+                  fill: isDark ? "#94a3b8" : "#71717a",
                   fontWeight: 500,
                 },
               },
               legend: {
                 text: {
                   fontSize: 12,
-                  fill: "#3f3f46",
+                  fill: isDark ? "#cbd5e1" : "#3f3f46",
                   fontWeight: 600,
                 },
               },
             },
             grid: {
               line: {
-                stroke: "#e4e4e7",
+                stroke: isDark ? "#2e3555" : "#e4e4e7",
                 strokeWidth: 1,
               },
             },
             crosshair: {
               line: {
-                stroke: "#3b82f6",
+                stroke: isDark ? "#60a5fa" : "#3b82f6",
                 strokeWidth: 1,
                 strokeDasharray: "4 4",
+              },
+            },
+            tooltip: {
+              container: {
+                background: isDark ? "#1a1f2e" : "#ffffff",
+                color: isDark ? "#f1f5f9" : "#09090b",
+                border: `1px solid ${isDark ? "#2e3555" : "#e4e4e7"}`,
               },
             },
           }}

@@ -582,7 +582,9 @@ export function RegionsTableUI({
       <div className="flex flex-wrap items-center justify-between gap-4 w-full py-1">
         {/* Lado Izquierdo: Filtro Región con Switch animado y dropdown select */}
         <div ref={overflowRef} className="relative flex items-center gap-2">
-          <span className="text-xs font-semibold text-zinc-600">Región:</span>
+          <span className="text-xs font-semibold text-zinc-600 dark:text-slate-200">
+            Región:
+          </span>
           <Switch
             value={isBarriosSelected ? "Barrios" : selectedType}
             onValueChange={(val) => {
@@ -628,7 +630,7 @@ export function RegionsTableUI({
 
           {/* Menú desplegable flotante con las demás listas */}
           {hasMultipleLists && isOverflowOpen && (
-            <div className="absolute top-full mt-2 left-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 bg-white/90 backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
+            <div className="absolute top-full mt-2 left-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 dark:border-[#2b395b] bg-white/95 dark:bg-[#161f36] backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
               {uniqueListas.map((lista) => {
                 const isSelected =
                   !isBarriosSelected &&
@@ -644,13 +646,13 @@ export function RegionsTableUI({
                     }}
                     className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? "bg-white font-bold text-zinc-950 shadow-xs"
-                        : "text-zinc-700 hover:bg-white/60 hover:text-zinc-950 font-medium"
+                        ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-950 dark:text-white shadow-xs"
+                        : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white font-medium"
                     }`}
                   >
                     <span>{lista.nombre}</span>
                     {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                      <Check className="h-3.5 w-3.5 text-zinc-900 dark:text-white ml-2" />
                     )}
                   </button>
                 );
@@ -662,7 +664,7 @@ export function RegionsTableUI({
                     setIsOverflowOpen(false);
                     onOpenNewListModal();
                   }}
-                  className="text-left px-3 py-2 text-xs rounded-lg font-bold text-zinc-800 hover:bg-zinc-100 transition cursor-pointer border-t border-gray-200/60 mt-1 flex items-center gap-1.5"
+                  className="text-left px-3 py-2 text-xs rounded-lg font-bold text-zinc-800 dark:text-slate-200 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] transition cursor-pointer border-t border-gray-200/60 dark:border-[#2b395b] mt-1 flex items-center gap-1.5"
                 >
                   <Plus className="w-3 h-3" />
                   <span>Nueva lista...</span>
@@ -681,11 +683,11 @@ export function RegionsTableUI({
               placeholder="Buscar región..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 rounded-full border border-gray-200/60 bg-white/50 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md pl-3.5 pr-8 text-xs text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white transition-all w-36 sm:w-48"
+              className="h-9 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md pl-3.5 pr-8 text-xs text-zinc-800 dark:text-slate-100 placeholder:text-zinc-400 dark:placeholder:text-slate-400 outline-none focus:border-zinc-400 dark:focus:border-blue-400 focus:bg-white dark:focus:bg-[#1c2744] transition-all w-36 sm:w-48"
             />
             <button
               type="button"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800 transition-colors cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer"
             >
               <Search className="h-3.5 w-3.5" />
             </button>
@@ -705,10 +707,10 @@ export function RegionsTableUI({
               type="button"
               disabled={isBarriosSelected}
               onClick={onCreateRegion}
-              className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all active:scale-95 shrink-0 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md ${
+              className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all active:scale-95 shrink-0 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md ${
                 isBarriosSelected
-                  ? "border-gray-200/60 bg-white/30 text-zinc-300 cursor-not-allowed opacity-50"
-                  : "border-gray-200/60 bg-white/50 text-zinc-700 hover:bg-white hover:text-zinc-900 cursor-pointer"
+                  ? "border-gray-200/60 dark:border-[#2b395b]/60 bg-white/30 dark:bg-[#161f36]/30 text-zinc-300 dark:text-zinc-600 cursor-not-allowed opacity-50"
+                  : "border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white cursor-pointer"
               }`}
             >
               <Plus className="h-4 w-4" />
@@ -732,12 +734,12 @@ export function RegionsTableUI({
                 type="button"
                 disabled={isBarriosSelected}
                 onClick={handleTrashButtonClick}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md active:scale-95 shrink-0 ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md active:scale-95 shrink-0 ${
                   isBarriosSelected
-                    ? "border-gray-200/60 bg-white/30 text-zinc-300 cursor-not-allowed opacity-50"
+                    ? "border-gray-200/60 dark:border-[#2b395b]/60 bg-white/30 dark:bg-[#161f36]/30 text-zinc-300 dark:text-zinc-600 cursor-not-allowed opacity-50"
                     : isDeleteMode
-                      ? "border-red-200 bg-red-50/90 text-red-600 hover:bg-red-100 cursor-pointer"
-                      : "border-gray-200/60 bg-white/50 text-zinc-700 hover:bg-white hover:text-zinc-900 cursor-pointer"
+                      ? "border-red-200 dark:border-blue-400/60 bg-red-50/90 dark:bg-[#314677] text-red-600 dark:text-blue-100 hover:bg-red-100 dark:hover:bg-[#3d5691] cursor-pointer"
+                      : "border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white cursor-pointer"
                 }`}
               >
                 {isDeleteMode && selectedRowIds.size > 0 ? (
@@ -754,7 +756,7 @@ export function RegionsTableUI({
               <button
                 type="button"
                 onClick={handleCancelDeleteMode}
-                className="h-9 rounded-full border border-gray-200/60 bg-white/50 px-3.5 text-xs font-semibold text-zinc-600 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
+                className="h-9 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] px-3.5 text-xs font-semibold text-zinc-600 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
               >
                 Cancelar
               </button>
@@ -766,7 +768,7 @@ export function RegionsTableUI({
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 bg-white/50 text-zinc-700 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all active:scale-95 cursor-pointer shrink-0"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer shrink-0"
             >
               <Download className="h-3.5 w-3.5" />
             </button>
@@ -776,17 +778,17 @@ export function RegionsTableUI({
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
       <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
-        <div className="rounded-xl border border-gray-200/80 bg-white overflow-hidden">
+        <div className="rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
           <table className="w-full text-left text-xs relative border-collapse">
-            <thead className="sticky top-0 z-20 bg-zinc-50/90 backdrop-blur-xs shadow-2xs">
-              <tr className="border-b border-gray-200 select-none">
+            <thead className="sticky top-0 z-20 bg-zinc-50/95 dark:bg-[#1c2744] backdrop-blur-xs shadow-2xs">
+              <tr className="border-b border-gray-200 dark:border-[#2b395b] select-none">
                 {isDeleteMode && (
-                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 transition-colors animate-fade-kpi">
+                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors animate-fade-kpi">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                     />
                   </th>
                 )}
@@ -794,22 +796,22 @@ export function RegionsTableUI({
                 {/* Nombre — sortable y hover */}
                 <th
                   onClick={() => handleSort("nombre")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[180px] ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[180px] ${
                     sortField === "nombre"
-                      ? "text-zinc-900 bg-zinc-100/40"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Nombre</span>
                     {sortField === "nombre" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
@@ -817,52 +819,52 @@ export function RegionsTableUI({
                 {/* Localidad — sortable y hover */}
                 <th
                   onClick={() => handleSort("localidad")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[150px] ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[150px] ${
                     sortField === "localidad"
-                      ? "text-zinc-900 bg-zinc-100/40"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Localidad</span>
                     {sortField === "localidad" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
                 {/* Cantidad de reclamos — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[150px]">
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[150px]">
                   Cantidad de reclamos
                 </th>
 
                 {/* Última ayuda — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[130px]">
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[130px]">
                   Última ayuda
                 </th>
 
                 {/* Reclamos activos — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[140px]">
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[140px]">
                   Reclamos activos
                 </th>
 
                 {/* Acciones — hover en cabecera */}
-                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 transition-colors" />
+                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors" />
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-gray-100 dark:divide-[#222e4d] bg-white dark:bg-[#161f36]">
               {sortedRegiones.length === 0 ? (
                 <tr>
                   <td
                     colSpan={isDeleteMode ? 7 : 6}
-                    className="px-6 py-12 text-center text-xs text-zinc-400"
+                    className="px-6 py-12 text-center text-xs text-zinc-400 dark:text-slate-400"
                   >
                     {isBarriosSelected && !barriosGeoJson
                       ? "Cargando barrios..."
@@ -890,12 +892,12 @@ export function RegionsTableUI({
                         }}
                         className={`group transition-colors cursor-pointer ${
                           isEditing
-                            ? "bg-amber-50/60"
+                            ? "bg-amber-50/60 dark:bg-amber-950/40"
                             : isSelected
-                              ? "bg-blue-50/90 font-bold"
+                              ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
                               : isChecked
-                                ? "bg-red-50/60"
-                                : "hover:bg-zinc-50/80"
+                                ? "bg-red-50/60 dark:bg-red-950/30"
+                                : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
                         }`}
                       >
                         {/* Checkbox (solo visible en modo eliminación) */}
@@ -908,20 +910,20 @@ export function RegionsTableUI({
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => toggleSelectRow(region.id)}
-                              className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                              className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                             />
                           </td>
                         )}
 
                         {/* Nombre — alineado a la izquierda */}
-                        <td className="px-5 py-3 font-bold text-zinc-900 text-left">
+                        <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
                           {isEditing ? (
                             <input
                               type="text"
                               value={editNombre}
                               onChange={(e) => setEditNombre(e.target.value)}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-full rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 font-bold outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                              className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
                               autoFocus
                             />
                           ) : (
@@ -930,22 +932,22 @@ export function RegionsTableUI({
                         </td>
 
                         {/* Localidad — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
                           {region.localidad}
                         </td>
 
                         {/* Cantidad de reclamos — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-800 text-left font-bold">
+                        <td className="px-5 py-3 text-zinc-800 dark:text-white text-left font-bold">
                           {region.cantidadReclamos}
                         </td>
 
                         {/* Última ayuda — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-400 text-left font-medium">
+                        <td className="px-5 py-3 text-zinc-400 dark:text-slate-400 text-left font-medium">
                           {region.ultimaAyuda ?? "-"}
                         </td>
 
                         {/* Reclamos activos — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-800 font-bold text-left">
+                        <td className="px-5 py-3 text-zinc-800 dark:text-white font-bold text-left">
                           {region.reclamosActivos}
                         </td>
 
@@ -959,7 +961,7 @@ export function RegionsTableUI({
                               <button
                                 type="button"
                                 onClick={handleConfirmEdit}
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
                                 title="Confirmar edición"
                               >
                                 <Check className="h-3.5 w-3.5" />
@@ -967,7 +969,7 @@ export function RegionsTableUI({
                               <button
                                 type="button"
                                 onClick={handleCancelEdit}
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
                                 title="Cancelar edición"
                               >
                                 <X className="h-3.5 w-3.5" />
@@ -995,7 +997,7 @@ export function RegionsTableUI({
                                   });
                                 }
                               }}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 transition-colors cursor-pointer"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                             >
                               <MoreHorizontal className="h-3.5 w-3.5" />
                             </button>
@@ -1021,7 +1023,7 @@ export function RegionsTableUI({
             right: `${activeMenuData.right}px`,
             zIndex: 9999,
           }}
-          className="w-36 rounded-xl border border-gray-200 bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5"
+          className="w-36 rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -1029,9 +1031,9 @@ export function RegionsTableUI({
               onSelectRegion(activeMenuData.region.id);
               setActiveMenuData(null);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] transition-colors cursor-pointer"
           >
-            <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+            <MapPin className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
             <span>Ver en mapa</span>
           </button>
           {!isBarriosSelected && onUpdateRegion && (
@@ -1040,9 +1042,9 @@ export function RegionsTableUI({
                 handleStartEdit(activeMenuData.region);
                 setActiveMenuData(null);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] transition-colors cursor-pointer"
             >
-              <Pencil className="h-3.5 w-3.5 text-zinc-500" />
+              <Pencil className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
               <span>Editar</span>
             </button>
           )}
@@ -1053,7 +1055,7 @@ export function RegionsTableUI({
                 setActiveMenuData(null);
                 await onDeleteRegions([idToDelete]);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>Eliminar</span>
@@ -1065,19 +1067,19 @@ export function RegionsTableUI({
       {/* Modal de confirmación para borrado */}
       {showConfirmDeleteModal && (
         <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-zinc-900">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white">
                 Confirmar eliminación
               </h3>
               <button
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer"
+                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-700 dark:hover:text-slate-200 transition cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-600 leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-slate-300 leading-relaxed">
               ¿Estás seguro de que deseas eliminar {selectedRowIds.size} región
               {selectedRowIds.size > 1 ? "es" : ""}? Esta acción no se puede
               deshacer.
@@ -1086,7 +1088,7 @@ export function RegionsTableUI({
               <button
                 type="button"
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-4 py-2 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>

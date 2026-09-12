@@ -15,7 +15,7 @@ const MinimapInternal = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[420px] bg-zinc-100 animate-pulse rounded-2xl border border-gray-200" />
+      <div className="w-full h-[420px] bg-zinc-100 dark:bg-[#0b101d] animate-pulse rounded-2xl border border-gray-200 dark:border-slate-800" />
     ),
   }
 );
@@ -123,14 +123,18 @@ export function RegionAnalysis({
   }, [reports, barriosGeoJson, customRegions, selectedZoneFilter, sortOrder]);
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col gap-4">
+    <div className="bg-white dark:bg-[#161f36] rounded-2xl p-5 border border-gray-200 dark:border-[#2b395b] shadow-2xs flex flex-col gap-4">
       {/* Encabezado y Selector con Switch (sin separador inferior) */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-bold text-zinc-900">Análisis por región</h3>
+        <h3 className="text-lg font-bold text-zinc-900 dark:text-slate-100">
+          Análisis por región
+        </h3>
 
         {/* Interruptor Switch con Mapa de Calor, Barrios y Lista seleccionable */}
         <div ref={dropdownRef} className="relative flex items-center gap-2">
-          <span className="text-xs font-semibold text-zinc-600">Región:</span>
+          <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
+            Región:
+          </span>
           <Switch
             value={selectedZoneFilter}
             onValueChange={(val) => {
@@ -171,7 +175,7 @@ export function RegionAnalysis({
 
           {/* Menú desplegable flotante con las demás listas */}
           {hasMultipleLists && isDropdownOpen && (
-            <div className="absolute top-full mt-2 right-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 bg-white/90 backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
+            <div className="absolute top-full mt-2 right-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 dark:border-[#2b395b] bg-white/95 dark:bg-[#161f36] backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
               {regionLists.map((lista) => {
                 const isSelected = selectedZoneFilter === lista.id;
                 return (
@@ -184,13 +188,13 @@ export function RegionAnalysis({
                     }}
                     className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? "bg-white font-bold text-zinc-950 shadow-xs"
-                        : "text-zinc-700 hover:bg-white/60 hover:text-zinc-950 font-medium"
+                        ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-950 dark:text-white shadow-xs"
+                        : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white font-medium"
                     }`}
                   >
                     <span>{lista.nombre}</span>
                     {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                      <Check className="h-3.5 w-3.5 text-zinc-900 dark:text-slate-200 ml-2" />
                     )}
                   </button>
                 );
@@ -206,16 +210,16 @@ export function RegionAnalysis({
         {selectedZoneFilter !== "MAPA_CALOR" && (
           <div className="md:col-span-4 flex flex-col gap-2.5 h-[420px] animate-list-slide-left">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-zinc-600">
+              <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
                 Regiones más afectadas:
               </span>
 
-              {/* Botón de Ordenamiento (Fondo blanco y recuadro gris) */}
+              {/* Botón de Ordenamiento */}
               <button
                 onClick={() =>
                   setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
                 }
-                className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-700 bg-white border border-gray-200 shadow-2xs hover:bg-zinc-50 px-2.5 py-1 rounded-xl transition cursor-pointer"
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-700 dark:text-slate-200 bg-white dark:bg-[#1c2744] border border-gray-200 dark:border-[#2b395b] shadow-2xs hover:bg-zinc-50 dark:hover:bg-[#233154] px-2.5 py-1 rounded-xl transition cursor-pointer"
                 title="Cambiar orden de afectación"
               >
                 <ArrowUpDown className="w-3 h-3" />
@@ -238,21 +242,21 @@ export function RegionAnalysis({
                     }
                     className={`text-left rounded-xl p-3 flex items-center justify-between transition cursor-pointer border ${
                       selectedRegionName === item.nombre
-                        ? "bg-blue-50/90 border-blue-400 font-bold"
-                        : "bg-zinc-50/80 hover:bg-zinc-100 border-gray-200/80"
+                        ? "bg-blue-50/90 dark:bg-[#233154] border-blue-400 dark:border-blue-400/60 font-bold"
+                        : "bg-zinc-50/80 dark:bg-[#1c2744]/70 hover:bg-zinc-100 dark:hover:bg-[#233154] border-gray-200/80 dark:border-[#2b395b]/80"
                     }`}
                     title={`Hacer zoom a ${item.nombre} en el minimapa`}
                   >
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-zinc-900 line-clamp-1">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-slate-100 line-clamp-1">
                         {item.nombre}
                       </span>
-                      <span className="text-[11px] font-medium text-zinc-500">
+                      <span className="text-[11px] font-medium text-zinc-500 dark:text-slate-400">
                         {item.count} {item.count === 1 ? "reclamo" : "reclamos"}
                       </span>
                     </div>
-                    {/* Porcentaje en texto plano sin recuadro */}
-                    <span className="text-xs font-bold text-zinc-700">
+                    {/* Porcentaje */}
+                    <span className="text-xs font-bold text-zinc-700 dark:text-slate-300">
                       {item.percentage}%
                     </span>
                   </button>

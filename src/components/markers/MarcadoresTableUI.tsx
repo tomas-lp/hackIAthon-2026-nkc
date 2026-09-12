@@ -539,7 +539,7 @@ export function MarcadoresTableUI({
         <div className="flex flex-wrap items-center gap-4">
           {/* Filtro Tipo */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-600">
+            <span className="text-xs font-semibold text-zinc-600 dark:text-slate-200">
               Tipo de marcador:
             </span>
             <Switch
@@ -561,7 +561,9 @@ export function MarcadoresTableUI({
             ref={regionOverflowRef}
             className="relative flex items-center gap-2"
           >
-            <span className="text-xs font-semibold text-zinc-600">Región:</span>
+            <span className="text-xs font-semibold text-zinc-600 dark:text-slate-200">
+              Región:
+            </span>
             <Switch
               value={selectedRegionFilter}
               onValueChange={(val) => {
@@ -604,7 +606,7 @@ export function MarcadoresTableUI({
 
             {/* Menú desplegable flotante con las demás listas */}
             {hasMultipleLists && isRegionOverflowOpen && (
-              <div className="absolute top-full mt-2 right-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 bg-white/90 backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
+              <div className="absolute top-full mt-2 right-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 dark:border-[#2b395b] bg-white/95 dark:bg-[#161f36] backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-[170px] overflow-hidden transition-all duration-200 ease-out p-1.5 animate-in fade-in zoom-in-95">
                 {uniqueListas.map((lista) => {
                   const isSelected =
                     selectedRegionFilter === lista.nombre ||
@@ -619,13 +621,13 @@ export function MarcadoresTableUI({
                       }}
                       className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
                         isSelected
-                          ? "bg-white font-bold text-zinc-950 shadow-xs"
-                          : "text-zinc-700 hover:bg-white/60 hover:text-zinc-950 font-medium"
+                          ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-950 dark:text-white shadow-xs"
+                          : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white font-medium"
                       }`}
                     >
                       <span>{lista.nombre}</span>
                       {isSelected && (
-                        <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                        <Check className="h-3.5 w-3.5 text-zinc-900 dark:text-white ml-2" />
                       )}
                     </button>
                   );
@@ -644,11 +646,11 @@ export function MarcadoresTableUI({
               placeholder="Buscar marcador..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 rounded-full border border-gray-200/60 bg-white/50 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md pl-3.5 pr-8 text-xs text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:bg-white transition-all w-36 sm:w-48"
+              className="h-9 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md pl-3.5 pr-8 text-xs text-zinc-800 dark:text-slate-100 placeholder:text-zinc-400 dark:placeholder:text-slate-400 outline-none focus:border-zinc-400 dark:focus:border-blue-400 focus:bg-white dark:focus:bg-[#1c2744] transition-all w-36 sm:w-48"
             />
             <button
               type="button"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800 transition-colors cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer"
             >
               <Search className="h-3.5 w-3.5" />
             </button>
@@ -663,7 +665,7 @@ export function MarcadoresTableUI({
             <button
               type="button"
               onClick={onCreateMarker}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 bg-white/50 text-zinc-700 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all active:scale-95 cursor-pointer shrink-0"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer shrink-0"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -679,10 +681,10 @@ export function MarcadoresTableUI({
               <button
                 type="button"
                 onClick={handleTrashButtonClick}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 cursor-pointer shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md active:scale-95 shrink-0 ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 cursor-pointer shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md active:scale-95 shrink-0 ${
                   isDeleteMode
-                    ? "border-red-200 bg-red-50/90 text-red-600 hover:bg-red-100"
-                    : "border-gray-200/60 bg-white/50 text-zinc-700 hover:bg-white hover:text-zinc-900"
+                    ? "border-red-200 dark:border-blue-400/60 bg-red-50/90 dark:bg-[#314677] text-red-600 dark:text-blue-100 hover:bg-red-100 dark:hover:bg-[#3d5691]"
+                    : "border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
                 {isDeleteMode && selectedRowIds.size > 0 ? (
@@ -699,7 +701,7 @@ export function MarcadoresTableUI({
               <button
                 type="button"
                 onClick={handleCancelDeleteMode}
-                className="h-9 rounded-full border border-gray-200/60 bg-white/50 px-3.5 text-xs font-semibold text-zinc-600 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
+                className="h-9 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] px-3.5 text-xs font-semibold text-zinc-600 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
               >
                 Cancelar
               </button>
@@ -711,7 +713,7 @@ export function MarcadoresTableUI({
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 bg-white/50 text-zinc-700 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md hover:bg-white hover:text-zinc-900 transition-all active:scale-95 cursor-pointer shrink-0"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer shrink-0"
             >
               <Download className="h-3.5 w-3.5" />
             </button>
@@ -721,17 +723,17 @@ export function MarcadoresTableUI({
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
       <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
-        <div className="rounded-xl border border-gray-200/80 bg-white overflow-hidden">
+        <div className="rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
           <table className="w-full text-left text-xs relative border-collapse">
-            <thead className="sticky top-0 z-20 bg-zinc-50/90 backdrop-blur-xs shadow-2xs">
-              <tr className="border-b border-gray-200 select-none">
+            <thead className="sticky top-0 z-20 bg-zinc-50/95 dark:bg-[#1c2744] backdrop-blur-xs shadow-2xs">
+              <tr className="border-b border-gray-200 dark:border-[#2b395b] select-none">
                 {isDeleteMode && (
-                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 transition-colors animate-fade-kpi">
+                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors animate-fade-kpi">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                     />
                   </th>
                 )}
@@ -739,22 +741,22 @@ export function MarcadoresTableUI({
                 {/* Nombre — sortable y hover */}
                 <th
                   onClick={() => handleSort("nombre")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[170px] ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[170px] ${
                     sortField === "nombre"
-                      ? "text-zinc-900 bg-zinc-100/40"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Nombre</span>
                     {sortField === "nombre" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
@@ -762,22 +764,22 @@ export function MarcadoresTableUI({
                 {/* Localidad — sortable y hover */}
                 <th
                   onClick={() => handleSort("localidad")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[140px] ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[140px] ${
                     sortField === "localidad"
-                      ? "text-zinc-900 bg-zinc-100/40"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Localidad</span>
                     {sortField === "localidad" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
@@ -785,22 +787,22 @@ export function MarcadoresTableUI({
                 {/* Región — sortable y hover */}
                 <th
                   onClick={() => handleSort("region")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[140px] ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[140px] ${
                     sortField === "region"
-                      ? "text-zinc-900 bg-zinc-100/40"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Región</span>
                     {sortField === "region" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
@@ -808,43 +810,43 @@ export function MarcadoresTableUI({
                 {/* Tipo / Subtipo — sortable, hover y alineado izquierda */}
                 <th
                   onClick={() => handleSort("subtipo")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 text-left min-w-[150px] ${
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[150px] ${
                     sortField === "subtipo"
-                      ? "text-zinc-900 bg-zinc-100/40"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-start gap-1.5">
                     <span className="leading-snug">Tipo</span>
                     {sortField === "subtipo" ? (
                       sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 shrink-0" />
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
                       )
                     ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
                     )}
                   </div>
                 </th>
 
                 {/* Dirección — hover y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[170px]">
+                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[170px]">
                   Dirección
                 </th>
 
                 {/* Capacidad — SOLO visible si es Centros de Evacuación */}
                 {selectedType === "EVACUACION" && (
-                  <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors select-none text-left min-w-[130px]">
+                  <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[130px]">
                     Capacidad
                   </th>
                 )}
 
                 {/* Acciones — hover en cabecera */}
-                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 transition-colors" />
+                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-gray-100 dark:divide-[#222e4d] bg-white dark:bg-[#161f36]">
               {sortedMarkers.length === 0 ? (
                 <tr>
                   <td
@@ -854,7 +856,7 @@ export function MarcadoresTableUI({
                       (selectedType === "EVACUACION" ? 1 : 0) +
                       1
                     }
-                    className="py-12 text-center text-xs text-zinc-400 font-medium"
+                    className="py-12 text-center text-xs text-zinc-400 dark:text-slate-400 font-medium"
                   >
                     No se encontraron marcadores.
                   </td>
@@ -884,12 +886,12 @@ export function MarcadoresTableUI({
                       }}
                       className={`group transition-colors cursor-pointer ${
                         isEditing
-                          ? "bg-amber-50/60"
+                          ? "bg-amber-50/60 dark:bg-amber-950/40"
                           : isSelected
-                            ? "bg-blue-50/90 font-bold"
+                            ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
                             : isChecked
-                              ? "bg-red-50/50"
-                              : "hover:bg-zinc-50/80"
+                              ? "bg-red-50/50 dark:bg-red-950/30"
+                              : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
                       }`}
                     >
                       {isDeleteMode && (
@@ -901,20 +903,20 @@ export function MarcadoresTableUI({
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleSelectRow(marker.id)}
-                            className="h-3.5 w-3.5 rounded border-gray-300 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                            className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-600 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                           />
                         </td>
                       )}
 
                       {/* Nombre — alineado a la izquierda */}
-                      <td className="px-5 py-3 font-bold text-zinc-900 text-left">
+                      <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
                         {isEditing ? (
                           <input
                             type="text"
                             value={editNombre}
                             onChange={(e) => setEditNombre(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 font-bold outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                            className="w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white/90 dark:bg-slate-800 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
                             autoFocus
                           />
                         ) : (
@@ -923,17 +925,17 @@ export function MarcadoresTableUI({
                       </td>
 
                       {/* Localidad — alineado a la izquierda */}
-                      <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                      <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
                         {locDisplay}
                       </td>
 
                       {/* Región — polígono calculado o Fuera de rango */}
-                      <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                      <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
                         <span
                           className={
                             regionDisplay === "Fuera de rango"
-                              ? "text-zinc-400 italic"
-                              : "text-zinc-700 font-semibold"
+                              ? "text-zinc-400 dark:text-slate-400 italic"
+                              : "text-zinc-700 dark:text-slate-200 font-semibold"
                           }
                         >
                           {regionDisplay}
@@ -941,7 +943,7 @@ export function MarcadoresTableUI({
                       </td>
 
                       {/* Tipo — Custom Dropdown estilizado */}
-                      <td className="px-5 py-3 text-zinc-600 font-medium text-left">
+                      <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
                         {isEditing ? (
                           <button
                             type="button"
@@ -967,7 +969,7 @@ export function MarcadoresTableUI({
                                 setIsTypeDropdownOpen(true);
                               }
                             }}
-                            className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 bg-white shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all cursor-pointer hover:border-gray-400"
+                            className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-slate-100 outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-slate-500"
                           >
                             <span className="truncate">
                               {marker.category === "EVACUACION"
@@ -985,7 +987,7 @@ export function MarcadoresTableUI({
                                   )[editTipo] || editTipo}
                             </span>
                             <ChevronDown
-                              className={`h-3.5 w-3.5 text-zinc-500 shrink-0 transition-transform duration-200 ${
+                              className={`h-3.5 w-3.5 text-zinc-500 dark:text-slate-400 shrink-0 transition-transform duration-200 ${
                                 isTypeDropdownOpen ? "rotate-180" : ""
                               }`}
                             />
@@ -996,14 +998,14 @@ export function MarcadoresTableUI({
                       </td>
 
                       {/* Dirección — alineado a la izquierda */}
-                      <td className="px-5 py-3 text-zinc-500 font-medium text-left">
+                      <td className="px-5 py-3 text-zinc-500 dark:text-slate-300 font-medium text-left">
                         {isEditing ? (
                           <input
                             type="text"
                             value={editDireccion}
                             onChange={(e) => setEditDireccion(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-700 font-medium outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                            className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-medium outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
                           />
                         ) : (
                           marker.direccion || "-"
@@ -1012,7 +1014,7 @@ export function MarcadoresTableUI({
 
                       {/* Capacidad — SOLO visible si es Centros de Evacuación */}
                       {selectedType === "EVACUACION" && (
-                        <td className="px-5 py-3 text-zinc-700 font-bold text-left">
+                        <td className="px-5 py-3 text-zinc-700 dark:text-white font-bold text-left">
                           {isEditing ? (
                             <input
                               type="number"
@@ -1021,7 +1023,7 @@ export function MarcadoresTableUI({
                               onChange={(e) => setEditCapacidad(e.target.value)}
                               onClick={(e) => e.stopPropagation()}
                               placeholder="0"
-                              className="w-24 rounded-xl border border-gray-300 bg-white/90 shadow-2xs px-3 py-1.5 text-xs text-zinc-700 font-bold outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 transition-all"
+                              className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
                             />
                           ) : marker.capacidad_maxima !== null &&
                             marker.capacidad_maxima !== undefined ? (
@@ -1034,7 +1036,7 @@ export function MarcadoresTableUI({
 
                       {/* Acciones — botones redondos con color de fuente normal */}
                       <td
-                        className="px-3 py-3 text-left relative"
+                        className="px-3 py-3 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {isEditing ? (
@@ -1042,7 +1044,7 @@ export function MarcadoresTableUI({
                             <button
                               type="button"
                               onClick={() => handleConfirmEdit(marker)}
-                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
                               title="Confirmar edición"
                             >
                               <Check className="h-3.5 w-3.5" />
@@ -1050,7 +1052,7 @@ export function MarcadoresTableUI({
                             <button
                               type="button"
                               onClick={handleCancelEdit}
-                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
                               title="Cancelar edición"
                             >
                               <X className="h-3.5 w-3.5" />
@@ -1078,7 +1080,7 @@ export function MarcadoresTableUI({
                                 });
                               }
                             }}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 transition-colors cursor-pointer"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" />
                           </button>
@@ -1103,7 +1105,7 @@ export function MarcadoresTableUI({
             right: `${activeMenuData.right}px`,
             zIndex: 9999,
           }}
-          className="w-36 rounded-xl border border-gray-200 bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5"
+          className="w-36 rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -1111,9 +1113,9 @@ export function MarcadoresTableUI({
               onSelectMarker(activeMenuData.marker);
               setActiveMenuData(null);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] transition-colors cursor-pointer"
           >
-            <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+            <MapPin className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
             <span>Ver en mapa</span>
           </button>
           {onUpdateMarker && (
@@ -1122,9 +1124,9 @@ export function MarcadoresTableUI({
                 handleStartEdit(activeMenuData.marker);
                 setActiveMenuData(null);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] transition-colors cursor-pointer"
             >
-              <Pencil className="h-3.5 w-3.5 text-zinc-500" />
+              <Pencil className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
               <span>Editar</span>
             </button>
           )}
@@ -1134,7 +1136,7 @@ export function MarcadoresTableUI({
               setActiveMenuData(null);
               await onDeleteMarkers([idToDelete]);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>Eliminar</span>
@@ -1154,7 +1156,7 @@ export function MarcadoresTableUI({
             zIndex: 9999,
           }}
           onClick={(e) => e.stopPropagation()}
-          className="max-h-56 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 bg-white/95 backdrop-blur-md shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
+          className="max-h-56 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 dark:border-[#2b395b] bg-white/95 dark:bg-[#161f36] backdrop-blur-md shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
         >
           {typeDropdownPos.marker.category === "EVACUACION"
             ? Object.entries(SAFE_ZONE_TYPE_LABELS).map(([key, label]) => {
@@ -1170,13 +1172,13 @@ export function MarcadoresTableUI({
                     }}
                     className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? "bg-zinc-100 font-bold text-zinc-950 shadow-2xs"
-                        : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 font-medium"
+                        ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-950 dark:text-white shadow-2xs"
+                        : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white font-medium"
                     }`}
                   >
                     <span>{label}</span>
                     {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                      <Check className="h-3.5 w-3.5 text-zinc-900 dark:text-white ml-2" />
                     )}
                   </button>
                 );
@@ -1194,13 +1196,13 @@ export function MarcadoresTableUI({
                     }}
                     className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? "bg-zinc-100 font-bold text-zinc-950 shadow-2xs"
-                        : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 font-medium"
+                        ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-950 dark:text-white shadow-2xs"
+                        : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white font-medium"
                     }`}
                   >
                     <span>{label}</span>
                     {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-zinc-900 ml-2" />
+                      <Check className="h-3.5 w-3.5 text-zinc-900 dark:text-white ml-2" />
                     )}
                   </button>
                 );
@@ -1211,20 +1213,22 @@ export function MarcadoresTableUI({
       {/* Modal de confirmación de eliminación masiva */}
       {showConfirmDeleteModal && (
         <div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-3">
-            <h3 className="text-base font-bold text-zinc-900">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-3">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-white">
               ¿Eliminar marcadores?
             </h3>
-            <p className="text-xs text-zinc-600 leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-slate-300 leading-relaxed">
               Estás por eliminar{" "}
-              <strong>{selectedRowIds.size} marcadores</strong> seleccionados.
-              Esta acción no se puede deshacer.
+              <strong className="text-zinc-900 dark:text-white">
+                {selectedRowIds.size} marcadores
+              </strong>{" "}
+              seleccionados. Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-2.5 mt-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 shadow-2xs hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-4 py-2 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs hover:bg-gray-50 dark:hover:bg-[#25355d] hover:border-gray-300 dark:hover:border-slate-500 transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>

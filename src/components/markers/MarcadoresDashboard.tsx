@@ -327,14 +327,14 @@ export function MarcadoresDashboard({
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-zinc-100 font-sans">
+    <div className="relative h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans">
       {/* Botón flotante para volver a la tabla si está en mapa enfocado */}
       {isMapVisible && (
         <div className="absolute left-6 top-6 z-[100]">
           <TooltipSign label="Volver a la lista de marcadores" position="right">
             <button
               onClick={handleBackToList}
-              className="flex items-center justify-center h-11 w-11 rounded-2xl border border-gray-200 bg-white text-zinc-700 shadow-md hover:bg-gray-50 hover:text-zinc-900 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center justify-center h-11 w-11 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-zinc-700 dark:text-slate-200 shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-zinc-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer"
               aria-label="Volver a la lista"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -384,7 +384,7 @@ export function MarcadoresDashboard({
             {/* Encabezado Superior */}
             <div className="flex items-center justify-between gap-4 mb-1">
               <div>
-                <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
                   Marcadores
                 </h1>
               </div>
@@ -444,7 +444,7 @@ export function MarcadoresDashboard({
                   setDraftLocation(null);
                   setIsMapVisible(false);
                 }}
-                className="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-6 py-2.5 text-sm font-bold text-red-600 shadow-xl transition-all duration-200 hover:bg-red-50 hover:scale-105 active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-2 rounded-full border border-red-200 dark:border-red-900/60 bg-white dark:bg-[#161f36] px-6 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 shadow-xl transition-all duration-200 hover:bg-red-50 dark:hover:bg-[#1e2a4a] hover:scale-105 active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>
