@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   MapContainer,
   Marker,
-  Tooltip,
   Popup,
   useMap,
   useMapEvents,
@@ -21,6 +20,7 @@ import { ShieldCheck, PlusSquare, Users } from "lucide-react";
 import { MapSizeInvalidator } from "@/components/map/MapSizeInvalidator";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { MapTileLayers } from "@/components/map/MapTileLayers";
+import { MapTooltip, MapTooltipManager } from "@/components/map/MapTooltip";
 
 interface MarcadoresMapInternalProps {
   markers: MarkerRow[];
@@ -161,6 +161,7 @@ export default function MarcadoresMapInternal({
         <MapTileLayers isDark={isDark} />
 
         <MapSizeInvalidator />
+        <MapTooltipManager />
         <ZoomWatcher onZoomChange={setCurrentZoom} />
         <MarkerFocuser selectedMarker={selectedMarker} />
         <MapClickHandler
@@ -185,7 +186,7 @@ export default function MarcadoresMapInternal({
                 click: () => onSelectMarker(marker),
               }}
             >
-              <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+              <MapTooltip variant="marker">
                 <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
                   {marker.category === "EVACUACION" ? (
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
@@ -194,7 +195,7 @@ export default function MarcadoresMapInternal({
                   )}
                   <span>{marker.nombre}</span>
                 </div>
-              </Tooltip>
+              </MapTooltip>
 
               <Popup className="custom-marker-popup">
                 <div className="p-1 min-w-[200px] text-xs">

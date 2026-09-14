@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Polygon,
-  Polyline,
-  Tooltip,
-  Popup,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
+import { Polygon, Polyline, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { Trash2 } from "lucide-react";
+import { MapTooltip, MapTooltipTitle, MapTooltipSub } from "./MapTooltip";
 
 import { Report } from "@/types/report";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
@@ -330,21 +324,16 @@ export function RegionShape({
         },
       }}
     >
-      <Tooltip
-        sticky
-        className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 dark:border-[#2b395b] shadow-xl px-3 py-2"
-      >
+      <MapTooltip variant="polygon">
         <div className="flex flex-col gap-1">
-          <span className="font-bold text-gray-800 dark:text-white">
-            {region.nombre}
-          </span>
-          <span className="text-zinc-600 dark:text-slate-300 text-xs">
+          <MapTooltipTitle>{region.nombre}</MapTooltipTitle>
+          <MapTooltipSub>
             {isEditingRegions
               ? "Clickeá para opciones"
               : `${pointsCount} reclamos activos en esta zona`}
-          </span>
+          </MapTooltipSub>
         </div>
-      </Tooltip>
+      </MapTooltip>
 
       {isEditingRegions && onDeleteRegion && (
         <Popup className="custom-popup rounded-2xl p-1 shadow-xl">

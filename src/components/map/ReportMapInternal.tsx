@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
-  Tooltip,
   useMapEvents,
   GeoJSON,
   useMap,
@@ -35,6 +34,12 @@ import {
 } from "./PolygonDrawingOverlay";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { MapTileLayers } from "./MapTileLayers";
+import {
+  MapTooltip,
+  MapTooltipManager,
+  buildMapTooltipHtml,
+  MAP_TOOLTIP_CLASSNAME,
+} from "./MapTooltip";
 
 interface ReportMapInternalProps {
   reports: Report[];
@@ -244,219 +249,61 @@ function createCustomPinIcon(
   });
 }
 
-interface BarrioTooltipInfo {
-  nombre: string;
-  tipo: string;
-  reportCount: number;
-  x: number;
-  y: number;
-}
-
 function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
   const map = useMap();
   const { isDark } = useDarkMode();
-  const isDragging = useRef(false);
-  const isAnimating = useRef(false);
-  const [tooltip, setTooltip] = useState<BarrioTooltipInfo | null>(null);
-
-  useEffect(() => {
-    const handleMoveStart = () => {
-      isAnimating.current = true;
-      setTooltip(null);
-    };
-    const handleMoveEnd = () => {
-      isAnimating.current = false;
-    };
-
-    map.on("movestart", handleMoveStart);
-    map.on("moveend", handleMoveEnd);
-
-    return () => {
-      map.off("movestart", handleMoveStart);
-      map.off("moveend", handleMoveEnd);
-    };
-  }, [map]);
-
-  useEffect(() => {
-    const container = map.getContainer();
-    let startX = 0;
-    let startY = 0;
-
-    const onPointerDown = (e: PointerEvent) => {
-      startX = e.clientX;
-      startY = e.clientY;
-      isDragging.current = false;
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!(e.buttons & 1)) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      if (dx * dx + dy * dy > 25) {
-        isDragging.current = true;
-        setTooltip(null);
-      }
-    };
-
-    const onPointerUp = () => {
-      isDragging.current = false;
-    };
-
-    container.addEventListener("pointerdown", onPointerDown);
-    container.addEventListener("pointermove", onPointerMove);
-    container.addEventListener("pointerup", onPointerUp);
-    container.addEventListener("pointercancel", onPointerUp);
-
-    return () => {
-      container.removeEventListener("pointerdown", onPointerDown);
-      container.removeEventListener("pointermove", onPointerMove);
-      container.removeEventListener("pointerup", onPointerUp);
-      container.removeEventListener("pointercancel", onPointerUp);
-    };
-  }, [map]);
 
   return (
-    <>
-      <GeoJSON
-        key={`barrios-layer-${isDark ? "dark" : "light"}`}
-        data={data}
-        style={() => ({
-          color: isDark ? "#38bdf8" : "#2563eb",
-          weight: 1.5,
-          opacity: isDark ? 0.8 : 0.7,
-          fillColor: isDark ? "#0284c7" : "#3b82f6",
-          fillOpacity: 0.08,
-        })}
-        onEachFeature={(feature, layer) => {
-          const nombre = feature.properties?.nombre ?? "";
-          const tipo = feature.properties?.tipo ?? "";
-          const reportCount = feature.properties?.report_count ?? 0;
+    <GeoJSON
+      key={`barrios-layer-${isDark ? "dark" : "light"}`}
+      data={data}
+      style={() => ({
+        color: isDark ? "#38bdf8" : "#2563eb",
+        weight: 1.5,
+        opacity: isDark ? 0.8 : 0.7,
+        fillColor: isDark ? "#0284c7" : "#3b82f6",
+        fillOpacity: 0.08,
+      })}
+      onEachFeature={(feature, layer) => {
+        const nombre = feature.properties?.nombre ?? "";
+        const tipo = feature.properties?.tipo ?? "";
+        const reportCount = feature.properties?.report_count ?? 0;
+        const subtitle =
+          reportCount > 0
+            ? `${tipo} · 🚨 ${reportCount} reportes`
+            : `${tipo} · ✅ Sin reportes`;
 
-          (layer as L.Path).on({
-            mouseover(e) {
-              if (isDragging.current || isAnimating.current) return;
-              (e.target as L.Path).setStyle({
-                fillOpacity: isDark ? 0.32 : 0.3,
-                weight: 2.5,
-              });
-              (e.target as L.Path).bringToFront();
-              const containerRect = map.getContainer().getBoundingClientRect();
-              const orig = e.originalEvent as MouseEvent;
-              setTooltip({
-                nombre,
-                tipo,
-                reportCount,
-                x: orig.clientX - containerRect.left + 12,
-                y: orig.clientY - containerRect.top - 10,
-              });
-            },
-            mousemove(e) {
-              if (isDragging.current || isAnimating.current) {
-                setTooltip(null);
-                return;
-              }
-              const containerRect = map.getContainer().getBoundingClientRect();
-              const orig = e.originalEvent as MouseEvent;
-              setTooltip((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      x: orig.clientX - containerRect.left + 12,
-                      y: orig.clientY - containerRect.top - 10,
-                    }
-                  : null
-              );
-            },
-            mouseout(e) {
-              (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
-              setTooltip(null);
-            },
-            click(e) {
-              e.originalEvent?.stopPropagation();
-              if (isDragging.current || isAnimating.current) return;
-              const target = e.target as L.Polygon;
+        layer.bindTooltip(buildMapTooltipHtml({ title: nombre, subtitle }), {
+          sticky: true,
+          direction: "top",
+          opacity: 0.95,
+          className: MAP_TOOLTIP_CLASSNAME,
+        });
 
-              if (typeof target.getBounds !== "function") return;
+        (layer as L.Path).on({
+          mouseover(e) {
+            (e.target as L.Path).setStyle({
+              fillOpacity: isDark ? 0.32 : 0.3,
+              weight: 2.5,
+            });
+            (e.target as L.Path).bringToFront();
+          },
+          mouseout(e) {
+            (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
+          },
+          click(e) {
+            e.originalEvent?.stopPropagation();
+            const target = e.target as L.Polygon;
 
-              const bounds = target.getBounds();
-              // Zoom justo para encuadrar el barrio con un poco de aire
-              map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 });
+            if (typeof target.getBounds !== "function") return;
 
-              // Esperar a que termine la animación para proyectar el centroide
-              map.once("moveend", () => {
-                const center = bounds.getCenter();
-                const containerPoint = map.latLngToContainerPoint(center);
-                const containerRect = map
-                  .getContainer()
-                  .getBoundingClientRect();
-                // Mostrar tooltip sólo si el centro del barrio sigue dentro del viewport
-                if (
-                  containerPoint.x > 0 &&
-                  containerPoint.x < containerRect.width &&
-                  containerPoint.y > 0 &&
-                  containerPoint.y < containerRect.height
-                ) {
-                  setTooltip({
-                    nombre,
-                    tipo,
-                    reportCount,
-                    x: containerPoint.x + 12,
-                    y: containerPoint.y - 10,
-                  });
-                  // Resaltar el polígono para dar feedback visual
-                  (target as L.Path).setStyle({
-                    fillOpacity: isDark ? 0.32 : 0.3,
-                    weight: 2.5,
-                  });
-                }
-              });
-            },
-          });
-        }}
-      />
-      {/* Tooltip React: posicionado absolutamente dentro del contenedor del mapa */}
-      {tooltip && (
-        <div
-          style={{
-            position: "absolute",
-            left: tooltip.x,
-            top: tooltip.y,
-            zIndex: 9999,
-            background: isDark ? "#161f36" : "white",
-            border: isDark ? "1px solid #2b395b" : "1px solid #ccc",
-            color: isDark ? "#f1f5f9" : "#09090b",
-            borderRadius: 6,
-            padding: "6px 10px",
-            pointerEvents: "none",
-            boxShadow: isDark
-              ? "0 4px 20px rgba(0,0,0,0.5)"
-              : "0 2px 8px rgba(0,0,0,0.15)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <strong style={{ fontSize: 13 }}>{tooltip.nombre}</strong>
-          <br />
-          <span style={{ fontSize: 11, color: isDark ? "#94a3b8" : "#666" }}>
-            {tooltip.tipo}
-          </span>
-          {tooltip.reportCount > 0 ? (
-            <>
-              <br />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#e74c3c" }}>
-                🚨 {tooltip.reportCount} reportes
-              </span>
-            </>
-          ) : (
-            <>
-              <br />
-              <span style={{ fontSize: 11, color: "#27ae60" }}>
-                ✅ Sin reportes
-              </span>
-            </>
-          )}
-        </div>
-      )}
-    </>
+            const bounds = target.getBounds();
+            // Zoom justo para encuadrar el barrio con un poco de aire
+            map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 });
+          },
+        });
+      }}
+    />
   );
 }
 
@@ -709,6 +556,7 @@ export default function ReportMapInternal({
         <MapTileLayers isDark={isDark} />
 
         <MapSizeInvalidator />
+        <MapTooltipManager />
 
         {/* Capa de polígonos de barrios — solo cuando Barrios está activo (variante interna) */}
         {showBarrios && barriosGeoJson && (
@@ -775,12 +623,12 @@ export default function ReportMapInternal({
                     }}
                     zIndexOffset={isSelected ? 1100 : 1000}
                   >
-                    <Tooltip direction="top" offset={[0, -14]} opacity={0.95}>
+                    <MapTooltip variant="marker" offset={[0, -14]}>
                       <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
                         <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                         <span>{sz.nombre}</span>
                       </div>
-                    </Tooltip>
+                    </MapTooltip>
                   </Marker>
                 );
               })}
@@ -805,12 +653,12 @@ export default function ReportMapInternal({
                     }}
                     zIndexOffset={isSelected ? 1100 : 1000}
                   >
-                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                    <MapTooltip variant="marker">
                       <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
                         <PlusSquare className="h-3.5 w-3.5 text-red-600" />
                         <span>{hc.nombre}</span>
                       </div>
-                    </Tooltip>
+                    </MapTooltip>
                   </Marker>
                 );
               })}
