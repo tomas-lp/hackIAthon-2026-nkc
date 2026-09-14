@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter, HealthCenterType } from "@/types/healthCenter";
 import { Report } from "@/types/report";
@@ -19,6 +19,7 @@ import { safeZoneService } from "@/services/safeZoneService";
 import { healthCenterService } from "@/services/healthCenterService";
 import { ArrowLeft } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
+import { useAdminSidebar } from "@/components/common/AppShell";
 import { resolveLocationDetails, geocodeAddress } from "@/lib/geocode";
 import { SafeZoneDetailSidebar } from "@/components/map/SafeZoneDetailSidebar";
 import { SafeZoneModal } from "@/components/map/SafeZoneModal";
@@ -72,6 +73,22 @@ export function MarcadoresDashboard({
   } | null>(null);
   const [showCreationModal, setShowCreationModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const { setCollapsed, setHidden } = useAdminSidebar();
+
+  useEffect(() => {
+    if (isMapVisible) {
+      setHidden(true);
+      setCollapsed(true);
+    } else {
+      setHidden(false);
+      setCollapsed(false);
+    }
+    return () => {
+      setHidden(false);
+      setCollapsed(false);
+    };
+  }, [isMapVisible, setHidden, setCollapsed]);
 
   // Refrescar marcadores desde la base de datos
   const refreshData = useCallback(async () => {
@@ -378,7 +395,7 @@ export function MarcadoresDashboard({
       {/* Contenido Principal: Tabla de Marcadores o Mapa Limpio */}
       {!isMapVisible ? (
         <div
-          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${"px-6"}`}
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-8 pb-6 transition-all duration-300 ease-in-out ${"px-6"}`}
         >
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
             {/* Encabezado Superior */}

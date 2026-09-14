@@ -378,10 +378,10 @@ export function MinimapInternal({
         {selectedZoneFilter === "BARRIOS" &&
           barrioPolygons.map((barrio) => {
             const isSelected = barrio.nombre === selectedRegionName;
-            const color =
-              barrio.reportCount > 0
-                ? heatColor(barrio.reportCount, maxBarrioReports)
-                : "#6b7280";
+            const hasReports = barrio.reportCount > 0;
+            const color = hasReports
+              ? heatColor(barrio.reportCount, maxBarrioReports)
+              : "#3b82f6";
 
             return (
               <Polygon
@@ -389,13 +389,10 @@ export function MinimapInternal({
                 positions={barrio.positions}
                 pathOptions={{
                   fillColor: color,
-                  fillOpacity: isSelected
-                    ? 0.65
-                    : barrio.reportCount > 0
-                      ? 0.45
-                      : 0.1,
+                  fillOpacity: isSelected ? 0.65 : hasReports ? 0.45 : 0.25,
                   color: isSelected ? "#2563eb" : color,
-                  weight: isSelected ? 3 : barrio.reportCount > 0 ? 2 : 1,
+                  weight: isSelected ? 3 : 2,
+                  opacity: 0.9,
                 }}
                 eventHandlers={{
                   mousedown: (e) => {

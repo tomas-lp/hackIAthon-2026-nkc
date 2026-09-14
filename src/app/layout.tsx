@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import "overlayscrollbars/overlayscrollbars.css";
+import "overlayscrollbars/styles/overlayscrollbars.css";
 import { AppShell } from "@/components/common/AppShell";
 
 const manrope = localFont({

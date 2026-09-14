@@ -252,15 +252,19 @@ export function TendenciaChart({ reports = [] }: TendenciaChartProps) {
             : "max-h-0 opacity-0 -translate-y-2 pointer-events-none -mt-2"
         }`}
       >
-        <div className="flex items-center gap-4 flex-wrap text-xs text-zinc-600 px-1 py-0.5">
-          <span className="font-semibold text-zinc-600 text-xs">Año:</span>
+        <div className="flex items-center gap-4 flex-wrap text-xs text-zinc-600 dark:text-slate-200 px-1 py-0.5">
+          <span className="font-semibold text-zinc-700 dark:text-slate-200 text-xs">
+            Año:
+          </span>
           {chartSeries.map((s) => (
             <div key={s.id} className="flex items-center gap-1.5">
               <div
                 className="w-3 h-3 rounded-full shadow-2xs"
                 style={{ backgroundColor: s.color }}
               />
-              <span className="font-medium text-zinc-700">{s.year}</span>
+              <span className="font-medium text-zinc-800 dark:text-white">
+                {s.year}
+              </span>
             </div>
           ))}
         </div>
