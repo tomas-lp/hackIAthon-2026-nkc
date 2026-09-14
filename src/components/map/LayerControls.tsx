@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Info, Plus } from "lucide-react";
+import { Layers, Info, Plus, Satellite } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface LayerControlsProps {
@@ -9,6 +9,8 @@ interface LayerControlsProps {
   setShowEvacuationCenters: React.Dispatch<React.SetStateAction<boolean>>;
   showMedicalCenters: boolean;
   setShowMedicalCenters: React.Dispatch<React.SetStateAction<boolean>>;
+  showSatellite: boolean;
+  setShowSatellite: React.Dispatch<React.SetStateAction<boolean>>;
   onCreateEvacuationCenter?: () => void;
   onCreateMedicalCenter?: () => void;
   isHidden?: boolean;
@@ -19,6 +21,8 @@ export function LayerControls({
   setShowEvacuationCenters,
   showMedicalCenters,
   setShowMedicalCenters,
+  showSatellite,
+  setShowSatellite,
   onCreateEvacuationCenter,
   onCreateMedicalCenter,
   isHidden,
@@ -157,6 +161,38 @@ export function LayerControls({
                   </button>
                 </TooltipSign>
               )}
+            </div>
+          </div>
+
+          <div className="h-[1px] w-full bg-gray-100 dark:bg-slate-700" />
+
+          {/* Vista satelital (ESRI World Imagery) */}
+          <div className="flex items-center justify-between gap-2 p-1">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                <Satellite className="h-3.5 w-3.5 stroke-[2.5]" />
+              </div>
+              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
+                Vista satelital
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={() => setShowSatellite((prev) => !prev)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  showSatellite ? "bg-sky-500" : "bg-zinc-300"
+                }`}
+              >
+                <span
+                  suppressHydrationWarning
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    showSatellite ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>

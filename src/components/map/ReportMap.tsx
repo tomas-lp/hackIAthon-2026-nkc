@@ -32,6 +32,7 @@ interface ReportMapProps {
   showEvacuationCenters?: boolean;
   showMedicalCenters?: boolean;
   showBarrios?: boolean;
+  satellite?: boolean;
   regiones?: RegionPersonalizada[];
   newlyAddedDraftZones?: RegionPersonalizada[];
   activeHeaderTab?: string;

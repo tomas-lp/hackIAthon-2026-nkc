@@ -5,6 +5,12 @@ const IGN_TMS_BASE =
 
 const CACHE_MAX_AGE = 60 * 60 * 24; // 86400 s — tiles del mapa base son estables
 
+// Si el IGN se cuelga, antes el Route Handler quedaba colgado hasta el
+// timeout de Next/Vercel y el navegador mostraba 504 con el mapa en gris.
+// Con timeout propio devolvemos 504 rápido para que Leaflet dispare
+// `tileerror` y el frontend pueda caer al siguiente proveedor (ESRI).
+const UPSTREAM_TIMEOUT_MS = 8000;
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ params: string[] }> }
@@ -30,8 +36,10 @@ export async function GET(
       cfCache = null; // fuera de CF Workers o error de inicialización
     }
 
-    // --- Fetch upstream ---
-    const upstream = await fetch(tileUrl);
+    // --- Fetch upstream (con timeout para no colgar el mapa) ---
+    const upstream = await fetch(tileUrl, {
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
 
     if (!upstream.ok) {
       return new NextResponse("Upstream error", { status: upstream.status });
@@ -58,6 +66,12 @@ export async function GET(
     return response;
   } catch (err) {
     console.error("[tile-proxy] error:", err);
-    return new NextResponse("Internal server error", { status: 500 });
+    const isTimeout = err instanceof Error && err.name === "TimeoutError";
+    return new NextResponse(
+      isTimeout ? "Upstream timeout" : "Internal server error",
+      {
+        status: isTimeout ? 504 : 500,
+      }
+    );
   }
 }

@@ -63,6 +63,7 @@ interface ReportMapInternalProps {
   showEvacuationCenters?: boolean;
   showMedicalCenters?: boolean;
   showBarrios?: boolean;
+  satellite?: boolean;
   regiones?: RegionPersonalizada[];
   newlyAddedDraftZones?: RegionPersonalizada[];
   activeHeaderTab?: string;
@@ -329,6 +330,7 @@ export default function ReportMapInternal({
   showEvacuationCenters = true,
   showMedicalCenters = true,
   showBarrios = false,
+  satellite = false,
   regiones = [],
   newlyAddedDraftZones = [],
   activeHeaderTab,
@@ -553,7 +555,7 @@ export default function ReportMapInternal({
         className="w-full h-full z-0"
       >
         <AttributionControl prefix='🇦🇷 <a href="https://leafletjs.com">Leaflet</a>' />
-        <MapTileLayers isDark={isDark} />
+        <MapTileLayers isDark={isDark} satellite={satellite} />
 
         <MapSizeInvalidator />
         <MapTooltipManager />
