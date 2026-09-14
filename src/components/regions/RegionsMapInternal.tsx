@@ -139,21 +139,12 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
             data={barriosGeoJson as unknown as GeoJSON.GeoJsonObject}
             style={(feature) => {
               const isSelected = feature?.properties?.id === selectedRegionId;
-              if (isDark) {
-                return {
-                  color: isSelected ? "#38bdf8" : "#38bdf8",
-                  weight: isSelected ? 3.5 : 1.5,
-                  opacity: isSelected ? 1 : 0.8,
-                  fillColor: isSelected ? "#0284c7" : "#0369a1",
-                  fillOpacity: isSelected ? 0.45 : 0.12,
-                };
-              }
               return {
-                color: isSelected ? "#1d4ed8" : "#2563eb",
-                weight: isSelected ? 3.5 : 1.5,
-                opacity: isSelected ? 0.95 : 0.7,
-                fillColor: isSelected ? "#2563eb" : "#3b82f6",
-                fillOpacity: isSelected ? 0.35 : 0.12,
+                color: isSelected ? "#2563eb" : "#3b82f6",
+                weight: isSelected ? 3 : 2,
+                opacity: 0.9,
+                fillColor: "#3b82f6",
+                fillOpacity: isSelected ? 0.65 : 0.25,
               };
             }}
             onEachFeature={(feature, layer) => {
@@ -182,16 +173,13 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
           />
         )}
 
-        {/* Regiones guardadas — visibles según lista activa en colores por lista */}
+        {/* Regiones guardadas — visibles según lista activa en baby blue unificado */}
         {regiones.map((region) => (
           <RegionShape
             key={region.id}
             region={region}
             reports={validReports}
-            color={getListColor(
-              region.lista_id || region.lista_nombre,
-              props.listas
-            )}
+            color="#3b82f6"
             isSelected={selectedRegionId === region.id}
           />
         ))}

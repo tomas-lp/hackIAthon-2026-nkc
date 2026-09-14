@@ -34,7 +34,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-export type SortField = "nombre" | "localidad";
+export type SortField =
+  | "nombre"
+  | "localidad"
+  | "cantidadReclamos"
+  | "ultimaAyuda"
+  | "reclamosActivos";
 
 export type SortOrder = "asc" | "desc";
 
@@ -103,6 +108,31 @@ function getFallbackLocalityFromCoords(lat: number, lon: number): string {
     }
   }
   return "Corrientes Capital";
+}
+
+// Helper para parsear fechas de última ayuda con soporte para ISO y DD/MM/YYYY
+function parseDateValue(val: unknown): number {
+  if (!val || val === "-" || val === "null") return -Infinity;
+  if (val instanceof Date) {
+    const t = val.getTime();
+    return isNaN(t) ? -Infinity : t;
+  }
+  if (typeof val === "number") return val;
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return -Infinity;
+    const parsed = Date.parse(trimmed);
+    if (!isNaN(parsed)) return parsed;
+    const parts = trimmed.split(/[/\-.]/);
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const y = parseInt(parts[2], 10);
+      const time = new Date(y, m, d).getTime();
+      if (!isNaN(time)) return time;
+    }
+  }
+  return -Infinity;
 }
 
 // Cache local de localidades resueltas
@@ -441,19 +471,35 @@ export function RegionsTableUI({
         id: "cantidadReclamos",
         accessorFn: (row) => row.cantidadReclamos,
         header: "Cantidad de reclamos",
-        enableSorting: false,
+        sortDescFirst: true,
+        sortFn: (rowA, rowB, columnId) => {
+          const a = Number(rowA.getValue(columnId)) || 0;
+          const b = Number(rowB.getValue(columnId)) || 0;
+          return a - b;
+        },
       },
       {
         id: "ultimaAyuda",
         accessorFn: (row) => row.ultimaAyuda ?? "",
         header: "Última ayuda",
-        enableSorting: false,
+        sortDescFirst: true,
+        sortFn: (rowA, rowB, columnId) => {
+          const timeA = parseDateValue(rowA.getValue(columnId));
+          const timeB = parseDateValue(rowB.getValue(columnId));
+          if (timeA === timeB) return 0;
+          return timeA > timeB ? 1 : -1;
+        },
       },
       {
         id: "reclamosActivos",
         accessorFn: (row) => row.reclamosActivos,
         header: "Reclamos activos",
-        enableSorting: false,
+        sortDescFirst: true,
+        sortFn: (rowA, rowB, columnId) => {
+          const a = Number(rowA.getValue(columnId)) || 0;
+          const b = Number(rowB.getValue(columnId)) || 0;
+          return a - b;
+        },
       },
       { id: "acciones", header: "", enableSorting: false },
     ],
@@ -472,17 +518,29 @@ export function RegionsTableUI({
   const sortedRegiones = regionTable
     .getRowModel()
     .rows.map((row) => row.original);
-  const activeSortField = (["nombre", "localidad"] as SortField[]).find(
-    (field) => regionTable.getColumn(field)?.getIsSorted()
-  );
+  const activeSortField = (
+    [
+      "nombre",
+      "localidad",
+      "cantidadReclamos",
+      "ultimaAyuda",
+      "reclamosActivos",
+    ] as SortField[]
+  ).find((field) => regionTable.getColumn(field)?.getIsSorted());
   const sortField = activeSortField || "nombre";
   const sortOrder: SortOrder =
     regionTable.getColumn(sortField)?.getIsSorted() === "desc" ? "desc" : "asc";
 
   const handleSort = (field: SortField) => {
-    regionTable
-      .getColumn(field)
-      ?.toggleSorting(sortField === field ? sortOrder === "asc" : false);
+    if (sortField === field) {
+      regionTable.getColumn(field)?.toggleSorting(sortOrder === "asc");
+    } else {
+      const shouldDescFirst =
+        field === "cantidadReclamos" ||
+        field === "ultimaAyuda" ||
+        field === "reclamosActivos";
+      regionTable.getColumn(field)?.toggleSorting(shouldDescFirst);
+    }
   };
 
   // Manejo de checkboxes
@@ -915,19 +973,73 @@ export function RegionsTableUI({
                   </div>
                 </th>
 
-                {/* Cantidad de reclamos — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[150px]">
-                  Cantidad de reclamos
+                {/* Cantidad de reclamos — sortable y hover */}
+                <th
+                  onClick={() => handleSort("cantidadReclamos")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[150px] ${
+                    sortField === "cantidadReclamos"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Cantidad de reclamos</span>
+                    {sortField === "cantidadReclamos" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
 
-                {/* Última ayuda — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[130px]">
-                  Última ayuda
+                {/* Última ayuda — sortable y hover */}
+                <th
+                  onClick={() => handleSort("ultimaAyuda")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[130px] ${
+                    sortField === "ultimaAyuda"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Última ayuda</span>
+                    {sortField === "ultimaAyuda" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
 
-                {/* Reclamos activos — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[140px]">
-                  Reclamos activos
+                {/* Reclamos activos — sortable y hover */}
+                <th
+                  onClick={() => handleSort("reclamosActivos")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[140px] ${
+                    sortField === "reclamosActivos"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Reclamos activos</span>
+                    {sortField === "reclamosActivos" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
 
                 {/* Acciones — hover en cabecera */}
@@ -937,7 +1049,7 @@ export function RegionsTableUI({
           </table>
           <OverlayScrollbarsComponent
             defer
-            className="min-w-[1012px] max-h-[580px]"
+            className="min-w-[1012px] max-h-[520px]"
             options={{
               overflow: { x: "hidden", y: "scroll" },
               scrollbars: {

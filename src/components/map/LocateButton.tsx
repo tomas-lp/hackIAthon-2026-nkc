@@ -271,7 +271,7 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
       onPointerUp={(e) => e.stopPropagation()}
       title="Mostrar mi ubicación"
       className={`
-        absolute top-16 right-4 z-[1000]
+        absolute top-[116px] right-4 z-[1000]
         rounded-full border ${c.border} ${c.bg} p-2.5 ${c.text}
         shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md
         cursor-pointer

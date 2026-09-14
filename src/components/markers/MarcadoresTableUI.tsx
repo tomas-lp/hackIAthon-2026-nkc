@@ -835,7 +835,7 @@ export function MarcadoresTableUI({
           </table>
           <OverlayScrollbarsComponent
             defer
-            className="min-w-[960px] max-h-[580px]"
+            className="min-w-[960px] max-h-[520px]"
             options={{
               overflow: { x: "hidden", y: "scroll" },
               scrollbars: {

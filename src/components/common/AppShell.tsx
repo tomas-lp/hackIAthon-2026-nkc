@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [hidden, setHidden] = useState(false);
   const isAdmin = !!currentUser;
   const isHome = pathname === "/";
-  const showAdminSidebar = isAdmin && !hidden;
+  const showAdminSidebar = isAdmin;
 
   return (
     <AdminSidebarContext.Provider
@@ -42,7 +42,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div
           className="fixed left-0 top-0 z-[100] transition-transform duration-300 ease-in-out"
           style={{
-            transform: collapsed ? "translateX(-110%)" : "translateX(0)",
+            transform:
+              collapsed || hidden ? "translateX(-110%)" : "translateX(0)",
           }}
         >
           <Sidebar
@@ -72,11 +73,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="fixed left-0 top-6 z-[100] flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-1.5 py-3 text-gray-400 dark:text-slate-400 shadow-md transition-all duration-300 ease-in-out hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
           style={{
             transform:
-              collapsed || !showAdminSidebar
-                ? "translateX(0)"
-                : "translateX(-100%)",
-            pointerEvents: collapsed || !showAdminSidebar ? "auto" : "none",
-            transitionDelay: collapsed || !showAdminSidebar ? "300ms" : "0ms",
+              !hidden && collapsed ? "translateX(0)" : "translateX(-100%)",
+            pointerEvents: !hidden && collapsed ? "auto" : "none",
+            transitionDelay: !hidden && collapsed ? "300ms" : "0ms",
           }}
         >
           <ChevronRight className="h-4 w-4" />
@@ -85,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div
         className={`min-h-screen transition-[padding] duration-300 ease-in-out ${
-          isAdmin && !isHome && !collapsed ? "pl-[304px]" : "pl-0"
+          isAdmin && !isHome && !collapsed && !hidden ? "pl-[304px]" : "pl-0"
         }`}
       >
         {children}

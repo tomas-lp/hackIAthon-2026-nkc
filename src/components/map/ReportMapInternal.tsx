@@ -258,11 +258,11 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
       key={`barrios-layer-${isDark ? "dark" : "light"}`}
       data={data}
       style={() => ({
-        color: isDark ? "#38bdf8" : "#2563eb",
-        weight: 1.5,
-        opacity: isDark ? 0.8 : 0.7,
-        fillColor: isDark ? "#0284c7" : "#3b82f6",
-        fillOpacity: 0.08,
+        color: "#3b82f6",
+        weight: 2,
+        opacity: 0.9,
+        fillColor: "#3b82f6",
+        fillOpacity: 0.25,
       })}
       onEachFeature={(feature, layer) => {
         const nombre = feature.properties?.nombre ?? "";
@@ -283,13 +283,13 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
         (layer as L.Path).on({
           mouseover(e) {
             (e.target as L.Path).setStyle({
-              fillOpacity: isDark ? 0.32 : 0.3,
+              fillOpacity: 0.5,
               weight: 2.5,
             });
             (e.target as L.Path).bringToFront();
           },
           mouseout(e) {
-            (e.target as L.Path).setStyle({ fillOpacity: 0.08, weight: 1.5 });
+            (e.target as L.Path).setStyle({ fillOpacity: 0.25, weight: 2 });
           },
           click(e) {
             e.originalEvent?.stopPropagation();
@@ -713,6 +713,7 @@ export default function ReportMapInternal({
             key={region.id}
             region={region}
             reports={validReports}
+            color="#3b82f6"
             isEditingRegions={isEditingRegions}
             onDeleteRegion={onDeleteRegion}
           />
