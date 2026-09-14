@@ -27,10 +27,29 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/Switch";
 import { TooltipSign } from "@/components/ui/TooltipSign";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+import {
+  createSortedRowModel,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_text,
+  tableFeatures,
+  useTable,
+  type ColumnDef,
+} from "@tanstack/react-table";
 
 export type SortField = "nombre" | "localidad" | "region" | "subtipo";
 
 export type SortOrder = "asc" | "desc";
+
+const tableFeaturesConfig = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: {
+    text: sortFn_text,
+    alphanumeric: sortFn_alphanumeric,
+  },
+});
 
 interface MarcadoresTableUIProps {
   markers: MarkerRow[];
@@ -93,9 +112,6 @@ export function MarcadoresTableUI({
   const [resolvedLocalities, setResolvedLocalities] = useState<
     Record<string, string>
   >({});
-  const [sortField, setSortField] = useState<SortField>("nombre");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-
   // Inline editing state
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState("");
@@ -312,52 +328,53 @@ export function MarcadoresTableUI({
     });
   }, [markers, selectedType, searchQuery, resolvedLocalities, markerRegionMap]);
 
-  // Manejo de ordenamiento (nombre, localidad, region, subtipo)
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
-  };
+  const columns = useMemo<ColumnDef<typeof tableFeaturesConfig, MarkerRow>[]>(
+    () => [
+      ...(isDeleteMode ? [{ id: "select", header: "" }] : []),
+      {
+        id: "nombre",
+        accessorFn: (row) => row.nombre,
+        header: "Nombre",
+        sortFn: sortFn_alphanumeric,
+      },
+      {
+        id: "localidad",
+        accessorFn: (row) =>
+          row.localidad || resolvedLocalities[row.id] || "Corrientes Capital",
+        header: "Localidad",
+        sortFn: sortFn_text,
+      },
+      {
+        id: "region",
+        accessorFn: (row) => markerRegionMap.get(row.id) || "",
+        header: "Región",
+        sortFn: sortFn_text,
+      },
+      {
+        id: "subtipo",
+        accessorFn: (row) => row.subtipo,
+        header: "Tipo",
+        sortFn: sortFn_text,
+      },
+      { id: "direccion", header: "Dirección", enableSorting: false },
+      ...(selectedType === "EVACUACION"
+        ? [{ id: "capacidad", header: "Capacidad", enableSorting: false }]
+        : []),
+      { id: "acciones", header: "", enableSorting: false },
+    ],
+    [isDeleteMode, markerRegionMap, resolvedLocalities, selectedType]
+  );
 
-  const sortedMarkers = useMemo(() => {
-    return [...filteredMarkers].sort((a, b) => {
-      let valA: string = "";
-      let valB: string = "";
+  const table = useTable({
+    key: "marcadores-table",
+    features: tableFeaturesConfig,
+    data: filteredMarkers,
+    columns,
+    getRowId: (row) => row.id,
+    initialState: { sorting: [{ id: "nombre", desc: false }] },
+  });
 
-      switch (sortField) {
-        case "nombre":
-          valA = a.nombre;
-          valB = b.nombre;
-          break;
-        case "localidad":
-          valA =
-            a.localidad || resolvedLocalities[a.id] || "Corrientes Capital";
-          valB =
-            b.localidad || resolvedLocalities[b.id] || "Corrientes Capital";
-          break;
-        case "region":
-          valA = markerRegionMap.get(a.id) || "";
-          valB = markerRegionMap.get(b.id) || "";
-          break;
-        case "subtipo":
-          valA = a.subtipo;
-          valB = b.subtipo;
-          break;
-      }
-
-      const cmp = valA.localeCompare(valB, "es", { sensitivity: "base" });
-      return sortOrder === "asc" ? cmp : -cmp;
-    });
-  }, [
-    filteredMarkers,
-    sortField,
-    sortOrder,
-    resolvedLocalities,
-    markerRegionMap,
-  ]);
+  const sortedMarkers = table.getRowModel().rows.map((row) => row.original);
 
   // Manejo de checkboxes
   const isAllSelected =
@@ -530,6 +547,17 @@ export function MarcadoresTableUI({
       alert("Error eliminando los marcadores seleccionados.");
     }
   };
+
+  const tableGridTemplateColumns = [
+    ...(isDeleteMode ? ["48px"] : []),
+    "minmax(170px, 1.4fr)",
+    "minmax(140px, 1fr)",
+    "minmax(140px, 1fr)",
+    "minmax(150px, 1fr)",
+    "minmax(170px, 1.4fr)",
+    ...(selectedType === "EVACUACION" ? ["130px"] : []),
+    "64px",
+  ].join(" ");
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -722,376 +750,358 @@ export function MarcadoresTableUI({
       </div>
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
-      <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
-        <div className="rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
-          <table className="w-full text-left text-xs relative border-collapse">
-            <thead className="sticky top-0 z-20 bg-zinc-50/95 dark:bg-[#1c2744] backdrop-blur-xs shadow-2xs">
-              <tr className="border-b border-gray-200 dark:border-[#2b395b] select-none">
-                {isDeleteMode && (
-                  <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors animate-fade-kpi">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                    />
-                  </th>
-                )}
-
-                {/* Nombre — sortable y hover */}
-                <th
-                  onClick={() => handleSort("nombre")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[170px] ${
-                    sortField === "nombre"
-                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
-                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
-                  }`}
+      <div className="w-full rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] animate-list-slide-left">
+        <div className="overflow-x-auto">
+          <table className="block w-full min-w-[960px] text-left text-xs relative border-separate border-spacing-0">
+            <thead className="table w-full table-fixed bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr
+                  key={headerGroup.id}
+                  style={{ gridTemplateColumns: tableGridTemplateColumns }}
+                  className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
                 >
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="leading-snug">Nombre</span>
-                    {sortField === "nombre" ? (
-                      sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
-                </th>
-
-                {/* Localidad — sortable y hover */}
-                <th
-                  onClick={() => handleSort("localidad")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[140px] ${
-                    sortField === "localidad"
-                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
-                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="leading-snug">Localidad</span>
-                    {sortField === "localidad" ? (
-                      sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
-                </th>
-
-                {/* Región — sortable y hover */}
-                <th
-                  onClick={() => handleSort("region")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[140px] ${
-                    sortField === "region"
-                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
-                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="leading-snug">Región</span>
-                    {sortField === "region" ? (
-                      sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
-                </th>
-
-                {/* Tipo / Subtipo — sortable, hover y alineado izquierda */}
-                <th
-                  onClick={() => handleSort("subtipo")}
-                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[150px] ${
-                    sortField === "subtipo"
-                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
-                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="leading-snug">Tipo</span>
-                    {sortField === "subtipo" ? (
-                      sortOrder === "asc" ? (
-                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      ) : (
-                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                    )}
-                  </div>
-                </th>
-
-                {/* Dirección — hover y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[170px]">
-                  Dirección
-                </th>
-
-                {/* Capacidad — SOLO visible si es Centros de Evacuación */}
-                {selectedType === "EVACUACION" && (
-                  <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[130px]">
-                    Capacidad
-                  </th>
-                )}
-
-                {/* Acciones — hover en cabecera */}
-                <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-[#222e4d] bg-white dark:bg-[#161f36]">
-              {sortedMarkers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={
-                      (isDeleteMode ? 1 : 0) +
-                      5 +
-                      (selectedType === "EVACUACION" ? 1 : 0) +
-                      1
-                    }
-                    className="py-12 text-center text-xs text-zinc-400 dark:text-slate-400 font-medium"
-                  >
-                    No se encontraron marcadores.
-                  </td>
-                </tr>
-              ) : (
-                sortedMarkers.map((marker) => {
-                  const isSelected = selectedMarkerId === marker.id;
-                  const isChecked = selectedRowIds.has(marker.id);
-                  const isEditing = editingRowId === marker.id;
-                  const locDisplay =
-                    marker.localidad ||
-                    resolvedLocalities[marker.id] ||
-                    "Corrientes Capital";
-                  const regionDisplay =
-                    markerRegionMap.get(marker.id) || "Fuera de rango";
-
-                  return (
-                    <tr
-                      key={marker.id}
-                      onClick={() => {
-                        if (isEditing) return;
-                        if (isDeleteMode) {
-                          toggleSelectRow(marker.id);
-                        } else {
-                          onSelectMarker(marker);
+                  {headerGroup.headers.map((header) => {
+                    const isSortable = header.column.getCanSort();
+                    const isSorted = header.column.getIsSorted();
+                    const isSelection = header.column.id === "select";
+                    const isActions = header.column.id === "acciones";
+                    const minWidth =
+                      header.column.id === "nombre"
+                        ? "min-w-[170px]"
+                        : header.column.id === "localidad" ||
+                            header.column.id === "region"
+                          ? "min-w-[140px]"
+                          : header.column.id === "subtipo"
+                            ? "min-w-[150px]"
+                            : header.column.id === "direccion"
+                              ? "min-w-[170px]"
+                              : header.column.id === "capacidad"
+                                ? "min-w-[130px]"
+                                : "";
+                    return (
+                      <th
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        onClick={
+                          isSortable
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
                         }
-                      }}
-                      className={`group transition-colors cursor-pointer ${
-                        isEditing
-                          ? "bg-amber-50/60 dark:bg-amber-950/40"
-                          : isSelected
-                            ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
-                            : isChecked
-                              ? "bg-red-50/50 dark:bg-red-950/30"
-                              : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
-                      }`}
-                    >
-                      {isDeleteMode && (
-                        <td
-                          className="px-4 py-3 text-left"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        className={`sticky top-0 z-30 bg-zinc-50/95 dark:bg-[#1c2744] ${
+                          isSelection
+                            ? "w-12 px-4"
+                            : isActions
+                              ? "w-16 px-3"
+                              : "px-5"
+                        } py-3.5 text-xs font-bold transition-none text-left ${
+                          isSortable
+                            ? "cursor-pointer group hover:bg-zinc-100/80 dark:hover:bg-[#233154]"
+                            : "hover:bg-zinc-100/80 dark:hover:bg-[#233154]"
+                        } ${minWidth} ${
+                          isSorted
+                            ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                            : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                        }`}
+                      >
+                        {isSelection ? (
                           <input
                             type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleSelectRow(marker.id)}
-                            className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-600 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                            checked={isAllSelected}
+                            onChange={toggleSelectAll}
+                            onClick={(event) => event.stopPropagation()}
+                            className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
                           />
-                        </td>
-                      )}
-
-                      {/* Nombre — alineado a la izquierda */}
-                      <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editNombre}
-                            onChange={(e) => setEditNombre(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white/90 dark:bg-slate-800 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
-                            autoFocus
-                          />
-                        ) : (
-                          marker.nombre
-                        )}
-                      </td>
-
-                      {/* Localidad — alineado a la izquierda */}
-                      <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                        {locDisplay}
-                      </td>
-
-                      {/* Región — polígono calculado o Fuera de rango */}
-                      <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                        <span
-                          className={
-                            regionDisplay === "Fuera de rango"
-                              ? "text-zinc-400 dark:text-slate-400 italic"
-                              : "text-zinc-700 dark:text-slate-200 font-semibold"
-                          }
-                        >
-                          {regionDisplay}
-                        </span>
-                      </td>
-
-                      {/* Tipo — Custom Dropdown estilizado */}
-                      <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                        {isEditing ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isTypeDropdownOpen) {
-                                setIsTypeDropdownOpen(false);
-                                setTypeDropdownPos(null);
-                              } else {
-                                const rect =
-                                  e.currentTarget.getBoundingClientRect();
-                                const spaceBelow =
-                                  window.innerHeight - rect.bottom;
-                                const showAbove = spaceBelow < 220;
-                                setTypeDropdownPos({
-                                  top: showAbove
-                                    ? rect.top - 210
-                                    : rect.bottom + 4,
-                                  left: rect.left,
-                                  width: Math.max(rect.width, 180),
-                                  marker,
-                                });
-                                setIsTypeDropdownOpen(true);
-                              }
-                            }}
-                            className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-slate-100 outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-slate-500"
-                          >
-                            <span className="truncate">
-                              {marker.category === "EVACUACION"
-                                ? (
-                                    SAFE_ZONE_TYPE_LABELS as Record<
-                                      string,
-                                      string
-                                    >
-                                  )[editTipo] || editTipo
-                                : (
-                                    HEALTH_CENTER_TYPE_LABELS as Record<
-                                      string,
-                                      string
-                                    >
-                                  )[editTipo] || editTipo}
+                        ) : isActions ? null : (
+                          <div className="flex items-center justify-start gap-1.5">
+                            <span className="leading-snug">
+                              {header.column.columnDef.header as string}
                             </span>
-                            <ChevronDown
-                              className={`h-3.5 w-3.5 text-zinc-500 dark:text-slate-400 shrink-0 transition-transform duration-200 ${
-                                isTypeDropdownOpen ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
-                        ) : (
-                          marker.subtipo
+                            {isSortable &&
+                              (isSorted === "asc" ? (
+                                <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                              ) : isSorted === "desc" ? (
+                                <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                              ) : (
+                                <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                              ))}
+                          </div>
                         )}
-                      </td>
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+          </table>
+          <OverlayScrollbarsComponent
+            defer
+            className="min-w-[960px] max-h-[580px]"
+            options={{
+              overflow: { x: "hidden", y: "scroll" },
+              scrollbars: {
+                theme: "inu-table-scrollbar",
+                autoHide: "never",
+                visibility: "auto",
+              },
+            }}
+          >
+            <table className="block w-full min-w-[960px] text-left text-xs relative border-separate border-spacing-0">
+              <tbody className="block divide-y divide-gray-100 dark:divide-[#222e4d] bg-white dark:bg-[#161f36]">
+                {sortedMarkers.length === 0 ? (
+                  <tr
+                    style={{ gridTemplateColumns: tableGridTemplateColumns }}
+                    className="grid w-full items-center"
+                  >
+                    <td
+                      colSpan={
+                        (isDeleteMode ? 1 : 0) +
+                        5 +
+                        (selectedType === "EVACUACION" ? 1 : 0) +
+                        1
+                      }
+                      className="py-12 text-center text-xs text-zinc-400 dark:text-slate-400 font-medium"
+                    >
+                      No se encontraron marcadores.
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map((row) => {
+                    const marker = row.original;
+                    const isSelected = selectedMarkerId === marker.id;
+                    const isChecked = selectedRowIds.has(marker.id);
+                    const isEditing = editingRowId === marker.id;
+                    const locDisplay =
+                      marker.localidad ||
+                      resolvedLocalities[marker.id] ||
+                      "Corrientes Capital";
+                    const regionDisplay =
+                      markerRegionMap.get(marker.id) || "Fuera de rango";
 
-                      {/* Dirección — alineado a la izquierda */}
-                      <td className="px-5 py-3 text-zinc-500 dark:text-slate-300 font-medium text-left">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editDireccion}
-                            onChange={(e) => setEditDireccion(e.target.value)}
+                    return (
+                      <tr
+                        key={marker.id}
+                        onClick={() => {
+                          if (isEditing) return;
+                          if (isDeleteMode) {
+                            toggleSelectRow(marker.id);
+                          } else {
+                            onSelectMarker(marker);
+                          }
+                        }}
+                        style={{
+                          gridTemplateColumns: tableGridTemplateColumns,
+                        }}
+                        className={`grid w-full items-center group transition-colors cursor-pointer ${
+                          isEditing
+                            ? "bg-amber-50/60 dark:bg-amber-950/40"
+                            : isSelected
+                              ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
+                              : isChecked
+                                ? "bg-red-50/50 dark:bg-red-950/30"
+                                : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
+                        }`}
+                      >
+                        {isDeleteMode && (
+                          <td
+                            className="px-4 py-3 text-left"
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-medium outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
-                          />
-                        ) : (
-                          marker.direccion || "-"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleSelectRow(marker.id)}
+                              className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-600 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                            />
+                          </td>
                         )}
-                      </td>
 
-                      {/* Capacidad — SOLO visible si es Centros de Evacuación */}
-                      {selectedType === "EVACUACION" && (
-                        <td className="px-5 py-3 text-zinc-700 dark:text-white font-bold text-left">
+                        {/* Nombre — alineado a la izquierda */}
+                        <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
                           {isEditing ? (
                             <input
-                              type="number"
-                              min="0"
-                              value={editCapacidad}
-                              onChange={(e) => setEditCapacidad(e.target.value)}
+                              type="text"
+                              value={editNombre}
+                              onChange={(e) => setEditNombre(e.target.value)}
                               onClick={(e) => e.stopPropagation()}
-                              placeholder="0"
-                              className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                              className="w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white/90 dark:bg-slate-800 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                              autoFocus
                             />
-                          ) : marker.capacidad_maxima !== null &&
-                            marker.capacidad_maxima !== undefined ? (
-                            marker.capacidad_maxima.toLocaleString("es-AR")
                           ) : (
-                            "-"
+                            marker.nombre
                           )}
                         </td>
-                      )}
 
-                      {/* Acciones — botones redondos con color de fuente normal */}
-                      <td
-                        className="px-3 py-3 text-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {isEditing ? (
-                          <div className="flex items-center justify-start gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleConfirmEdit(marker)}
-                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                              title="Confirmar edición"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancelEdit}
-                              className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                              title="Cancelar edición"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const rect =
-                                e.currentTarget.getBoundingClientRect();
-                              if (activeMenuData?.marker.id === marker.id) {
-                                setActiveMenuData(null);
-                              } else {
-                                const spaceBelow =
-                                  window.innerHeight - rect.bottom;
-                                const showAbove = spaceBelow < 140;
-                                setActiveMenuData({
-                                  marker,
-                                  top: showAbove
-                                    ? rect.top - 120
-                                    : rect.bottom + 4,
-                                  right: window.innerWidth - rect.right,
-                                });
-                              }
-                            }}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                        {/* Localidad — alineado a la izquierda */}
+                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                          {locDisplay}
+                        </td>
+
+                        {/* Región — polígono calculado o Fuera de rango */}
+                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                          <span
+                            className={
+                              regionDisplay === "Fuera de rango"
+                                ? "text-zinc-400 dark:text-slate-400 italic"
+                                : "text-zinc-700 dark:text-slate-200 font-semibold"
+                            }
                           >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </button>
+                            {regionDisplay}
+                          </span>
+                        </td>
+
+                        {/* Tipo — Custom Dropdown estilizado */}
+                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                          {isEditing ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isTypeDropdownOpen) {
+                                  setIsTypeDropdownOpen(false);
+                                  setTypeDropdownPos(null);
+                                } else {
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
+                                  const spaceBelow =
+                                    window.innerHeight - rect.bottom;
+                                  const showAbove = spaceBelow < 220;
+                                  setTypeDropdownPos({
+                                    top: showAbove
+                                      ? rect.top - 210
+                                      : rect.bottom + 4,
+                                    left: rect.left,
+                                    width: Math.max(rect.width, 180),
+                                    marker,
+                                  });
+                                  setIsTypeDropdownOpen(true);
+                                }
+                              }}
+                              className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-slate-100 outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-slate-500"
+                            >
+                              <span className="truncate">
+                                {marker.category === "EVACUACION"
+                                  ? (
+                                      SAFE_ZONE_TYPE_LABELS as Record<
+                                        string,
+                                        string
+                                      >
+                                    )[editTipo] || editTipo
+                                  : (
+                                      HEALTH_CENTER_TYPE_LABELS as Record<
+                                        string,
+                                        string
+                                      >
+                                    )[editTipo] || editTipo}
+                              </span>
+                              <ChevronDown
+                                className={`h-3.5 w-3.5 text-zinc-500 dark:text-slate-400 shrink-0 transition-transform duration-200 ${
+                                  isTypeDropdownOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+                          ) : (
+                            marker.subtipo
+                          )}
+                        </td>
+
+                        {/* Dirección — alineado a la izquierda */}
+                        <td className="px-5 py-3 text-zinc-500 dark:text-slate-300 font-medium text-left">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editDireccion}
+                              onChange={(e) => setEditDireccion(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-medium outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                            />
+                          ) : (
+                            marker.direccion || "-"
+                          )}
+                        </td>
+
+                        {/* Capacidad — SOLO visible si es Centros de Evacuación */}
+                        {selectedType === "EVACUACION" && (
+                          <td className="px-5 py-3 text-zinc-700 dark:text-white font-bold text-left">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                min="0"
+                                value={editCapacidad}
+                                onChange={(e) =>
+                                  setEditCapacidad(e.target.value)
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                                placeholder="0"
+                                className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                              />
+                            ) : marker.capacidad_maxima !== null &&
+                              marker.capacidad_maxima !== undefined ? (
+                              marker.capacidad_maxima.toLocaleString("es-AR")
+                            ) : (
+                              "-"
+                            )}
+                          </td>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+
+                        {/* Acciones — botones redondos con color de fuente normal */}
+                        <td
+                          className="px-3 py-3 text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {isEditing ? (
+                            <div className="flex items-center justify-start gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmEdit(marker)}
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title="Confirmar edición"
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title="Cancelar edición"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                if (activeMenuData?.marker.id === marker.id) {
+                                  setActiveMenuData(null);
+                                } else {
+                                  const spaceBelow =
+                                    window.innerHeight - rect.bottom;
+                                  const showAbove = spaceBelow < 140;
+                                  setActiveMenuData({
+                                    marker,
+                                    top: showAbove
+                                      ? rect.top - 120
+                                      : rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                  });
+                                }
+                              }}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                            >
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </OverlayScrollbarsComponent>
         </div>
       </div>
 

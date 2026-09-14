@@ -264,6 +264,26 @@ path.leaflet-interactive:focus {
   background: #94a3b8;
 }
 
+.inu-table-scrollbar.os-scrollbar {
+  --os-size: 12px;
+  --os-padding-perpendicular: 2px;
+  --os-padding-axis: 4px;
+  --os-track-bg: transparent;
+  --os-track-bg-hover: transparent;
+  --os-handle-bg: #cbd5e1;
+  --os-handle-bg-hover: #94a3b8;
+  --os-handle-bg-active: #333333;
+  --os-handle-border-radius: 9999px;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.dark .inu-table-scrollbar.os-scrollbar {
+  --os-handle-bg: #cccccc;
+  --os-handle-bg-hover: #ffffff;
+  --os-handle-bg-active: #ffffff;
+}
+
 /* When selected: scale up, thicker border, strong shadow, and strong bounce */
 .custom-report-marker.is-selected .marker-inner {
   transform: scale(1.5);
