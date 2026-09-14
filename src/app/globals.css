@@ -125,6 +125,11 @@ body {
   border-right-color: var(--map-popup-bg) !important;
 }
 
+/* MapTooltipManager: oculta tooltips mientras se arrastra el mapa */
+.leaflet-tooltip-suppressed .leaflet-tooltip {
+  display: none !important;
+}
+
 .leaflet-popup-content {
   margin: 0 8px !important;
   line-height: 1.3 !important;

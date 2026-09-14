@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useEffect } from "react";
-import {
-  MapContainer,
-  Polygon,
-  Tooltip,
-  CircleMarker,
-  useMap,
-} from "react-leaflet";
+import { MapContainer, Polygon, CircleMarker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Report } from "@/types/report";
 import { BarriosFeatureCollection } from "@/services/barrioService";
@@ -18,6 +12,13 @@ import { isPointInGeoJSONGeometry, isPointInPolygon } from "@/lib/geometry";
 import { Target, Plus, Minus } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { MapTileLayers } from "@/components/map/MapTileLayers";
+import {
+  MapTooltip,
+  MapTooltipManager,
+  MapTooltipTitle,
+  MapTooltipSub,
+  MapTooltipCount,
+} from "@/components/map/MapTooltip";
 
 interface MinimapInternalProps {
   reports: Report[];
@@ -97,41 +98,6 @@ function CustomMapControls() {
       </div>
     </div>
   );
-}
-
-function MapTooltipCleaner() {
-  const map = useMap();
-
-  useEffect(() => {
-    const closeAll = () => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        map.eachLayer((layer: any) => {
-          if (layer && typeof layer.closeTooltip === "function") {
-            layer.closeTooltip();
-          }
-        });
-      } catch {
-        // Ignorar
-      }
-    };
-
-    map.on("mousedown", closeAll);
-    map.on("dragstart", closeAll);
-    map.on("movestart", closeAll);
-    map.on("mouseup", closeAll);
-    map.on("zoomstart", closeAll);
-
-    return () => {
-      map.off("mousedown", closeAll);
-      map.off("dragstart", closeAll);
-      map.off("movestart", closeAll);
-      map.off("mouseup", closeAll);
-      map.off("zoomstart", closeAll);
-    };
-  }, [map]);
-
-  return null;
 }
 
 function MapSizeInvalidator() {
@@ -394,7 +360,7 @@ export function MinimapInternal({
 
         {/* Controladores de mapa */}
         <CustomMapControls />
-        <MapTooltipCleaner />
+        <MapTooltipManager />
         <MapSizeInvalidator />
         <MapRegionBoundsController
           selectedRegionName={selectedRegionName}
@@ -441,19 +407,12 @@ export function MinimapInternal({
                   },
                 }}
               >
-                <Tooltip opacity={0.95}>
-                  <div className="text-xs font-sans p-0.5">
-                    <p className="font-bold text-zinc-900 dark:text-white">
-                      {barrio.nombre}
-                    </p>
-                    <p className="text-zinc-600 dark:text-slate-300">
-                      Reclamos:{" "}
-                      <span className="font-semibold">
-                        {barrio.reportCount}
-                      </span>
-                    </p>
+                <MapTooltip variant="polygon">
+                  <div className="font-sans p-0.5">
+                    <MapTooltipTitle>{barrio.nombre}</MapTooltipTitle>
+                    <MapTooltipCount count={barrio.reportCount} />
                   </div>
-                </Tooltip>
+                </MapTooltip>
               </Polygon>
             );
           })}
@@ -488,19 +447,12 @@ export function MinimapInternal({
                   },
                 }}
               >
-                <Tooltip opacity={0.95}>
-                  <div className="text-xs font-sans p-0.5">
-                    <p className="font-bold text-zinc-900 dark:text-white">
-                      {region.nombre}
-                    </p>
-                    <p className="text-zinc-600 dark:text-slate-300">
-                      Reclamos:{" "}
-                      <span className="font-semibold">
-                        {region.reportCount}
-                      </span>
-                    </p>
+                <MapTooltip variant="polygon">
+                  <div className="font-sans p-0.5">
+                    <MapTooltipTitle>{region.nombre}</MapTooltipTitle>
+                    <MapTooltipCount count={region.reportCount} />
                   </div>
-                </Tooltip>
+                </MapTooltip>
               </Polygon>
             );
           })}
@@ -536,21 +488,21 @@ export function MinimapInternal({
                 },
               }}
             >
-              <Tooltip opacity={0.95}>
-                <div className="text-xs font-sans p-0.5">
-                  <p className="font-bold text-zinc-900 dark:text-white">
-                    {formatReportType(r.tipo)}
-                  </p>
+              <MapTooltip variant="report">
+                <div className="font-sans p-0.5">
+                  <MapTooltipTitle>{formatReportType(r.tipo)}</MapTooltipTitle>
                   {r.descripcion && (
-                    <p className="text-zinc-600 dark:text-slate-300 text-[11px] font-medium line-clamp-1">
-                      {r.descripcion}
-                    </p>
+                    <MapTooltipSub>
+                      <span className="text-[11px] font-medium line-clamp-1">
+                        {r.descripcion}
+                      </span>
+                    </MapTooltipSub>
                   )}
                   <p className="text-zinc-500 dark:text-slate-400 text-[10px]">
                     {new Date(r.fecha).toLocaleDateString("es-AR")}
                   </p>
                 </div>
-              </Tooltip>
+              </MapTooltip>
             </CircleMarker>
           ))}
       </MapContainer>
