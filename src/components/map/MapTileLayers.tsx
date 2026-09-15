@@ -88,6 +88,7 @@ export function MapTileLayers({
           attribution={MAP_TILES.esriSatellite.attribution}
           url={MAP_TILES.esriSatellite.url}
           maxZoom={MAP_TILES.esriSatellite.maxZoom}
+          maxNativeZoom={MAP_TILES.esriSatellite.maxNativeZoom}
         />
         <TileLayer
           key="esri-satellite-manual-labels"
@@ -123,6 +124,7 @@ export function MapTileLayers({
           attribution={MAP_TILES.esriSatellite.attribution}
           url={MAP_TILES.esriSatellite.url}
           maxZoom={MAP_TILES.esriSatellite.maxZoom}
+          maxNativeZoom={MAP_TILES.esriSatellite.maxNativeZoom}
         />
         <TileLayer
           key="esri-satellite-fallback-labels"

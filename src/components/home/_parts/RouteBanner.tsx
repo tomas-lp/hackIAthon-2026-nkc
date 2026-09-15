@@ -51,7 +51,7 @@ export function RouteBanner({
           <button
             onClick={onCancel}
             title="Cancelar ruta"
-            className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-200/50 hover:text-zinc-700 cursor-pointer shrink-0"
+            className="rounded-full p-1 text-zinc-600 transition-colors hover:bg-zinc-200/60 hover:text-zinc-950 cursor-pointer shrink-0"
           >
             <X className="h-4 w-4" />
           </button>

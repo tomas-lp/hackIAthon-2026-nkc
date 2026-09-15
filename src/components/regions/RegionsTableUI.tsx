@@ -956,7 +956,7 @@ export function RegionsTableUI({
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
       <div className="w-full rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] animate-list-slide-left">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full min-w-[1012px] table-fixed text-left text-xs relative border-separate border-spacing-0">
             <thead className="bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
               <tr
