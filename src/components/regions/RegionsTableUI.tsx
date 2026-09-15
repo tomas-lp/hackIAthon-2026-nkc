@@ -887,7 +887,7 @@ export function RegionsTableUI({
               <button
                 type="button"
                 onClick={handleCancelDeleteMode}
-                className="h-9 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] px-3.5 text-xs font-semibold text-zinc-600 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
+                className="h-9 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-3.5 text-xs font-bold text-red-600 dark:text-[#f87171] shadow-2xs backdrop-blur-md hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
               >
                 Cancelar
               </button>
@@ -1296,14 +1296,14 @@ export function RegionsTableUI({
               <button
                 type="button"
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-4 py-2 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-4 py-2 text-xs font-bold text-red-600 dark:text-[#f87171] shadow-2xs hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-red-500 bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition-all active:scale-95 cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition-all active:scale-95 cursor-pointer"
               >
                 Eliminar
               </button>

@@ -184,7 +184,7 @@ export function SafeZoneDetailSidebar({
           {onEdit && (
             <button
               onClick={onEdit}
-              className="flex w-1/2 items-center justify-center gap-1.5 rounded-xl bg-zinc-100 dark:bg-[#1e2a4a] px-3 py-2.5 text-xs font-bold text-zinc-700 dark:text-slate-200 transition-colors hover:bg-zinc-200 dark:hover:bg-[#25355d]"
+              className="flex w-1/2 items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-3 py-2.5 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#25355d] hover:border-gray-300 dark:hover:border-slate-500 active:scale-95 cursor-pointer"
             >
               <Edit className="h-3.5 w-3.5" />
               Editar
@@ -193,7 +193,7 @@ export function SafeZoneDetailSidebar({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="flex w-1/2 items-center justify-center gap-1.5 rounded-xl bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 transition-colors hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-700 dark:hover:text-red-300"
+              className="flex w-1/2 items-center justify-center gap-1.5 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-3 py-2.5 text-xs font-bold text-red-600 dark:text-[#f87171] shadow-2xs transition-all duration-200 hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] active:scale-95 cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Eliminar

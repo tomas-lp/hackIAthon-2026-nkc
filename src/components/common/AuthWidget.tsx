@@ -1,7 +1,7 @@
 "use client";
 
 import { User, LogOut, X, Loader2, Sun, Moon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { loginWithCredentials } from "@/app/auth/actions";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -21,6 +21,33 @@ export function AuthWidget({
 }: AuthWidgetProps) {
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, true);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside, true);
+      document.removeEventListener("touchstart", handleClickOutside, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showUserMenu]);
 
   return (
     <div
@@ -31,21 +58,24 @@ export function AuthWidget({
       {isAdmin ? (
         <>
           {/* Top Row: Sliding Logout Button + User Profile Button */}
-          <div className="flex items-center gap-2 relative pointer-events-auto">
-            {/* Standalone Logout Pill Button */}
+          <div
+            ref={menuRef}
+            className="flex items-center gap-2 relative pointer-events-auto"
+          >
+            {/* Standalone Logout Button with rounded-xl and red border/text */}
             <button
               onClick={() => {
                 setShowUserMenu(false);
                 onLogoutClick();
               }}
               title="Cerrar sesion"
-              className={`flex items-center gap-2 rounded-full border border-red-200/80 bg-white/90 dark:bg-slate-900/90 dark:border-red-900/60 px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 shadow-2xs backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/40 active:scale-95 ${
+              className={`flex items-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-4 py-2 text-xs font-bold text-red-600 dark:text-[#f87171] shadow-2xs backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] active:scale-95 ${
                 showUserMenu
-                  ? "translate-x-0 opacity-100 scale-100"
+                  ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
                   : "translate-x-12 opacity-0 pointer-events-none scale-90"
               }`}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 text-red-500 dark:text-[#f87171]" />
               <span>Cerrar sesion</span>
             </button>
 

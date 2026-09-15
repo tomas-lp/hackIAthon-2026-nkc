@@ -113,14 +113,16 @@ function escapeHtml(value: string): string {
 export function buildMapTooltipHtml({
   title,
   subtitle,
+  italic = false,
 }: {
   title: string;
   subtitle: string;
+  italic?: boolean;
 }): string {
   return (
     `<div class="flex flex-col gap-0.5 font-sans p-0.5">` +
     `<span class="font-bold text-sm text-zinc-900 dark:text-slate-100 leading-tight">${escapeHtml(title)}</span>` +
-    `<span class="text-xs font-medium text-zinc-600 dark:text-slate-300 leading-tight">${escapeHtml(subtitle)}</span>` +
+    `<span class="text-xs ${italic ? "italic font-normal" : "font-medium"} text-zinc-600 dark:text-slate-300 leading-tight">${escapeHtml(subtitle)}</span>` +
     `</div>`
   );
 }

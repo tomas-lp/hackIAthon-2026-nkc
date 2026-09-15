@@ -513,7 +513,7 @@ export function MinimapInternal({
           <span className="text-[10px] text-zinc-400 dark:text-slate-400">
             Baja
           </span>
-          <div className="w-14 h-2 rounded-full bg-gradient-to-r from-[#3b82f6] via-[#eab308] to-[#ef4444]" />
+          <div className="w-14 h-2 rounded-full bg-gradient-to-r from-[#facc15] via-[#f97316] to-[#dc2626]" />
           <span className="text-[10px] text-zinc-400 dark:text-slate-400">
             Alta
           </span>
