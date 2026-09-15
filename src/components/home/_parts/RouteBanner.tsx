@@ -1,7 +1,8 @@
 "use client";
 
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Navigation, X } from "lucide-react";
 import { RouteResult } from "@/lib/routing";
+import { buildGoogleMapsNavigationUrl } from "@/lib/googleMaps";
 import { RoutingState } from "@/hooks/useRouting";
 
 interface RouteBannerProps {
@@ -48,13 +49,26 @@ export function RouteBanner({
                   : "alto"}
             </span>
           </div>
-          <button
-            onClick={onCancel}
-            title="Cancelar ruta"
-            className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-200/50 hover:text-zinc-700 cursor-pointer shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={buildGoogleMapsNavigationUrl(displayRoute)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir esta ruta en Google Maps con navegación por voz"
+              aria-label="Abrir esta ruta en Google Maps con navegación por voz"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-500 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600 active:scale-95"
+            >
+              <Navigation className="h-4 w-4" />
+              Navegar
+            </a>
+            <button
+              onClick={onCancel}
+              title="Cancelar ruta"
+              className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-200/50 hover:text-zinc-700 cursor-pointer shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 
