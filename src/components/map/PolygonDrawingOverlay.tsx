@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Polygon,
-  Polyline,
-  Tooltip,
-  Popup,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
+import { Polygon, Polyline, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { Trash2 } from "lucide-react";
+import { MapTooltip, MapTooltipTitle, MapTooltipSub } from "./MapTooltip";
 
 import { Report } from "@/types/report";
 import { RegionLista, RegionPersonalizada } from "@/types/region";
@@ -18,32 +12,14 @@ import { extractGeoJSONPoints, isPointInPolygon } from "@/lib/geometry";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 
 export const LIST_COLOR_PALETTE = [
-  "#10b981", // Emerald
-  "#3b82f6", // Blue
-  "#8b5cf6", // Purple
-  "#f59e0b", // Amber
-  "#f43f5e", // Rose
-  "#06b6d4", // Cyan
-  "#ec4899", // Pink
-  "#84cc16", // Lime
+  "#3b82f6", // Unified baby blue
 ];
 
 export function getListColor(
-  listIdOrName?: string | null,
-  listas?: RegionLista[]
+  _listIdOrName?: string | null,
+  _listas?: RegionLista[]
 ): string {
-  if (!listIdOrName) return LIST_COLOR_PALETTE[0];
-  if (listas && listas.length > 0) {
-    const idx = listas.findIndex(
-      (l) => l.id === listIdOrName || l.nombre === listIdOrName
-    );
-    if (idx >= 0) return LIST_COLOR_PALETTE[idx % LIST_COLOR_PALETTE.length];
-  }
-  let hash = 0;
-  for (let i = 0; i < listIdOrName.length; i++) {
-    hash = listIdOrName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return LIST_COLOR_PALETTE[Math.abs(hash) % LIST_COLOR_PALETTE.length];
+  return "#3b82f6";
 }
 
 export function RegionFocuser({
@@ -290,7 +266,7 @@ if (typeof window !== "undefined" && L && (L as any).Tooltip) {
 export function RegionShape({
   region,
   reports,
-  color = "#10b981",
+  color = "#3b82f6",
   isSelected = false,
   isEditingRegions = false,
   onDeleteRegion,
@@ -318,33 +294,28 @@ export function RegionShape({
       pathOptions={{
         color: color,
         fillColor: color,
-        fillOpacity: isSelected ? 0.45 : 0.2,
-        weight: isSelected ? 3.5 : 2,
+        fillOpacity: isSelected ? 0.65 : 0.45,
+        weight: isSelected ? 3 : 2,
       }}
       eventHandlers={{
         mouseover: (e) => {
-          e.target.setStyle({ fillOpacity: isSelected ? 0.6 : 0.4 });
+          e.target.setStyle({ fillOpacity: isSelected ? 0.75 : 0.6 });
         },
         mouseout: (e) => {
-          e.target.setStyle({ fillOpacity: isSelected ? 0.45 : 0.2 });
+          e.target.setStyle({ fillOpacity: isSelected ? 0.65 : 0.45 });
         },
       }}
     >
-      <Tooltip
-        sticky
-        className="custom-tooltip font-sans text-sm rounded-xl border border-gray-200 dark:border-[#2b395b] shadow-xl px-3 py-2"
-      >
+      <MapTooltip variant="polygon">
         <div className="flex flex-col gap-1">
-          <span className="font-bold text-gray-800 dark:text-white">
-            {region.nombre}
-          </span>
-          <span className="text-zinc-600 dark:text-slate-300 text-xs">
+          <MapTooltipTitle>{region.nombre}</MapTooltipTitle>
+          <MapTooltipSub>
             {isEditingRegions
               ? "Clickeá para opciones"
               : `${pointsCount} reclamos activos en esta zona`}
-          </span>
+          </MapTooltipSub>
         </div>
-      </Tooltip>
+      </MapTooltip>
 
       {isEditingRegions && onDeleteRegion && (
         <Popup className="custom-popup rounded-2xl p-1 shadow-xl">

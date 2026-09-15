@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Info, Plus } from "lucide-react";
+import { Layers, Info, Plus, Satellite } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface LayerControlsProps {
@@ -9,6 +9,8 @@ interface LayerControlsProps {
   setShowEvacuationCenters: React.Dispatch<React.SetStateAction<boolean>>;
   showMedicalCenters: boolean;
   setShowMedicalCenters: React.Dispatch<React.SetStateAction<boolean>>;
+  showSatellite: boolean;
+  setShowSatellite: React.Dispatch<React.SetStateAction<boolean>>;
   onCreateEvacuationCenter?: () => void;
   onCreateMedicalCenter?: () => void;
   isHidden?: boolean;
@@ -19,6 +21,8 @@ export function LayerControls({
   setShowEvacuationCenters,
   showMedicalCenters,
   setShowMedicalCenters,
+  showSatellite,
+  setShowSatellite,
   onCreateEvacuationCenter,
   onCreateMedicalCenter,
   isHidden,
@@ -60,9 +64,30 @@ export function LayerControls({
           {/* Centros de Evacuación */}
           <div className="flex items-center justify-between gap-2 p-1">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <Info className="h-3.5 w-3.5 stroke-[2.5]" />
-              </div>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-6 w-6 shrink-0 block"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="12" fill="#d1fae5" />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="7.5"
+                  stroke="#059669"
+                  strokeWidth="1.8"
+                />
+                <circle cx="12" cy="8.4" r="1.1" fill="#059669" />
+                <rect
+                  x="11"
+                  y="11.1"
+                  width="2"
+                  height="5.4"
+                  rx="1"
+                  fill="#059669"
+                />
+              </svg>
               <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
                 Centros de evacuación
               </span>
@@ -159,6 +184,38 @@ export function LayerControls({
               )}
             </div>
           </div>
+
+          <div className="h-[1px] w-full bg-gray-100 dark:bg-slate-700" />
+
+          {/* Vista satelital (ESRI World Imagery) */}
+          <div className="flex items-center justify-between gap-2 p-1">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                <Satellite className="h-3.5 w-3.5 stroke-[2.5]" />
+              </div>
+              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
+                Vista satelital
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={() => setShowSatellite((prev) => !prev)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  showSatellite ? "bg-sky-500" : "bg-zinc-300"
+                }`}
+              >
+                <span
+                  suppressHydrationWarning
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    showSatellite ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -169,24 +226,44 @@ export function LayerControls({
         </span>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs">
-            <Info className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
+          <svg
+            viewBox="0 0 16 16"
+            className="h-4 w-4 shrink-0 block shadow-2xs rounded-full"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="8" cy="8" r="8" fill="#10b981" />
+            <circle cx="8" cy="8" r="5" stroke="#ffffff" strokeWidth="1.2" />
+            <circle cx="8" cy="5.6" r="0.75" fill="#ffffff" />
+            <rect
+              x="7.3"
+              y="7.4"
+              width="1.4"
+              height="3.75"
+              rx="0.7"
+              fill="#ffffff"
+            />
+          </svg>
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Centros de evacuación
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white shadow-2xs">
-            <svg
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-2.5 w-2.5"
-            >
-              <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
-            </svg>
-          </div>
+          <svg
+            viewBox="0 0 16 16"
+            className="h-4 w-4 shrink-0 block shadow-2xs rounded-full"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="8" cy="8" r="8" fill="#ef4444" />
+            <path
+              d="M8 4.2v7.6M4.2 8h7.6"
+              stroke="#ffffff"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Centros de at. médica
           </span>
@@ -207,7 +284,7 @@ export function LayerControls({
             className="h-2 w-16 sm:w-20 rounded-full shadow-2xs"
             style={{
               background:
-                "linear-gradient(to right, #3b82f6, #22c55e, #eab308, #f97316, #ef4444)",
+                "linear-gradient(to right, #facc15, #fb923c, #f97316, #ef4444, #dc2626)",
             }}
           />
           <span className="text-[10px] font-mono text-zinc-400 dark:text-slate-500">

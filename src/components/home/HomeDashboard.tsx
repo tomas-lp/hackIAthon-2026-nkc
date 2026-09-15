@@ -64,6 +64,7 @@ export function HomeDashboard({
     useState<boolean>(true);
   const [showMedicalCenters, setShowMedicalCentersState] =
     useState<boolean>(true);
+  const [showSatellite, setShowSatelliteState] = useState<boolean>(false);
 
   useEffect(() => {
     const savedEvac = localStorage.getItem("layer_evacuation_centers");
@@ -74,6 +75,10 @@ export function HomeDashboard({
     const savedMed = localStorage.getItem("layer_medical_centers");
     if (savedMed !== null) {
       setShowMedicalCentersState(savedMed === "true");
+    }
+    const savedSat = localStorage.getItem("layer_satellite");
+    if (savedSat !== null) {
+      setShowSatelliteState(savedSat === "true");
     }
   }, []);
 
@@ -96,6 +101,16 @@ export function HomeDashboard({
       const next = typeof val === "function" ? val(prev) : val;
       if (typeof window !== "undefined") {
         localStorage.setItem("layer_medical_centers", String(next));
+      }
+      return next;
+    });
+  };
+
+  const setShowSatellite = (val: boolean | ((prev: boolean) => boolean)) => {
+    setShowSatelliteState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("layer_satellite", String(next));
       }
       return next;
     });
@@ -488,6 +503,7 @@ export function HomeDashboard({
         showEvacuationCenters={showEvacuationCenters}
         showMedicalCenters={showMedicalCenters}
         showBarrios={isAdmin ? activeListTab === "Barrios" : false}
+        satellite={showSatellite}
         regiones={regiones}
         newlyAddedDraftZones={newlyAddedDraftZones}
         activeHeaderTab={activeListTab}
@@ -507,6 +523,8 @@ export function HomeDashboard({
           setShowEvacuationCenters={setShowEvacuationCenters}
           showMedicalCenters={showMedicalCenters}
           setShowMedicalCenters={setShowMedicalCenters}
+          showSatellite={showSatellite}
+          setShowSatellite={setShowSatellite}
           onCreateEvacuationCenter={
             isAdmin ? () => safeZoneSel.setIsCreatingSafeZone(true) : undefined
           }

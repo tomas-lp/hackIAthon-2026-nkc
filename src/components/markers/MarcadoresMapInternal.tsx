@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   MapContainer,
   Marker,
-  Tooltip,
   Popup,
   useMap,
   useMapEvents,
@@ -17,10 +16,11 @@ import {
   createHealthCenterIcon,
   createDraftMarkerIcon,
 } from "@/lib/markerIcons";
-import { ShieldCheck, PlusSquare, Users } from "lucide-react";
+import { ShieldCheck, PlusSquare, Users, Info } from "lucide-react";
 import { MapSizeInvalidator } from "@/components/map/MapSizeInvalidator";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { MapTileLayers } from "@/components/map/MapTileLayers";
+import { MapTooltip, MapTooltipManager } from "@/components/map/MapTooltip";
 
 interface MarcadoresMapInternalProps {
   markers: MarkerRow[];
@@ -138,15 +138,41 @@ export default function MarcadoresMapInternal({
           Referencias
         </span>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[8px]">
-            ✓
-          </div>
+          <svg
+            viewBox="0 0 16 16"
+            className="h-3.5 w-3.5 shrink-0 block shadow-2xs rounded-full"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="8" cy="8" r="8" fill="#10b981" />
+            <circle cx="8" cy="8" r="5" stroke="#ffffff" strokeWidth="1.2" />
+            <circle cx="8" cy="5.6" r="0.75" fill="#ffffff" />
+            <rect
+              x="7.3"
+              y="7.4"
+              width="1.4"
+              height="3.75"
+              rx="0.7"
+              fill="#ffffff"
+            />
+          </svg>
           <span>Centros de evacuación</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-blue-600 flex items-center justify-center text-white text-[9px] font-bold">
-            +
-          </div>
+          <svg
+            viewBox="0 0 16 16"
+            className="h-3.5 w-3.5 shrink-0 block shadow-2xs rounded-full"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="8" cy="8" r="8" fill="#ef4444" />
+            <path
+              d="M8 4.2v7.6M4.2 8h7.6"
+              stroke="#ffffff"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
           <span>Centros de at. médica</span>
         </div>
       </div>
@@ -161,6 +187,7 @@ export default function MarcadoresMapInternal({
         <MapTileLayers isDark={isDark} />
 
         <MapSizeInvalidator />
+        <MapTooltipManager />
         <ZoomWatcher onZoomChange={setCurrentZoom} />
         <MarkerFocuser selectedMarker={selectedMarker} />
         <MapClickHandler
@@ -185,7 +212,7 @@ export default function MarcadoresMapInternal({
                 click: () => onSelectMarker(marker),
               }}
             >
-              <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+              <MapTooltip variant="marker">
                 <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
                   {marker.category === "EVACUACION" ? (
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
@@ -194,7 +221,7 @@ export default function MarcadoresMapInternal({
                   )}
                   <span>{marker.nombre}</span>
                 </div>
-              </Tooltip>
+              </MapTooltip>
 
               <Popup className="custom-marker-popup">
                 <div className="p-1 min-w-[200px] text-xs">

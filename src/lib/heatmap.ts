@@ -20,11 +20,11 @@ export const HEATMAP_CONFIG: HeatmapConfig = {
   maxZoom: 12,
   minOpacity: 0.05,
   gradient: {
-    0.2: "#3b82f6",
-    0.4: "#22c55e",
-    0.6: "#eab308",
-    0.8: "#f97316",
-    1.0: "#ef4444",
+    0.2: "#facc15", // Amarillo
+    0.4: "#fb923c", // Naranja claro
+    0.6: "#f97316", // Naranja intenso
+    0.8: "#ef4444", // Rojo
+    1.0: "#dc2626", // Rojo brillante
   },
   maxIntensity: 80,
 };
@@ -93,7 +93,7 @@ export function heatColor(
     .map(([stop, color]) => ({ stop: Number(stop), color }))
     .sort((a, b) => a.stop - b.stop);
 
-  if (stops.length === 0) return "#3b82f6";
+  if (stops.length === 0) return "#facc15";
   if (valor <= stops[0].stop) return stops[0].color;
   if (valor >= stops[stops.length - 1].stop) {
     return stops[stops.length - 1].color;

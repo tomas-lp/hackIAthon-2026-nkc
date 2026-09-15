@@ -13,6 +13,11 @@ import { isPointInGeoJSONGeometry } from "@/lib/geometry";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { MapTileLayers } from "@/components/map/MapTileLayers";
+import {
+  buildMapTooltipHtml,
+  MAP_TOOLTIP_CLASSNAME,
+  MapTooltipManager,
+} from "@/components/map/MapTooltip";
 
 const CORRIENTES_CENTER: [number, number] = [-27.4692, -58.8306];
 const INITIAL_ZOOM = 12;
@@ -123,6 +128,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
         <MapTileLayers isDark={isDark} />
 
         <MapSizeInvalidator />
+        <MapTooltipManager />
 
         {!props.hideHeatmap && <HeatLayer points={heatPoints} />}
 
@@ -133,21 +139,12 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
             data={barriosGeoJson as unknown as GeoJSON.GeoJsonObject}
             style={(feature) => {
               const isSelected = feature?.properties?.id === selectedRegionId;
-              if (isDark) {
-                return {
-                  color: isSelected ? "#38bdf8" : "#38bdf8",
-                  weight: isSelected ? 3.5 : 1.5,
-                  opacity: isSelected ? 1 : 0.8,
-                  fillColor: isSelected ? "#0284c7" : "#0369a1",
-                  fillOpacity: isSelected ? 0.45 : 0.12,
-                };
-              }
               return {
-                color: isSelected ? "#1d4ed8" : "#2563eb",
-                weight: isSelected ? 3.5 : 1.5,
-                opacity: isSelected ? 0.95 : 0.7,
-                fillColor: isSelected ? "#2563eb" : "#3b82f6",
-                fillOpacity: isSelected ? 0.35 : 0.12,
+                color: isSelected ? "#2563eb" : "#3b82f6",
+                weight: isSelected ? 3 : 2,
+                opacity: 0.9,
+                fillColor: "#3b82f6",
+                fillOpacity: isSelected ? 0.65 : 0.25,
               };
             }}
             onEachFeature={(feature, layer) => {
@@ -163,38 +160,26 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
                     ? "1 reclamo en esta zona"
                     : `${count} reclamos en esta zona`;
 
-                const htmlContent = `
-                  <div class="flex flex-col gap-0.5 font-sans p-0.5">
-                    <span class="font-bold text-sm ${
-                      isDark ? "text-slate-100" : "text-zinc-900"
-                    } leading-tight">${nombre}</span>
-                    <span class="text-xs font-medium ${
-                      isDark ? "text-slate-300" : "text-zinc-600"
-                    } leading-tight">${countText}</span>
-                  </div>
-                `;
-
-                layer.bindTooltip(htmlContent, {
-                  sticky: true,
-                  className: isDark
-                    ? "custom-tooltip font-sans rounded-xl border border-slate-700 bg-slate-900/95 backdrop-blur-xs shadow-xl px-3 py-2 text-slate-100"
-                    : "custom-tooltip font-sans rounded-xl border border-gray-200 bg-white/95 backdrop-blur-xs shadow-xl px-3 py-2 text-zinc-800",
-                });
+                layer.bindTooltip(
+                  buildMapTooltipHtml({ title: nombre, subtitle: countText }),
+                  {
+                    sticky: true,
+                    direction: "top",
+                    className: MAP_TOOLTIP_CLASSNAME,
+                  }
+                );
               }
             }}
           />
         )}
 
-        {/* Regiones guardadas — visibles según lista activa en colores por lista */}
+        {/* Regiones guardadas — visibles según lista activa en baby blue unificado */}
         {regiones.map((region) => (
           <RegionShape
             key={region.id}
             region={region}
             reports={validReports}
-            color={getListColor(
-              region.lista_id || region.lista_nombre,
-              props.listas
-            )}
+            color="#3b82f6"
             isSelected={selectedRegionId === region.id}
           />
         ))}

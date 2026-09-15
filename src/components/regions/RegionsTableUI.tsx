@@ -8,6 +8,16 @@ import { formatTitleCase } from "@/lib/format";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import { Switch } from "@/components/ui/Switch";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+import {
+  createSortedRowModel,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_text,
+  tableFeatures,
+  useTable,
+  type ColumnDef,
+} from "@tanstack/react-table";
 import {
   Search,
   Plus,
@@ -24,9 +34,30 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-export type SortField = "nombre" | "localidad";
+export type SortField =
+  | "nombre"
+  | "localidad"
+  | "cantidadReclamos"
+  | "ultimaAyuda"
+  | "reclamosActivos";
 
 export type SortOrder = "asc" | "desc";
+
+const regionTableFeatures = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: {
+    text: sortFn_text,
+    alphanumeric: sortFn_alphanumeric,
+  },
+});
+
+type RegionTableRow = RegionPersonalizada & {
+  localidad: string;
+  cantidadReclamos: number;
+  ultimaAyuda: string | null;
+  reclamosActivos: number;
+};
 
 interface RegionsTableUIProps {
   regiones: RegionPersonalizada[];
@@ -77,6 +108,31 @@ function getFallbackLocalityFromCoords(lat: number, lon: number): string {
     }
   }
   return "Corrientes Capital";
+}
+
+// Helper para parsear fechas de última ayuda con soporte para ISO y DD/MM/YYYY
+function parseDateValue(val: unknown): number {
+  if (!val || val === "-" || val === "null") return -Infinity;
+  if (val instanceof Date) {
+    const t = val.getTime();
+    return isNaN(t) ? -Infinity : t;
+  }
+  if (typeof val === "number") return val;
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return -Infinity;
+    const parsed = Date.parse(trimmed);
+    if (!isNaN(parsed)) return parsed;
+    const parts = trimmed.split(/[/\-.]/);
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const y = parseInt(parts[2], 10);
+      const time = new Date(y, m, d).getTime();
+      if (!isNaN(time)) return time;
+    }
+  }
+  return -Infinity;
 }
 
 // Cache local de localidades resueltas
@@ -143,8 +199,6 @@ export function RegionsTableUI({
   const [resolvedLocalities, setResolvedLocalities] = useState<
     Record<string, string>
   >({});
-  const [sortField, setSortField] = useState<SortField>("nombre");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   // Inline editing state
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
@@ -396,31 +450,98 @@ export function RegionsTableUI({
     isBarriosSelected,
   ]);
 
-  // Manejo de ordenamiento solo para nombre y localidad
+  const regionColumns = useMemo<
+    ColumnDef<typeof regionTableFeatures, RegionTableRow>[]
+  >(
+    () => [
+      ...(isDeleteMode ? [{ id: "select", header: "" }] : []),
+      {
+        id: "nombre",
+        accessorFn: (row) => row.nombre,
+        header: "Nombre",
+        sortFn: sortFn_alphanumeric,
+      },
+      {
+        id: "localidad",
+        accessorFn: (row) => row.localidad,
+        header: "Localidad",
+        sortFn: sortFn_text,
+      },
+      {
+        id: "cantidadReclamos",
+        accessorFn: (row) => row.cantidadReclamos,
+        header: "Cantidad de reclamos",
+        sortDescFirst: true,
+        sortFn: (rowA, rowB, columnId) => {
+          const a = Number(rowA.getValue(columnId)) || 0;
+          const b = Number(rowB.getValue(columnId)) || 0;
+          return a - b;
+        },
+      },
+      {
+        id: "ultimaAyuda",
+        accessorFn: (row) => row.ultimaAyuda ?? "",
+        header: "Última ayuda",
+        sortDescFirst: true,
+        sortFn: (rowA, rowB, columnId) => {
+          const timeA = parseDateValue(rowA.getValue(columnId));
+          const timeB = parseDateValue(rowB.getValue(columnId));
+          if (timeA === timeB) return 0;
+          return timeA > timeB ? 1 : -1;
+        },
+      },
+      {
+        id: "reclamosActivos",
+        accessorFn: (row) => row.reclamosActivos,
+        header: "Reclamos activos",
+        sortDescFirst: true,
+        sortFn: (rowA, rowB, columnId) => {
+          const a = Number(rowA.getValue(columnId)) || 0;
+          const b = Number(rowB.getValue(columnId)) || 0;
+          return a - b;
+        },
+      },
+      { id: "acciones", header: "", enableSorting: false },
+    ],
+    [isDeleteMode]
+  );
+
+  const regionTable = useTable({
+    key: "regiones-table",
+    features: regionTableFeatures,
+    data: filteredRegiones as RegionTableRow[],
+    columns: regionColumns,
+    getRowId: (row) => row.id,
+    initialState: { sorting: [{ id: "nombre", desc: false }] },
+  });
+
+  const sortedRegiones = regionTable
+    .getRowModel()
+    .rows.map((row) => row.original);
+  const activeSortField = (
+    [
+      "nombre",
+      "localidad",
+      "cantidadReclamos",
+      "ultimaAyuda",
+      "reclamosActivos",
+    ] as SortField[]
+  ).find((field) => regionTable.getColumn(field)?.getIsSorted());
+  const sortField = activeSortField || "nombre";
+  const sortOrder: SortOrder =
+    regionTable.getColumn(sortField)?.getIsSorted() === "desc" ? "desc" : "asc";
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+      regionTable.getColumn(field)?.toggleSorting(sortOrder === "asc");
     } else {
-      setSortField(field);
-      setSortOrder("asc");
+      const shouldDescFirst =
+        field === "cantidadReclamos" ||
+        field === "ultimaAyuda" ||
+        field === "reclamosActivos";
+      regionTable.getColumn(field)?.toggleSorting(shouldDescFirst);
     }
   };
-
-  const sortedRegiones = useMemo(() => {
-    return [...filteredRegiones].sort((a, b) => {
-      const valA = a[sortField] ?? "";
-      const valB = b[sortField] ?? "";
-
-      if (typeof valA === "string" && typeof valB === "string") {
-        const cmp = valA.localeCompare(valB, "es", { sensitivity: "base" });
-        return sortOrder === "asc" ? cmp : -cmp;
-      }
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [filteredRegiones, sortField, sortOrder]);
 
   // Manejo de checkboxes
   const isAllSelected =
@@ -575,6 +696,16 @@ export function RegionsTableUI({
   }, [uniqueListas, selectedType]);
 
   const hasMultipleLists = uniqueListas.length >= 2;
+
+  const regionGridTemplateColumns = [
+    ...(isDeleteMode ? ["48px"] : []),
+    "minmax(180px, 1.4fr)",
+    "minmax(150px, 1fr)",
+    "minmax(150px, 1fr)",
+    "minmax(130px, 1fr)",
+    "minmax(140px, 1fr)",
+    "64px",
+  ].join(" ");
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -756,7 +887,7 @@ export function RegionsTableUI({
               <button
                 type="button"
                 onClick={handleCancelDeleteMode}
-                className="h-9 rounded-full border border-gray-200/60 dark:border-[#2b395b] bg-white/50 dark:bg-[#161f36] px-3.5 text-xs font-semibold text-zinc-600 dark:text-slate-200 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-none backdrop-blur-md hover:bg-white dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
+                className="h-9 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-3.5 text-xs font-bold text-red-600 dark:text-[#f87171] shadow-2xs backdrop-blur-md hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] transition-all duration-150 active:scale-95 cursor-pointer flex items-center"
               >
                 Cancelar
               </button>
@@ -777,11 +908,14 @@ export function RegionsTableUI({
       </div>
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
-      <div className="w-full overflow-x-auto overflow-y-scroll max-h-[580px] custom-scrollbar [scrollbar-gutter:stable] pr-1 animate-list-slide-left">
-        <div className="rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
-          <table className="w-full text-left text-xs relative border-collapse">
-            <thead className="sticky top-0 z-20 bg-zinc-50/95 dark:bg-[#1c2744] backdrop-blur-xs shadow-2xs">
-              <tr className="border-b border-gray-200 dark:border-[#2b395b] select-none">
+      <div className="w-full rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] animate-list-slide-left">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1012px] table-fixed text-left text-xs relative border-separate border-spacing-0">
+            <thead className="bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
+              <tr
+                style={{ gridTemplateColumns: regionGridTemplateColumns }}
+                className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
+              >
                 {isDeleteMode && (
                   <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors animate-fade-kpi">
                     <input
@@ -839,177 +973,251 @@ export function RegionsTableUI({
                   </div>
                 </th>
 
-                {/* Cantidad de reclamos — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[150px]">
-                  Cantidad de reclamos
+                {/* Cantidad de reclamos — sortable y hover */}
+                <th
+                  onClick={() => handleSort("cantidadReclamos")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[150px] ${
+                    sortField === "cantidadReclamos"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Cantidad de reclamos</span>
+                    {sortField === "cantidadReclamos" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
 
-                {/* Última ayuda — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[130px]">
-                  Última ayuda
+                {/* Última ayuda — sortable y hover */}
+                <th
+                  onClick={() => handleSort("ultimaAyuda")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[130px] ${
+                    sortField === "ultimaAyuda"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Última ayuda</span>
+                    {sortField === "ultimaAyuda" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
 
-                {/* Reclamos activos — hover, título completo y alineado izquierda */}
-                <th className="px-5 py-3.5 text-xs font-bold text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors select-none text-left min-w-[140px]">
-                  Reclamos activos
+                {/* Reclamos activos — sortable y hover */}
+                <th
+                  onClick={() => handleSort("reclamosActivos")}
+                  className={`px-5 py-3.5 text-xs font-bold transition-colors cursor-pointer group select-none hover:bg-zinc-100/80 dark:hover:bg-[#233154] text-left min-w-[140px] ${
+                    sortField === "reclamosActivos"
+                      ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                      : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="leading-snug">Reclamos activos</span>
+                    {sortField === "reclamosActivos" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      ) : (
+                        <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                    )}
+                  </div>
                 </th>
 
                 {/* Acciones — hover en cabecera */}
                 <th className="w-16 px-3 py-3.5 hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors" />
               </tr>
             </thead>
-
-            <tbody className="divide-y divide-gray-100 dark:divide-[#222e4d] bg-white dark:bg-[#161f36]">
-              {sortedRegiones.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={isDeleteMode ? 7 : 6}
-                    className="px-6 py-12 text-center text-xs text-zinc-400 dark:text-slate-400"
+          </table>
+          <OverlayScrollbarsComponent
+            defer
+            className="min-w-[1012px] max-h-[520px]"
+            options={{
+              overflow: { x: "hidden", y: "scroll" },
+              scrollbars: {
+                theme: "inu-table-scrollbar",
+                autoHide: "never",
+                visibility: "auto",
+              },
+            }}
+          >
+            <table className="w-full min-w-[1012px] table-fixed text-left text-xs relative border-separate border-spacing-0">
+              <tbody className="block divide-y divide-gray-100 dark:divide-[#222e4d] bg-white dark:bg-[#161f36]">
+                {sortedRegiones.length === 0 ? (
+                  <tr
+                    style={{ gridTemplateColumns: regionGridTemplateColumns }}
+                    className="grid w-full items-center"
                   >
-                    {isBarriosSelected && !barriosGeoJson
-                      ? "Cargando barrios..."
-                      : "No se encontraron regiones creadas."}
-                  </td>
-                </tr>
-              ) : (
-                <>
-                  {sortedRegiones.map((region) => {
-                    const isChecked = selectedRowIds.has(region.id);
-                    const isSelected = selectedRegionId === region.id;
-                    const isEditing = editingRowId === region.id;
+                    <td
+                      colSpan={isDeleteMode ? 7 : 6}
+                      className="px-6 py-12 text-center text-xs text-zinc-400 dark:text-slate-400"
+                    >
+                      {isBarriosSelected && !barriosGeoJson
+                        ? "Cargando barrios..."
+                        : "No se encontraron regiones creadas."}
+                    </td>
+                  </tr>
+                ) : (
+                  <>
+                    {sortedRegiones.map((region) => {
+                      const isChecked = selectedRowIds.has(region.id);
+                      const isSelected = selectedRegionId === region.id;
+                      const isEditing = editingRowId === region.id;
 
-                    return (
-                      <tr
-                        key={region.id}
-                        id={`region-row-${region.id}`}
-                        onClick={() => {
-                          if (isEditing) return;
-                          if (isDeleteMode) {
-                            toggleSelectRow(region.id);
-                          } else {
-                            onSelectRegion(region.id);
-                          }
-                        }}
-                        className={`group transition-colors cursor-pointer ${
-                          isEditing
-                            ? "bg-amber-50/60 dark:bg-amber-950/40"
-                            : isSelected
-                              ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
-                              : isChecked
-                                ? "bg-red-50/60 dark:bg-red-950/30"
-                                : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
-                        }`}
-                      >
-                        {/* Checkbox (solo visible en modo eliminación) */}
-                        {isDeleteMode && (
+                      return (
+                        <tr
+                          key={region.id}
+                          id={`region-row-${region.id}`}
+                          onClick={() => {
+                            if (isEditing) return;
+                            if (isDeleteMode) {
+                              toggleSelectRow(region.id);
+                            } else {
+                              onSelectRegion(region.id);
+                            }
+                          }}
+                          style={{
+                            gridTemplateColumns: regionGridTemplateColumns,
+                          }}
+                          className={`grid w-full items-center group transition-colors cursor-pointer ${
+                            isEditing
+                              ? "bg-amber-50/60 dark:bg-amber-950/40"
+                              : isSelected
+                                ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
+                                : isChecked
+                                  ? "bg-red-50/60 dark:bg-red-950/30"
+                                  : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
+                          }`}
+                        >
+                          {/* Checkbox (solo visible en modo eliminación) */}
+                          {isDeleteMode && (
+                            <td
+                              className="px-4 py-3 text-left animate-fade-kpi"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleSelectRow(region.id)}
+                                className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                              />
+                            </td>
+                          )}
+
+                          {/* Nombre — alineado a la izquierda */}
+                          <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editNombre}
+                                onChange={(e) => setEditNombre(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                                autoFocus
+                              />
+                            ) : (
+                              region.nombre
+                            )}
+                          </td>
+
+                          {/* Localidad — alineado a la izquierda */}
+                          <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                            {region.localidad}
+                          </td>
+
+                          {/* Cantidad de reclamos — alineado a la izquierda */}
+                          <td className="px-5 py-3 text-zinc-800 dark:text-white text-left font-bold">
+                            {region.cantidadReclamos}
+                          </td>
+
+                          {/* Última ayuda — alineado a la izquierda */}
+                          <td className="px-5 py-3 text-zinc-400 dark:text-slate-400 text-left font-medium">
+                            {region.ultimaAyuda ?? "-"}
+                          </td>
+
+                          {/* Reclamos activos — alineado a la izquierda */}
+                          <td className="px-5 py-3 text-zinc-800 dark:text-white font-bold text-left">
+                            {region.reclamosActivos}
+                          </td>
+
+                          {/* Opciones ... — botones redondos con color de fuente normal */}
                           <td
-                            className="px-4 py-3 text-left animate-fade-kpi"
+                            className="px-3 py-3 text-left relative"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleSelectRow(region.id)}
-                              className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                            />
+                            {isEditing ? (
+                              <div className="flex items-center justify-start gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={handleConfirmEdit}
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                  title="Confirmar edición"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEdit}
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                  title="Cancelar edición"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
+                                  if (activeMenuData?.region.id === region.id) {
+                                    setActiveMenuData(null);
+                                  } else {
+                                    const spaceBelow =
+                                      window.innerHeight - rect.bottom;
+                                    const showAbove = spaceBelow < 140;
+                                    setActiveMenuData({
+                                      region,
+                                      top: showAbove
+                                        ? rect.top - 120
+                                        : rect.bottom + 4,
+                                      right: window.innerWidth - rect.right,
+                                    });
+                                  }
+                                }}
+                                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </td>
-                        )}
-
-                        {/* Nombre — alineado a la izquierda */}
-                        <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editNombre}
-                              onChange={(e) => setEditNombre(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
-                              autoFocus
-                            />
-                          ) : (
-                            region.nombre
-                          )}
-                        </td>
-
-                        {/* Localidad — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                          {region.localidad}
-                        </td>
-
-                        {/* Cantidad de reclamos — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-800 dark:text-white text-left font-bold">
-                          {region.cantidadReclamos}
-                        </td>
-
-                        {/* Última ayuda — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-400 dark:text-slate-400 text-left font-medium">
-                          {region.ultimaAyuda ?? "-"}
-                        </td>
-
-                        {/* Reclamos activos — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-800 dark:text-white font-bold text-left">
-                          {region.reclamosActivos}
-                        </td>
-
-                        {/* Opciones ... — botones redondos con color de fuente normal */}
-                        <td
-                          className="px-3 py-3 text-left relative"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isEditing ? (
-                            <div className="flex items-center justify-start gap-1.5">
-                              <button
-                                type="button"
-                                onClick={handleConfirmEdit}
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                                title="Confirmar edición"
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleCancelEdit}
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                                title="Cancelar edición"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const rect =
-                                  e.currentTarget.getBoundingClientRect();
-                                if (activeMenuData?.region.id === region.id) {
-                                  setActiveMenuData(null);
-                                } else {
-                                  const spaceBelow =
-                                    window.innerHeight - rect.bottom;
-                                  const showAbove = spaceBelow < 140;
-                                  setActiveMenuData({
-                                    region,
-                                    top: showAbove
-                                      ? rect.top - 120
-                                      : rect.bottom + 4,
-                                    right: window.innerWidth - rect.right,
-                                  });
-                                }
-                              }}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                            >
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </>
-              )}
-            </tbody>
-          </table>
+                        </tr>
+                      );
+                    })}
+                  </>
+                )}
+              </tbody>
+            </table>
+          </OverlayScrollbarsComponent>
         </div>
       </div>
 
@@ -1088,14 +1296,14 @@ export function RegionsTableUI({
               <button
                 type="button"
                 onClick={() => setShowConfirmDeleteModal(false)}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-4 py-2 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-4 py-2 text-xs font-bold text-red-600 dark:text-[#f87171] shadow-2xs hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="flex w-1/2 items-center justify-center gap-2 rounded-full border border-red-500 bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition-all active:scale-95 cursor-pointer"
+                className="flex w-1/2 items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 transition-all active:scale-95 cursor-pointer"
               >
                 Eliminar
               </button>

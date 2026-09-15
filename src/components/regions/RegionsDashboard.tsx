@@ -17,6 +17,7 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import { useReports } from "@/hooks/useReports";
+import { useAdminSidebar } from "@/components/common/AppShell";
 
 interface RegionsDashboardProps {
   initialReports: Report[];
@@ -52,6 +53,8 @@ export function RegionsDashboard({
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [isFocusedRegionView, setIsFocusedRegionView] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const { setCollapsed, setHidden } = useAdminSidebar();
 
   const { reports } = useReports(initialReports);
 
@@ -217,6 +220,20 @@ export function RegionsDashboard({
   // Modo mapa activo si se está dibujando, se muestra el popup de nombrar zona o el tab es Mapa o se clickeó una región/barrio
   const isMapVisible = isFocusedRegionView || isDrawing || showNamePopup;
 
+  useEffect(() => {
+    if (isMapVisible) {
+      setHidden(true);
+      setCollapsed(true);
+    } else {
+      setHidden(false);
+      setCollapsed(false);
+    }
+    return () => {
+      setHidden(false);
+      setCollapsed(false);
+    };
+  }, [isMapVisible, setHidden, setCollapsed]);
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans">
       {/* Botón Volver a la lista de regiones (arriba a la izquierda en vista de mapa enfocada) */}
@@ -263,7 +280,7 @@ export function RegionsDashboard({
       {/* Contenido Principal: Tabla de Regiones o Mapa Limpio Enfocado */}
       {!isMapVisible ? (
         <div
-          className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${"px-6"}`}
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-8 pb-6 transition-all duration-300 ease-in-out ${"px-6"}`}
         >
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
             {/* Encabezado Superior */}
@@ -342,7 +359,7 @@ export function RegionsDashboard({
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
           <button
             onClick={handleCancelDrawing}
-            className="flex items-center justify-center gap-2 rounded-full border border-red-200 dark:border-red-900/60 bg-white dark:bg-[#161f36] px-6 py-3 text-sm font-bold text-red-600 dark:text-red-400 shadow-xl transition-all duration-200 hover:bg-red-50 dark:hover:bg-[#1e2a4a] hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-6 py-2.5 text-sm font-bold text-red-600 dark:text-[#f87171] shadow-xl transition-all duration-200 hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] hover:scale-105 active:scale-95 cursor-pointer"
           >
             Cancelar
           </button>
