@@ -200,7 +200,7 @@ export function RangeCalendarModal({
         </button>
         <button
           onClick={handleApply}
-          className="bg-zinc-900 dark:bg-blue-600 hover:bg-zinc-800 dark:hover:bg-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-2xs transition cursor-pointer"
+          className="rounded-xl bg-[#435bb5] hover:bg-[#364ba0] active:bg-[#2d3e84] text-white border border-transparent dark:bg-[#435ebd] dark:hover:bg-[#4f6cd1] dark:active:bg-[#364ea3] dark:border-[#5270d8] dark:text-white text-xs font-bold px-5 py-2 shadow-2xs transition-all active:scale-95 cursor-pointer text-center"
         >
           Aplicar
         </button>

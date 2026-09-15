@@ -461,7 +461,7 @@ export function MarcadoresDashboard({
                   setDraftLocation(null);
                   setIsMapVisible(false);
                 }}
-                className="flex items-center justify-center gap-2 rounded-full border border-red-200 dark:border-red-900/60 bg-white dark:bg-[#161f36] px-6 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 shadow-xl transition-all duration-200 hover:bg-red-50 dark:hover:bg-[#1e2a4a] hover:scale-105 active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-6 py-2.5 text-sm font-bold text-red-600 dark:text-[#f87171] shadow-xl transition-all duration-200 hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] hover:scale-105 active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>

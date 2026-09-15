@@ -151,10 +151,10 @@ La visualización de los colores se determina a partir del puntaje de los report
 1. **Límite de Intensidad y Opacidad:** El sistema establece un umbral de máxima intensidad configurado en **80 puntos**. El puntaje de cada reporte se divide por este valor para determinar su nivel de opacidad base (fuerza de presencia en el mapa).
 2. **Superposición e Intersección:** Cuando las áreas de influencia de **100 metros** de múltiples reportes se cruzan, **sus niveles de opacidad se suman de forma acumulativa en las zonas de intersección**. Esto significa que varios reportes leves cercanos pueden generar la misma presencia que un solo reporte grave.
 3. **Escala Cromática:** El mapa aplica un gradiente de colores basado en la opacidad final acumulada en cada zona del terreno:
-   - **Azul:** Niveles bajos de acumulación.
-   - **Verde y Amarillo:** Niveles medios.
-   - **Naranja:** Niveles altos.
-   - **Rojo:** Niveles críticos.
+   - **Amarillo:** Niveles bajos de acumulación.
+   - **Naranja claro / Naranja:** Niveles medios.
+   - **Rojo:** Niveles altos.
+   - **Rojo brillante:** Niveles críticos.
 
 ## Configuración Técnica
 
@@ -170,11 +170,11 @@ export const HEATMAP_CONFIG: HeatmapConfig = {
   minOpacity: 0.05, // Opacidad mínima requerida para dibujar un punto.
   gradient: {
     // Escala cromática aplicada sobre la opacidad final.
-    0.2: "#3b82f6", // Azul
-    0.4: "#22c55e", // Verde
-    0.6: "#eab308", // Amarillo
-    0.8: "#f97316", // Naranja
-    1.0: "#ef4444", // Rojo
+    0.2: "#facc15", // Amarillo
+    0.4: "#fb923c", // Naranja claro
+    0.6: "#f97316", // Naranja intenso
+    0.8: "#ef4444", // Rojo
+    1.0: "#dc2626", // Rojo brillante
   },
   maxIntensity: 80, // Umbral de intensidad máxima para regular la opacidad (y alcanzar el rojo).
 };

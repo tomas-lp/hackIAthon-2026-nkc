@@ -267,19 +267,25 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
       })}
       onEachFeature={(feature, layer) => {
         const nombre = feature.properties?.nombre ?? "";
-        const tipo = feature.properties?.tipo ?? "";
         const reportCount = feature.properties?.report_count ?? 0;
-        const subtitle =
-          reportCount > 0
-            ? `${tipo} · 🚨 ${reportCount} reportes`
-            : `${tipo} · ✅ Sin reportes`;
+        const hasReports = reportCount > 0;
+        const subtitle = hasReports
+          ? `${reportCount} ${reportCount === 1 ? "reporte" : "reportes"}`
+          : "Sin reportes";
 
-        layer.bindTooltip(buildMapTooltipHtml({ title: nombre, subtitle }), {
-          sticky: true,
-          direction: "top",
-          opacity: 0.95,
-          className: MAP_TOOLTIP_CLASSNAME,
-        });
+        layer.bindTooltip(
+          buildMapTooltipHtml({
+            title: nombre,
+            subtitle,
+            italic: !hasReports,
+          }),
+          {
+            sticky: true,
+            direction: "top",
+            opacity: 0.95,
+            className: MAP_TOOLTIP_CLASSNAME,
+          }
+        );
 
         (layer as L.Path).on({
           mouseover(e) {
