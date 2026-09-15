@@ -159,6 +159,20 @@ export function MarcadoresDashboard({
 
   // Click en el mapa para capturar ubicación
   const handleMapClickToCreate = async (lat: number, lng: number) => {
+    // Restaura el cursor y muestra el marcador rebotando de inmediato
+    setIsCreating(false);
+    setDraftLocation({
+      lat,
+      lng,
+      localidad: "Corrientes",
+      departamento: "Capital",
+      direccion: `Lat ${lat.toFixed(4)}, Lon ${lng.toFixed(4)}`,
+      fullAddress: "",
+    });
+
+    // Mostramos el modal de inmediato con la info básica
+    setShowCreationModal(true);
+
     let loc = {
       direccion: `Lat ${lat.toFixed(4)}, Lon ${lng.toFixed(4)}`,
       localidad: "Corrientes",
@@ -168,19 +182,18 @@ export function MarcadoresDashboard({
 
     try {
       loc = await resolveLocationDetails(lat, lng);
+      // Actualizamos los detalles con los datos resueltos
+      setDraftLocation({
+        lat,
+        lng,
+        localidad: loc.localidad,
+        departamento: loc.departamento,
+        direccion: loc.direccion,
+        fullAddress: loc.fullAddress,
+      });
     } catch {
       // Ignorar fallback
     }
-
-    setDraftLocation({
-      lat,
-      lng,
-      localidad: loc.localidad,
-      departamento: loc.departamento,
-      direccion: loc.direccion,
-      fullAddress: loc.fullAddress,
-    });
-    setShowCreationModal(true);
   };
 
   // Guardar nuevo marcador

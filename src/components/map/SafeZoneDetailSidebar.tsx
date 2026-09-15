@@ -11,6 +11,7 @@ import {
   Navigation,
   Loader2,
   Building2,
+  Users,
 } from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
 import { useEffect, useState } from "react";
@@ -156,8 +157,9 @@ export function SafeZoneDetailSidebar({
 
         {activeSafeZone.capacidad_maxima !== null &&
           activeSafeZone.capacidad_maxima !== undefined && (
-            <div className="flex items-center gap-2.5 text-xs p-3 bg-emerald-50/70 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 rounded-xl text-emerald-800 dark:text-emerald-300">
-              <span className="font-semibold">
+            <div className="flex items-center gap-2.5 text-xs p-3 bg-zinc-50 dark:bg-[#0b101d] border border-zinc-100 dark:border-[#2b395b] rounded-xl">
+              <Users className="h-4 w-4 text-zinc-400 dark:text-slate-500 shrink-0" />
+              <span className="font-medium text-zinc-700 dark:text-slate-300 leading-relaxed">
                 Capacidad máxima: {activeSafeZone.capacidad_maxima} personas
               </span>
             </div>
@@ -181,15 +183,6 @@ export function SafeZoneDetailSidebar({
 
         <div className="mt-2 flex gap-2">
           {/* Modo admin: botones Editar / Eliminar */}
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              className="flex w-1/2 items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-3 py-2.5 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#25355d] hover:border-gray-300 dark:hover:border-slate-500 active:scale-95 cursor-pointer"
-            >
-              <Edit className="h-3.5 w-3.5" />
-              Editar
-            </button>
-          )}
           {onDelete && (
             <button
               onClick={onDelete}
@@ -199,17 +192,22 @@ export function SafeZoneDetailSidebar({
               Eliminar
             </button>
           )}
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="flex w-1/2 items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#1e2a4a] px-3 py-2.5 text-xs font-bold text-zinc-700 dark:text-slate-200 shadow-2xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-[#25355d] hover:border-gray-300 dark:hover:border-slate-500 active:scale-95 cursor-pointer"
+            >
+              <Edit className="h-3.5 w-3.5" />
+              Editar
+            </button>
+          )}
 
           {/* Modo usuario: botón Cómo llegar */}
           {onNavigate && (
             <button
               onClick={onNavigate}
               disabled={isNavigating}
-              className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-white transition-colors active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm ${
-                buttonColor === "red"
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-blue-500 hover:bg-blue-600"
-              }`}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#435bb5] hover:bg-[#364ba0] active:bg-[#2d3e84] text-white border border-transparent dark:bg-[#435ebd] dark:hover:bg-[#4f6cd1] dark:active:bg-[#364ea3] dark:border-[#5270d8] dark:text-white px-3 py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isNavigating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

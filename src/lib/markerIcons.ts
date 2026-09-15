@@ -9,9 +9,18 @@ export function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
   const bgColor = isDraft ? "#6ee7b7" : "#10b981"; // emerald-300 vs emerald-500
 
   return L.divIcon({
-    className: `custom-safe-zone-marker`,
+    className: `custom-safe-zone-marker ${isDraft ? "animate-bounce" : ""}`,
     html: `
-      <div class="marker-inner" style="display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); width: ${size}px; height: ${size * 1.15}px;">
+      <div class="marker-inner" style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        width: ${size}px;
+        height: ${size * 1.15}px;
+        transform-origin: bottom center;
+        transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      ">
         <svg width="100%" height="100%" viewBox="0 0 24 24" fill="${bgColor}" stroke="#ffffff" stroke-width="0.75">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linejoin="round" stroke-linecap="round"/>
           <path d="M9 12.5l2.5 2.5 4.5-5.5" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
@@ -47,8 +56,8 @@ export function createHealthCenterIcon(
         align-items: center;
         justify-content: center;
         color: #ffffff;
-        opacity: ${isVisible ? 1 : 0};
-        pointer-events: ${isVisible ? "auto" : "none"};
+        transform-origin: center center;
+        transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       ">
         <svg width="${size * 0.65}" height="${size * 0.65}" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -73,7 +82,7 @@ export function createDraftMarkerIcon(
     size = Math.max(minSize, Math.min(maxSize, size));
 
     return L.divIcon({
-      className: `custom-health-center-marker is-draft animate-pulse`,
+      className: `custom-health-center-marker is-draft animate-bounce`,
       html: `
         <div class="marker-inner" style="
           background-color: #f87171;
