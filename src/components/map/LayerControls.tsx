@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Info, Plus, Satellite } from "lucide-react";
+import { Layers, Plus, Satellite, Map, Check } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface LayerControlsProps {
@@ -55,165 +55,172 @@ export function LayerControls({
 
         {/* Popover Panel with Spring Bounce Slide Animation */}
         <div
-          className={`absolute bottom-14 left-0 w-72 rounded-2xl border border-gray-200/80 dark:border-slate-600/80 bg-white/60 dark:bg-slate-800/90 p-3.5 shadow-xl backdrop-blur-md flex flex-col gap-3 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          className={`absolute bottom-14 left-0 w-72 rounded-2xl border border-gray-200/80 dark:border-slate-600/80 bg-white/60 dark:bg-slate-800/90 p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             isPopoverOpen
               ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
               : "translate-y-8 opacity-0 scale-95 pointer-events-none"
           }`}
         >
+          {/* Map Type Selector (Google Maps Style) */}
+          <div className="flex flex-col gap-2.5">
+            <div className="flex justify-center gap-5 w-full">
+              {/* Default Button */}
+              <button
+                type="button"
+                onClick={() => setShowSatellite(false)}
+                className="flex flex-col items-center gap-2 cursor-pointer group"
+              >
+                <div
+                  className={`w-16 h-16 rounded-[14px] border-[2.5px] flex items-center justify-center transition-all ${
+                    !showSatellite
+                      ? "border-teal-600 bg-teal-50 dark:bg-teal-900/30"
+                      : "border-transparent bg-gray-100 dark:bg-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-600"
+                  }`}
+                >
+                  <Map
+                    className={`h-7 w-7 ${
+                      !showSatellite
+                        ? "text-teal-600 dark:text-teal-400"
+                        : "text-zinc-500 dark:text-zinc-400"
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-xs font-semibold ${
+                    !showSatellite
+                      ? "text-teal-700 dark:text-teal-400"
+                      : "text-zinc-600 dark:text-zinc-400"
+                  }`}
+                >
+                  Predeterminado
+                </span>
+              </button>
+
+              {/* Satellite Button */}
+              <button
+                type="button"
+                onClick={() => setShowSatellite(true)}
+                className="flex flex-col items-center gap-2 cursor-pointer group"
+              >
+                <div
+                  className={`w-16 h-16 rounded-[14px] border-[2.5px] flex items-center justify-center transition-all ${
+                    showSatellite
+                      ? "border-teal-600 bg-teal-50 dark:bg-teal-900/30"
+                      : "border-transparent bg-gray-100 dark:bg-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-600"
+                  }`}
+                >
+                  <Satellite
+                    className={`h-7 w-7 ${
+                      showSatellite
+                        ? "text-teal-600 dark:text-teal-400"
+                        : "text-zinc-500 dark:text-zinc-400"
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-xs font-semibold ${
+                    showSatellite
+                      ? "text-teal-700 dark:text-teal-400"
+                      : "text-zinc-600 dark:text-zinc-400"
+                  }`}
+                >
+                  Satelital
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="h-[1px] w-full bg-gray-200/80 dark:bg-slate-700/80" />
+
           {/* Centros de Evacuación */}
-          <div className="flex items-center justify-between gap-2 p-1">
-            <div className="flex items-center gap-2">
-              <svg
-                viewBox="0 0 24 24"
-                className="h-6 w-6 shrink-0 block"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="12" cy="12" r="12" fill="#d1fae5" />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="7.5"
-                  stroke="#059669"
-                  strokeWidth="1.8"
-                />
-                <circle cx="12" cy="8.4" r="1.1" fill="#059669" />
-                <rect
-                  x="11"
-                  y="11.1"
-                  width="2"
-                  height="5.4"
-                  rx="1"
-                  fill="#059669"
-                />
-              </svg>
-              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
-                Centros de evacuación
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Toggle Switch */}
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => setShowEvacuationCenters((prev) => !prev)}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  showEvacuationCenters ? "bg-emerald-500" : "bg-zinc-300"
-                }`}
-              >
-                <span
-                  suppressHydrationWarning
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                    showEvacuationCenters ? "translate-x-4" : "translate-x-0"
-                  }`}
-                />
-              </button>
-              {/* Plus Button — solo visible si se pasa handler (Admin) */}
-              {onCreateEvacuationCenter && (
-                <TooltipSign
-                  label="Añadir centro de evacuación"
-                  position="top"
-                  delayMs={500}
-                >
-                  <button
-                    onClick={() => {
-                      onCreateEvacuationCenter();
-                    }}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipSign>
-              )}
-            </div>
-          </div>
-
-          <div className="h-[1px] w-full bg-gray-100 dark:bg-slate-700" />
-
-          {/* Centros de At. Médica */}
-          <div className="flex items-center justify-between gap-2 p-1">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600">
-                {/* Medical Cross Icon */}
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                >
-                  <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
-                </svg>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <Check className="h-4 w-4" strokeWidth={4} />
+                </div>
+                <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
+                  Centros de evacuación
+                </span>
               </div>
-              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
-                Centros de at. médica
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Toggle Switch */}
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => setShowMedicalCenters((prev) => !prev)}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  showMedicalCenters ? "bg-red-500" : "bg-zinc-300"
-                }`}
-              >
-                <span
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
                   suppressHydrationWarning
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                    showMedicalCenters ? "translate-x-4" : "translate-x-0"
+                  onClick={() => setShowEvacuationCenters((prev) => !prev)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    showEvacuationCenters ? "bg-emerald-500" : "bg-zinc-300"
                   }`}
-                />
-              </button>
-              {/* Plus Button — solo visible si se pasa handler (Admin) */}
-              {onCreateMedicalCenter && (
-                <TooltipSign
-                  label="Añadir centro de at. médica"
-                  position="top"
-                  delayMs={500}
                 >
-                  <button
-                    onClick={() => {
-                      onCreateMedicalCenter();
-                    }}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                  <span
+                    suppressHydrationWarning
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      showEvacuationCenters ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+                {onCreateEvacuationCenter && (
+                  <TooltipSign
+                    label="Añadir centro de evacuación"
+                    position="top"
+                    delayMs={500}
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipSign>
-              )}
-            </div>
-          </div>
-
-          <div className="h-[1px] w-full bg-gray-100 dark:bg-slate-700" />
-
-          {/* Vista satelital (ESRI World Imagery) */}
-          <div className="flex items-center justify-between gap-2 p-1">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-sky-600">
-                <Satellite className="h-3.5 w-3.5 stroke-[2.5]" />
+                    <button
+                      onClick={() => {
+                        onCreateEvacuationCenter();
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipSign>
+                )}
               </div>
-              <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
-                Vista satelital
-              </span>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Toggle Switch */}
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => setShowSatellite((prev) => !prev)}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  showSatellite ? "bg-sky-500" : "bg-zinc-300"
-                }`}
-              >
-                <span
+
+            {/* Centros de At. Médica */}
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-600">
+                  <Plus className="h-4 w-4" strokeWidth={3} />
+                </div>
+                <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
+                  Centros de at. médica
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
                   suppressHydrationWarning
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                    showSatellite ? "translate-x-4" : "translate-x-0"
+                  onClick={() => setShowMedicalCenters((prev) => !prev)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    showMedicalCenters ? "bg-red-500" : "bg-zinc-300"
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    suppressHydrationWarning
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      showMedicalCenters ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+                {onCreateMedicalCenter && (
+                  <TooltipSign
+                    label="Añadir centro de at. médica"
+                    position="top"
+                    delayMs={500}
+                  >
+                    <button
+                      onClick={() => {
+                        onCreateMedicalCenter();
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipSign>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -226,24 +233,9 @@ export function LayerControls({
         </span>
 
         <div className="flex items-center gap-1.5">
-          <svg
-            viewBox="0 0 16 16"
-            className="h-4 w-4 shrink-0 block shadow-2xs rounded-full"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="8" cy="8" r="8" fill="#10b981" />
-            <circle cx="8" cy="8" r="5" stroke="#ffffff" strokeWidth="1.2" />
-            <circle cx="8" cy="5.6" r="0.75" fill="#ffffff" />
-            <rect
-              x="7.3"
-              y="7.4"
-              width="1.4"
-              height="3.75"
-              rx="0.7"
-              fill="#ffffff"
-            />
-          </svg>
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs">
+            <Check className="h-2.5 w-2.5" strokeWidth={4} />
+          </div>
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Centros de evacuación
           </span>
@@ -277,7 +269,7 @@ export function LayerControls({
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Riesgo:
           </span>
-          <span className="text-[10px] font-mono text-zinc-400 dark:text-slate-500">
+          <span className="text-[10px] font-mono font-bold text-zinc-600 dark:text-slate-300">
             Bajo
           </span>
           <div
@@ -287,7 +279,7 @@ export function LayerControls({
                 "linear-gradient(to right, #facc15, #fb923c, #f97316, #ef4444, #dc2626)",
             }}
           />
-          <span className="text-[10px] font-mono text-zinc-400 dark:text-slate-500">
+          <span className="text-[10px] font-mono font-bold text-zinc-600 dark:text-slate-300">
             Alto
           </span>
         </div>

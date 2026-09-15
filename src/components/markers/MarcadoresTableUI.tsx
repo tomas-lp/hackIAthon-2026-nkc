@@ -278,7 +278,9 @@ export function MarcadoresTableUI({
       } else {
         // Lista personalizada seleccionada
         const targetListRegions = customRegions.filter(
-          (r) =>
+          (
+            r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+          ) =>
             r.lista_nombre === selectedRegionFilter ||
             r.lista_id === selectedRegionFilter
         );
@@ -333,26 +335,34 @@ export function MarcadoresTableUI({
       ...(isDeleteMode ? [{ id: "select", header: "" }] : []),
       {
         id: "nombre",
-        accessorFn: (row) => row.nombre,
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.nombre,
         header: "Nombre",
         sortFn: sortFn_alphanumeric,
       },
       {
         id: "localidad",
-        accessorFn: (row) =>
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) =>
           row.localidad || resolvedLocalities[row.id] || "Corrientes Capital",
         header: "Localidad",
         sortFn: sortFn_text,
       },
       {
         id: "region",
-        accessorFn: (row) => markerRegionMap.get(row.id) || "",
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => markerRegionMap.get(row.id) || "",
         header: "Región",
         sortFn: sortFn_text,
       },
       {
         id: "subtipo",
-        accessorFn: (row) => row.subtipo,
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.subtipo,
         header: "Tipo",
         sortFn: sortFn_text,
       },
@@ -370,22 +380,40 @@ export function MarcadoresTableUI({
     features: tableFeaturesConfig,
     data: filteredMarkers,
     columns,
-    getRowId: (row) => row.id,
+    getRowId: (
+      row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+    ) => row.id,
     initialState: { sorting: [{ id: "nombre", desc: false }] },
   });
 
-  const sortedMarkers = table.getRowModel().rows.map((row) => row.original);
+  const sortedMarkers = table
+    .getRowModel()
+    .rows.map(
+      (row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) =>
+        row.original
+    );
 
   // Manejo de checkboxes
   const isAllSelected =
     sortedMarkers.length > 0 &&
-    sortedMarkers.every((r) => selectedRowIds.has(r.id));
+    sortedMarkers.every(
+      (r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) =>
+        selectedRowIds.has(r.id)
+    );
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedRowIds(new Set());
     } else {
-      setSelectedRowIds(new Set(sortedMarkers.map((r) => r.id)));
+      setSelectedRowIds(
+        new Set(
+          sortedMarkers.map(
+            (
+              r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+            ) => r.id
+          )
+        )
+      );
     }
   };
 
@@ -489,34 +517,36 @@ export function MarcadoresTableUI({
       "Fecha de registro",
     ];
 
-    const rows = sortedMarkers.map((m) => {
-      const loc =
-        m.localidad || resolvedLocalities[m.id] || "Corrientes Capital";
-      const reg = markerRegionMap.get(m.id) || "Fuera de rango";
-      const catLabel =
-        m.category === "EVACUACION"
-          ? "Centro de evacuación"
-          : "Centro de atención médica";
-      return [
-        `"${m.nombre.replace(/"/g, '""')}"`,
-        `"${catLabel}"`,
-        `"${m.subtipo.replace(/"/g, '""')}"`,
-        `"${loc.replace(/"/g, '""')}"`,
-        `"${reg.replace(/"/g, '""')}"`,
-        `"${(m.departamento || "").replace(/"/g, '""')}"`,
-        `"${(m.direccion || "").replace(/"/g, '""')}"`,
-        ...(selectedType === "EVACUACION"
-          ? [
-              m.capacidad_maxima !== null && m.capacidad_maxima !== undefined
-                ? m.capacidad_maxima
-                : "",
-            ]
-          : []),
-        m.lat,
-        m.lon,
-        `"${new Date(m.fecha).toLocaleDateString()}"`,
-      ].join(";");
-    });
+    const rows = sortedMarkers.map(
+      (m: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => {
+        const loc =
+          m.localidad || resolvedLocalities[m.id] || "Corrientes Capital";
+        const reg = markerRegionMap.get(m.id) || "Fuera de rango";
+        const catLabel =
+          m.category === "EVACUACION"
+            ? "Centro de evacuación"
+            : "Centro de atención médica";
+        return [
+          `"${m.nombre.replace(/"/g, '""')}"`,
+          `"${catLabel}"`,
+          `"${m.subtipo.replace(/"/g, '""')}"`,
+          `"${loc.replace(/"/g, '""')}"`,
+          `"${reg.replace(/"/g, '""')}"`,
+          `"${(m.departamento || "").replace(/"/g, '""')}"`,
+          `"${(m.direccion || "").replace(/"/g, '""')}"`,
+          ...(selectedType === "EVACUACION"
+            ? [
+                m.capacidad_maxima !== null && m.capacidad_maxima !== undefined
+                  ? m.capacidad_maxima
+                  : "",
+              ]
+            : []),
+          m.lat,
+          m.lon,
+          `"${new Date(m.fecha).toLocaleDateString()}"`,
+        ].join(";");
+      }
+    );
 
     const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
 
@@ -754,83 +784,93 @@ export function MarcadoresTableUI({
         <div className="overflow-x-auto">
           <table className="block w-full min-w-[960px] text-left text-xs relative border-separate border-spacing-0">
             <thead className="table w-full table-fixed bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr
-                  key={headerGroup.id}
-                  style={{ gridTemplateColumns: tableGridTemplateColumns }}
-                  className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
-                >
-                  {headerGroup.headers.map((header) => {
-                    const isSortable = header.column.getCanSort();
-                    const isSorted = header.column.getIsSorted();
-                    const isSelection = header.column.id === "select";
-                    const isActions = header.column.id === "acciones";
-                    const minWidth =
-                      header.column.id === "nombre"
-                        ? "min-w-[170px]"
-                        : header.column.id === "localidad" ||
-                            header.column.id === "region"
-                          ? "min-w-[140px]"
-                          : header.column.id === "subtipo"
-                            ? "min-w-[150px]"
-                            : header.column.id === "direccion"
+              {table
+                .getHeaderGroups()
+                .map(
+                  (
+                    headerGroup: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+                  ) => (
+                    <tr
+                      key={headerGroup.id}
+                      style={{ gridTemplateColumns: tableGridTemplateColumns }}
+                      className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
+                    >
+                      {headerGroup.headers.map(
+                        (
+                          header: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+                        ) => {
+                          const isSortable = header.column.getCanSort();
+                          const isSorted = header.column.getIsSorted();
+                          const isSelection = header.column.id === "select";
+                          const isActions = header.column.id === "acciones";
+                          const minWidth =
+                            header.column.id === "nombre"
                               ? "min-w-[170px]"
-                              : header.column.id === "capacidad"
-                                ? "min-w-[130px]"
-                                : "";
-                    return (
-                      <th
-                        key={header.id}
-                        colSpan={header.colSpan}
-                        onClick={
-                          isSortable
-                            ? header.column.getToggleSortingHandler()
-                            : undefined
+                              : header.column.id === "localidad" ||
+                                  header.column.id === "region"
+                                ? "min-w-[140px]"
+                                : header.column.id === "subtipo"
+                                  ? "min-w-[150px]"
+                                  : header.column.id === "direccion"
+                                    ? "min-w-[170px]"
+                                    : header.column.id === "capacidad"
+                                      ? "min-w-[130px]"
+                                      : "";
+                          return (
+                            <th
+                              key={header.id}
+                              colSpan={header.colSpan}
+                              onClick={
+                                isSortable
+                                  ? header.column.getToggleSortingHandler()
+                                  : undefined
+                              }
+                              className={`sticky top-0 z-30 bg-zinc-50/95 dark:bg-[#1c2744] ${
+                                isSelection
+                                  ? "w-12 px-4"
+                                  : isActions
+                                    ? "w-16 px-3"
+                                    : "px-5"
+                              } py-3.5 text-xs font-bold transition-none text-left ${
+                                isSortable
+                                  ? "cursor-pointer group hover:bg-zinc-100/80 dark:hover:bg-[#233154]"
+                                  : "hover:bg-zinc-100/80 dark:hover:bg-[#233154]"
+                              } ${minWidth} ${
+                                isSorted
+                                  ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
+                                  : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
+                              }`}
+                            >
+                              {isSelection ? (
+                                <input
+                                  type="checkbox"
+                                  checked={isAllSelected}
+                                  onChange={toggleSelectAll}
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                                />
+                              ) : isActions ? null : (
+                                <div className="flex items-center justify-start gap-1.5">
+                                  <span className="leading-snug">
+                                    {header.column.columnDef.header as string}
+                                  </span>
+                                  {isSortable &&
+                                    (isSorted === "asc" ? (
+                                      <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                                    ) : isSorted === "desc" ? (
+                                      <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
+                                    ) : (
+                                      <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                                    ))}
+                                </div>
+                              )}
+                            </th>
+                          );
                         }
-                        className={`sticky top-0 z-30 bg-zinc-50/95 dark:bg-[#1c2744] ${
-                          isSelection
-                            ? "w-12 px-4"
-                            : isActions
-                              ? "w-16 px-3"
-                              : "px-5"
-                        } py-3.5 text-xs font-bold transition-none text-left ${
-                          isSortable
-                            ? "cursor-pointer group hover:bg-zinc-100/80 dark:hover:bg-[#233154]"
-                            : "hover:bg-zinc-100/80 dark:hover:bg-[#233154]"
-                        } ${minWidth} ${
-                          isSorted
-                            ? "text-zinc-900 dark:text-white bg-zinc-100/40 dark:bg-[#233154]"
-                            : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
-                        }`}
-                      >
-                        {isSelection ? (
-                          <input
-                            type="checkbox"
-                            checked={isAllSelected}
-                            onChange={toggleSelectAll}
-                            onClick={(event) => event.stopPropagation()}
-                            className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                          />
-                        ) : isActions ? null : (
-                          <div className="flex items-center justify-start gap-1.5">
-                            <span className="leading-snug">
-                              {header.column.columnDef.header as string}
-                            </span>
-                            {isSortable &&
-                              (isSorted === "asc" ? (
-                                <ArrowDown className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                              ) : isSorted === "desc" ? (
-                                <ArrowUp className="h-3 w-3 text-zinc-900 dark:text-white shrink-0" />
-                              ) : (
-                                <ArrowUpDown className="h-3 w-3 text-zinc-400 dark:text-slate-400 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-                              ))}
-                          </div>
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
+                      )}
+                    </tr>
+                  )
+                )}
             </thead>
           </table>
           <OverlayScrollbarsComponent
@@ -865,239 +905,253 @@ export function MarcadoresTableUI({
                     </td>
                   </tr>
                 ) : (
-                  table.getRowModel().rows.map((row) => {
-                    const marker = row.original;
-                    const isSelected = selectedMarkerId === marker.id;
-                    const isChecked = selectedRowIds.has(marker.id);
-                    const isEditing = editingRowId === marker.id;
-                    const locDisplay =
-                      marker.localidad ||
-                      resolvedLocalities[marker.id] ||
-                      "Corrientes Capital";
-                    const regionDisplay =
-                      markerRegionMap.get(marker.id) || "Fuera de rango";
+                  table
+                    .getRowModel()
+                    .rows.map(
+                      (
+                        row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+                      ) => {
+                        const marker = row.original;
+                        const isSelected = selectedMarkerId === marker.id;
+                        const isChecked = selectedRowIds.has(marker.id);
+                        const isEditing = editingRowId === marker.id;
+                        const locDisplay =
+                          marker.localidad ||
+                          resolvedLocalities[marker.id] ||
+                          "Corrientes Capital";
+                        const regionDisplay =
+                          markerRegionMap.get(marker.id) || "Fuera de rango";
 
-                    return (
-                      <tr
-                        key={marker.id}
-                        onClick={() => {
-                          if (isEditing) return;
-                          if (isDeleteMode) {
-                            toggleSelectRow(marker.id);
-                          } else {
-                            onSelectMarker(marker);
-                          }
-                        }}
-                        style={{
-                          gridTemplateColumns: tableGridTemplateColumns,
-                        }}
-                        className={`grid w-full items-center group transition-colors cursor-pointer ${
-                          isEditing
-                            ? "bg-amber-50/60 dark:bg-amber-950/40"
-                            : isSelected
-                              ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
-                              : isChecked
-                                ? "bg-red-50/50 dark:bg-red-950/30"
-                                : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
-                        }`}
-                      >
-                        {isDeleteMode && (
-                          <td
-                            className="px-4 py-3 text-left"
-                            onClick={(e) => e.stopPropagation()}
+                        return (
+                          <tr
+                            key={marker.id}
+                            onClick={() => {
+                              if (isEditing) return;
+                              if (isDeleteMode) {
+                                toggleSelectRow(marker.id);
+                              } else {
+                                onSelectMarker(marker);
+                              }
+                            }}
+                            style={{
+                              gridTemplateColumns: tableGridTemplateColumns,
+                            }}
+                            className={`grid w-full items-center group transition-colors cursor-pointer ${
+                              isEditing
+                                ? "bg-amber-50/60 dark:bg-amber-950/40"
+                                : isSelected
+                                  ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
+                                  : isChecked
+                                    ? "bg-red-50/50 dark:bg-red-950/30"
+                                    : "hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
+                            }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleSelectRow(marker.id)}
-                              className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-600 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                            />
-                          </td>
-                        )}
-
-                        {/* Nombre — alineado a la izquierda */}
-                        <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editNombre}
-                              onChange={(e) => setEditNombre(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white/90 dark:bg-slate-800 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
-                              autoFocus
-                            />
-                          ) : (
-                            marker.nombre
-                          )}
-                        </td>
-
-                        {/* Localidad — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                          {locDisplay}
-                        </td>
-
-                        {/* Región — polígono calculado o Fuera de rango */}
-                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                          <span
-                            className={
-                              regionDisplay === "Fuera de rango"
-                                ? "text-zinc-400 dark:text-slate-400 italic"
-                                : "text-zinc-700 dark:text-slate-200 font-semibold"
-                            }
-                          >
-                            {regionDisplay}
-                          </span>
-                        </td>
-
-                        {/* Tipo — Custom Dropdown estilizado */}
-                        <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
-                          {isEditing ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isTypeDropdownOpen) {
-                                  setIsTypeDropdownOpen(false);
-                                  setTypeDropdownPos(null);
-                                } else {
-                                  const rect =
-                                    e.currentTarget.getBoundingClientRect();
-                                  const spaceBelow =
-                                    window.innerHeight - rect.bottom;
-                                  const showAbove = spaceBelow < 220;
-                                  setTypeDropdownPos({
-                                    top: showAbove
-                                      ? rect.top - 210
-                                      : rect.bottom + 4,
-                                    left: rect.left,
-                                    width: Math.max(rect.width, 180),
-                                    marker,
-                                  });
-                                  setIsTypeDropdownOpen(true);
-                                }
-                              }}
-                              className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-slate-100 outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-slate-500"
-                            >
-                              <span className="truncate">
-                                {marker.category === "EVACUACION"
-                                  ? (
-                                      SAFE_ZONE_TYPE_LABELS as Record<
-                                        string,
-                                        string
-                                      >
-                                    )[editTipo] || editTipo
-                                  : (
-                                      HEALTH_CENTER_TYPE_LABELS as Record<
-                                        string,
-                                        string
-                                      >
-                                    )[editTipo] || editTipo}
-                              </span>
-                              <ChevronDown
-                                className={`h-3.5 w-3.5 text-zinc-500 dark:text-slate-400 shrink-0 transition-transform duration-200 ${
-                                  isTypeDropdownOpen ? "rotate-180" : ""
-                                }`}
-                              />
-                            </button>
-                          ) : (
-                            marker.subtipo
-                          )}
-                        </td>
-
-                        {/* Dirección — alineado a la izquierda */}
-                        <td className="px-5 py-3 text-zinc-500 dark:text-slate-300 font-medium text-left">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editDireccion}
-                              onChange={(e) => setEditDireccion(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-medium outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
-                            />
-                          ) : (
-                            marker.direccion || "-"
-                          )}
-                        </td>
-
-                        {/* Capacidad — SOLO visible si es Centros de Evacuación */}
-                        {selectedType === "EVACUACION" && (
-                          <td className="px-5 py-3 text-zinc-700 dark:text-white font-bold text-left">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                min="0"
-                                value={editCapacidad}
-                                onChange={(e) =>
-                                  setEditCapacidad(e.target.value)
-                                }
+                            {isDeleteMode && (
+                              <td
+                                className="px-4 py-3 text-left"
                                 onClick={(e) => e.stopPropagation()}
-                                placeholder="0"
-                                className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
-                              />
-                            ) : marker.capacidad_maxima !== null &&
-                              marker.capacidad_maxima !== undefined ? (
-                              marker.capacidad_maxima.toLocaleString("es-AR")
-                            ) : (
-                              "-"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleSelectRow(marker.id)}
+                                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-600 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                                />
+                              </td>
                             )}
-                          </td>
-                        )}
 
-                        {/* Acciones — botones redondos con color de fuente normal */}
-                        <td
-                          className="px-3 py-3 text-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isEditing ? (
-                            <div className="flex items-center justify-start gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleConfirmEdit(marker)}
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                                title="Confirmar edición"
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleCancelEdit}
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                                title="Cancelar edición"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const rect =
-                                  e.currentTarget.getBoundingClientRect();
-                                if (activeMenuData?.marker.id === marker.id) {
-                                  setActiveMenuData(null);
-                                } else {
-                                  const spaceBelow =
-                                    window.innerHeight - rect.bottom;
-                                  const showAbove = spaceBelow < 140;
-                                  setActiveMenuData({
-                                    marker,
-                                    top: showAbove
-                                      ? rect.top - 120
-                                      : rect.bottom + 4,
-                                    right: window.innerWidth - rect.right,
-                                  });
+                            {/* Nombre — alineado a la izquierda */}
+                            <td className="px-5 py-3 font-bold text-zinc-900 dark:text-white text-left">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editNombre}
+                                  onChange={(e) =>
+                                    setEditNombre(e.target.value)
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white/90 dark:bg-slate-800 shadow-2xs px-3 py-1.5 text-xs text-zinc-900 dark:text-white font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                                  autoFocus
+                                />
+                              ) : (
+                                marker.nombre
+                              )}
+                            </td>
+
+                            {/* Localidad — alineado a la izquierda */}
+                            <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                              {locDisplay}
+                            </td>
+
+                            {/* Región — polígono calculado o Fuera de rango */}
+                            <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                              <span
+                                className={
+                                  regionDisplay === "Fuera de rango"
+                                    ? "text-zinc-400 dark:text-slate-400 italic"
+                                    : "text-zinc-700 dark:text-slate-200 font-semibold"
                                 }
-                              }}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                              >
+                                {regionDisplay}
+                              </span>
+                            </td>
+
+                            {/* Tipo — Custom Dropdown estilizado */}
+                            <td className="px-5 py-3 text-zinc-600 dark:text-slate-300 font-medium text-left">
+                              {isEditing ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isTypeDropdownOpen) {
+                                      setIsTypeDropdownOpen(false);
+                                      setTypeDropdownPos(null);
+                                    } else {
+                                      const rect =
+                                        e.currentTarget.getBoundingClientRect();
+                                      const spaceBelow =
+                                        window.innerHeight - rect.bottom;
+                                      const showAbove = spaceBelow < 220;
+                                      setTypeDropdownPos({
+                                        top: showAbove
+                                          ? rect.top - 210
+                                          : rect.bottom + 4,
+                                        left: rect.left,
+                                        width: Math.max(rect.width, 180),
+                                        marker,
+                                      });
+                                      setIsTypeDropdownOpen(true);
+                                    }
+                                  }}
+                                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-2xs px-3 py-1.5 text-xs font-semibold text-zinc-800 dark:text-slate-100 outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-slate-500"
+                                >
+                                  <span className="truncate">
+                                    {marker.category === "EVACUACION"
+                                      ? (
+                                          SAFE_ZONE_TYPE_LABELS as Record<
+                                            string,
+                                            string
+                                          >
+                                        )[editTipo] || editTipo
+                                      : (
+                                          HEALTH_CENTER_TYPE_LABELS as Record<
+                                            string,
+                                            string
+                                          >
+                                        )[editTipo] || editTipo}
+                                  </span>
+                                  <ChevronDown
+                                    className={`h-3.5 w-3.5 text-zinc-500 dark:text-slate-400 shrink-0 transition-transform duration-200 ${
+                                      isTypeDropdownOpen ? "rotate-180" : ""
+                                    }`}
+                                  />
+                                </button>
+                              ) : (
+                                marker.subtipo
+                              )}
+                            </td>
+
+                            {/* Dirección — alineado a la izquierda */}
+                            <td className="px-5 py-3 text-zinc-500 dark:text-slate-300 font-medium text-left">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editDireccion}
+                                  onChange={(e) =>
+                                    setEditDireccion(e.target.value)
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-medium outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                                />
+                              ) : (
+                                marker.direccion || "-"
+                              )}
+                            </td>
+
+                            {/* Capacidad — SOLO visible si es Centros de Evacuación */}
+                            {selectedType === "EVACUACION" && (
+                              <td className="px-5 py-3 text-zinc-700 dark:text-white font-bold text-left">
+                                {isEditing ? (
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={editCapacidad}
+                                    onChange={(e) =>
+                                      setEditCapacidad(e.target.value)
+                                    }
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder="0"
+                                    className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                                  />
+                                ) : marker.capacidad_maxima !== null &&
+                                  marker.capacidad_maxima !== undefined ? (
+                                  marker.capacidad_maxima.toLocaleString(
+                                    "es-AR"
+                                  )
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                            )}
+
+                            {/* Acciones — botones redondos con color de fuente normal */}
+                            <td
+                              className="px-3 py-3 text-center"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
+                              {isEditing ? (
+                                <div className="flex items-center justify-start gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleConfirmEdit(marker)}
+                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                    title="Confirmar edición"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] text-zinc-700 dark:text-slate-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                    title="Cancelar edición"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const rect =
+                                      e.currentTarget.getBoundingClientRect();
+                                    if (
+                                      activeMenuData?.marker.id === marker.id
+                                    ) {
+                                      setActiveMenuData(null);
+                                    } else {
+                                      const spaceBelow =
+                                        window.innerHeight - rect.bottom;
+                                      const showAbove = spaceBelow < 140;
+                                      setActiveMenuData({
+                                        marker,
+                                        top: showAbove
+                                          ? rect.top - 120
+                                          : rect.bottom + 4,
+                                        right: window.innerWidth - rect.right,
+                                      });
+                                    }
+                                  }}
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                                >
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      }
+                    )
                 )}
               </tbody>
             </table>
