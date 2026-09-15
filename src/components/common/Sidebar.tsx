@@ -106,6 +106,9 @@ function FilterDropdown({
   );
 }
 
+import "overlayscrollbars/overlayscrollbars.css";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+
 interface SidebarProps {
   reports: Report[];
   filters: ReportFilters;
@@ -521,7 +524,18 @@ export function Sidebar({
               )}
 
               {!loading && !error && visibleReports.length > 0 && (
-                <div className="gap-2 flex flex-col overflow-y-auto custom-scrollbar pr-1">
+                <OverlayScrollbarsComponent
+                  defer
+                  className="gap-2 flex flex-col h-full"
+                  options={{
+                    overflow: { x: "hidden", y: "scroll" },
+                    scrollbars: {
+                      theme: "inu-table-scrollbar",
+                      autoHide: "leave",
+                      visibility: "auto",
+                    },
+                  }}
+                >
                   {visibleReports.map((report) => (
                     <ReportCard
                       key={report.id}
@@ -531,7 +545,7 @@ export function Sidebar({
                       isAdmin={isAdmin}
                     />
                   ))}
-                </div>
+                </OverlayScrollbarsComponent>
               )}
             </div>
           </div>
