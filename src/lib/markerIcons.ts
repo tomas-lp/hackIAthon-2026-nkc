@@ -9,7 +9,7 @@ export function createSafeZoneIcon(zoom: number, isDraft: boolean = false) {
   const bgColor = isDraft ? "#6ee7b7" : "#10b981"; // emerald-300 vs emerald-500
 
   return L.divIcon({
-    className: `custom-safe-zone-marker`,
+    className: `custom-safe-zone-marker ${isDraft ? "animate-bounce" : ""}`,
     html: `
       <div class="marker-inner" style="
         display: flex;
@@ -82,7 +82,7 @@ export function createDraftMarkerIcon(
     size = Math.max(minSize, Math.min(maxSize, size));
 
     return L.divIcon({
-      className: `custom-health-center-marker is-draft animate-pulse`,
+      className: `custom-health-center-marker is-draft animate-bounce`,
       html: `
         <div class="marker-inner" style="
           background-color: #f87171;

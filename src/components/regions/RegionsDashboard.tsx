@@ -190,6 +190,7 @@ export function RegionsDashboard({
 
   const handleBackToList = () => {
     setIsFocusedRegionView(false);
+    setSelectedRegionId(null);
   };
 
   const isSelectedBarrio = useMemo(() => {

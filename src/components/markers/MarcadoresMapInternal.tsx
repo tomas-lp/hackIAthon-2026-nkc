@@ -74,6 +74,40 @@ function MapClickHandler({
   return null;
 }
 
+// Subcomponente para mostrar un marcador gris siguiendo el mouse
+function HoverMarker({ isCreating }: { isCreating: boolean }) {
+  const [position, setPosition] = useState<L.LatLng | null>(null);
+
+  useMapEvents({
+    mousemove(e) {
+      if (isCreating) {
+        setPosition(e.latlng);
+      }
+    },
+    mouseout() {
+      setPosition(null);
+    },
+  });
+
+  if (!isCreating || !position) return null;
+
+  const genericGrayIcon = L.divIcon({
+    className: "bg-transparent border-none",
+    html: `<div style="width: 16px; height: 16px; background: #9ca3af; border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+
+  return (
+    <Marker
+      position={position}
+      icon={genericGrayIcon}
+      zIndexOffset={3000}
+      interactive={false}
+    />
+  );
+}
+
 // Subcomponente para sincronizar el nivel de zoom y redibujar iconos escalados
 function ZoomWatcher({ onZoomChange }: { onZoomChange: (z: number) => void }) {
   const map = useMapEvents({
@@ -117,7 +151,7 @@ export default function MarcadoresMapInternal({
 
   return (
     <div
-      className={`relative ${className} ${isCreating ? "cursor-crosshair" : ""}`}
+      className={`relative ${className} ${isCreating ? "!cursor-none [&_.leaflet-container]:!cursor-none [&_.leaflet-interactive]:!cursor-none" : ""}`}
     >
       {/* Banner superior flotante cuando está en modo creación */}
       {isCreating && (
@@ -194,6 +228,7 @@ export default function MarcadoresMapInternal({
           isCreating={isCreating}
           onMapClick={onMapClickToCreate}
         />
+        <HoverMarker isCreating={isCreating} />
 
         {/* Marcadores guardados */}
         {markers.map((marker) => {

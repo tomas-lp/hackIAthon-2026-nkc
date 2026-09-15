@@ -245,11 +245,9 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
           <button
             type="submit"
             disabled={loading || !email || !password}
-            className="mt-2 w-full rounded-xl bg-white dark:bg-[#1e2a4a] border border-blue-600 dark:border-blue-500 px-4 py-3 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-50 dark:hover:bg-[#25355d] active:bg-blue-100 disabled:opacity-50"
+            className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl bg-[#435bb5] hover:bg-[#364ba0] active:bg-[#2d3e84] text-white border border-transparent dark:bg-[#435ebd] dark:hover:bg-[#4f6cd1] dark:active:bg-[#364ea3] dark:border-[#5270d8] dark:text-white px-4 py-2.5 text-sm font-bold shadow-2xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           >
-            {loading && (
-              <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
-            )}
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             Ingresar
           </button>
         </form>

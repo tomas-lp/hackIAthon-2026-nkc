@@ -48,13 +48,6 @@ export function DeleteListModal({
           <h3 className="text-base font-bold text-zinc-900 dark:text-white leading-snug pt-0.5">
             ¿Deseas eliminar esta lista personalizada?
           </h3>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-full p-1 text-zinc-400 dark:text-slate-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-700 dark:hover:text-white transition cursor-pointer shrink-0 -mt-2 -mr-2"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         {listName && (

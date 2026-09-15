@@ -55,7 +55,7 @@ export function LayerControls({
 
         {/* Popover Panel with Spring Bounce Slide Animation */}
         <div
-          className={`absolute bottom-14 left-0 w-72 rounded-2xl border border-gray-200/80 dark:border-slate-600/80 bg-white/60 dark:bg-slate-800/90 p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          className={`absolute bottom-14 left-0 w-[304px] rounded-2xl border border-gray-200/80 dark:border-slate-600/80 bg-white/60 dark:bg-slate-800/90 p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             isPopoverOpen
               ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
               : "translate-y-8 opacity-0 scale-95 pointer-events-none"

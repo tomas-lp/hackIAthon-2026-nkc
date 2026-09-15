@@ -961,16 +961,18 @@ export function RegionsTableUI({
             <thead className="bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
               <tr
                 style={{ gridTemplateColumns: regionGridTemplateColumns }}
-                className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
+                className="grid w-full items-stretch border-b border-gray-200 dark:border-[#2b395b] select-none"
               >
                 {isDeleteMode && (
                   <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors animate-fade-kpi">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                    />
+                    <div className="flex items-center h-full">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                      />
+                    </div>
                   </th>
                 )}
 
@@ -983,7 +985,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Nombre</span>
                     {sortField === "nombre" ? (
                       sortOrder === "asc" ? (
@@ -1006,7 +1008,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Localidad</span>
                     {sortField === "localidad" ? (
                       sortOrder === "asc" ? (
@@ -1029,7 +1031,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Cantidad de reclamos</span>
                     {sortField === "cantidadReclamos" ? (
                       sortOrder === "asc" ? (
@@ -1052,7 +1054,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Última ayuda</span>
                     {sortField === "ultimaAyuda" ? (
                       sortOrder === "asc" ? (
@@ -1075,7 +1077,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Reclamos activos</span>
                     {sortField === "reclamosActivos" ? (
                       sortOrder === "asc" ? (

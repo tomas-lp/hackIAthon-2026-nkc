@@ -95,14 +95,6 @@ export function SafeZoneModal({
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-zinc-400 dark:text-slate-400 transition-colors hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-white cursor-pointer"
-          disabled={isSubmitting}
-        >
-          <X className="h-4 w-4" />
-        </button>
-
         <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
           {title}
         </h2>

@@ -793,7 +793,7 @@ export function MarcadoresTableUI({
                     <tr
                       key={headerGroup.id}
                       style={{ gridTemplateColumns: tableGridTemplateColumns }}
-                      className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
+                      className="grid w-full items-stretch border-b border-gray-200 dark:border-[#2b395b] select-none"
                     >
                       {headerGroup.headers.map(
                         (
@@ -842,15 +842,17 @@ export function MarcadoresTableUI({
                               }`}
                             >
                               {isSelection ? (
-                                <input
-                                  type="checkbox"
-                                  checked={isAllSelected}
-                                  onChange={toggleSelectAll}
-                                  onClick={(event) => event.stopPropagation()}
-                                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                                />
+                                <div className="flex items-center h-full">
+                                  <input
+                                    type="checkbox"
+                                    checked={isAllSelected}
+                                    onChange={toggleSelectAll}
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                                  />
+                                </div>
                               ) : isActions ? null : (
-                                <div className="flex items-center justify-start gap-1.5">
+                                <div className="flex items-center justify-start gap-1.5 h-full">
                                   <span className="leading-snug">
                                     {header.column.columnDef.header as string}
                                   </span>
