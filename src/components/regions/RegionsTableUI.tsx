@@ -1148,7 +1148,7 @@ export function RegionsTableUI({
                           }}
                           className={`grid w-full items-center group transition-colors cursor-pointer ${
                             isEditing
-                              ? "bg-amber-50/60 dark:bg-amber-950/40"
+                              ? "bg-zinc-100/80 dark:bg-[#233154]"
                               : isSelected
                                 ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
                                 : isChecked
