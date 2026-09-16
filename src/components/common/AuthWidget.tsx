@@ -11,6 +11,7 @@ interface AuthWidgetProps {
   onLoginClick: () => void;
   onLogoutClick: () => void;
   isHidden?: boolean;
+  inline?: boolean;
 }
 
 export function AuthWidget({
@@ -18,6 +19,7 @@ export function AuthWidget({
   onLoginClick,
   onLogoutClick,
   isHidden,
+  inline = false,
 }: AuthWidgetProps) {
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -51,7 +53,7 @@ export function AuthWidget({
 
   return (
     <div
-      className={`absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out pointer-events-none ${
+      className={`${inline ? "relative" : "absolute right-4 top-20 sm:top-4"} z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out pointer-events-none ${
         isHidden ? "-translate-y-20 opacity-0" : "translate-y-0 opacity-100"
       }`}
     >

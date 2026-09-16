@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useReports } from "@/hooks/useReports";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
 import { ReportDetailSidebar } from "@/components/map/ReportDetailSidebar";
@@ -30,6 +31,13 @@ import { useMapRouting } from "@/hooks/home/useMapRouting";
 import { AdminTopBar } from "./_parts/AdminTopBar";
 import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
+import { MobileHeader } from "./_parts/MobileHeader";
+import type { MobileAlertsSheetProps } from "./_parts/MobileAlertsSheet";
+
+const MobileAlertsSheet = dynamic<MobileAlertsSheetProps>(
+  () => import("./_parts/MobileAlertsSheet").then((m) => m.MobileAlertsSheet),
+  { ssr: false }
+);
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeMapView } from "./HomeMapView";
 import { useAdminSidebar } from "@/components/common/AppShell";
@@ -419,6 +427,33 @@ export function HomeDashboard({
         />
       )}
 
+      {/* Mobile-only: Header flotante con logo y buscador */}
+      {!isAdmin && (
+        <MobileHeader
+          safeZones={safeZoneSel.safeZones}
+          healthCenters={healthSel.healthCenters}
+          onSelectSafeZone={(zone) => {
+            setShowEvacuationCenters(true);
+            safeZoneSel.setSelectedSafeZone(zone);
+            setSelectedReport(null);
+            healthSel.setSelectedHealthCenter(null);
+            safeZoneSel.setIsEditingSafeZones(false);
+            safeZoneSel.setIsCreatingSafeZone(false);
+            safeZoneSel.setDraftLocation(null);
+          }}
+          onSelectHealthCenter={(center) => {
+            setShowMedicalCenters(true);
+            healthSel.setSelectedHealthCenter(center);
+            setSelectedReport(null);
+            safeZoneSel.setSelectedSafeZone(null);
+            safeZoneSel.setIsEditingSafeZones(false);
+            safeZoneSel.setIsCreatingSafeZone(false);
+            safeZoneSel.setDraftLocation(null);
+          }}
+          isHidden={hideMainUI}
+        />
+      )}
+
       {!isAdmin && (
         <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
           <button
@@ -544,16 +579,23 @@ export function HomeDashboard({
         onClearError={mapRouting.clearRoute}
       />
 
-      <AuthWidget
-        isAdmin={isAdmin}
-        onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={async () => {
-          const { logoutFromSession } = await import("@/app/auth/actions");
-          await logoutFromSession();
-          window.location.reload();
-        }}
-        isHidden={hideMainUI}
-      />
+      <div className="absolute right-4 top-20 sm:top-4 z-[1000] flex flex-col items-end gap-2">
+        <AuthWidget
+          isAdmin={isAdmin}
+          onLoginClick={() => setShowLoginModal(true)}
+          onLogoutClick={async () => {
+            const { logoutFromSession } = await import("@/app/auth/actions");
+            await logoutFromSession();
+            window.location.reload();
+          }}
+          isHidden={hideMainUI}
+          inline
+        />
+        <div
+          id="mobile-top-controls"
+          className="flex items-center justify-center"
+        />
+      </div>
 
       <LoginModal
         isOpen={showLoginModal}
@@ -761,6 +803,24 @@ export function HomeDashboard({
         onClose={() => setIsDeleteListModalOpen(false)}
         onConfirm={handleConfirmDeleteList}
       />
+
+      {/* Mobile-only: Bottom sheet con alertas y filtros */}
+      {!isAdmin && (
+        <MobileAlertsSheet
+          reports={reports}
+          filters={filters}
+          loading={loading}
+          error={error}
+          selectedReport={selectedReport}
+          onSelectReport={(report) => {
+            setSelectedReport(report);
+            safeZoneSel.setSelectedSafeZone(null);
+            healthSel.setSelectedHealthCenter(null);
+          }}
+          onUpdateFilter={updateFilter}
+          isHidden={hideMainUI}
+        />
+      )}
     </main>
   );
 }

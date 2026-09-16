@@ -16,7 +16,7 @@ export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
     <>
       {/* Floating Widget */}
       <div
-        className={`absolute bottom-6 right-6 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out ${
+        className={`absolute bottom-[22vh] right-6 sm:bottom-6 z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out ${
           isHidden
             ? "translate-y-28 opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100"

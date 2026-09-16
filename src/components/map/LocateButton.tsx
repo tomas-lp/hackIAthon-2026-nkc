@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useMap } from "react-leaflet";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import { Crosshair } from "lucide-react";
 
@@ -25,11 +26,22 @@ type LocateState = "idle" | "loading" | "active" | "error";
 
 interface LocateButtonProps {
   activeRoute?: RouteResult | null;
+  containerId?: string;
 }
 
-export function LocateButton({ activeRoute }: LocateButtonProps) {
+export function LocateButton({ activeRoute, containerId }: LocateButtonProps) {
   const map = useMap();
   const [state, setState] = useState<LocateState>("idle");
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!containerId) return;
+    queueMicrotask(() => {
+      setPortalContainer(document.getElementById(containerId));
+    });
+  }, [containerId]);
 
   // We keep a ref to the Leaflet marker so we can move it or remove it later
   // without triggering React re-renders.
@@ -260,7 +272,7 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
 
   const c = colors[state];
 
-  return (
+  const button = (
     <button
       ref={buttonRef}
       id="locate-me-button"
@@ -271,7 +283,7 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
       onPointerUp={(e) => e.stopPropagation()}
       title="Mostrar mi ubicación"
       className={`
-        absolute top-[116px] right-4 z-[1000]
+        ${containerId ? "relative" : "absolute top-20 right-16 sm:top-[116px] sm:right-4 z-1000"}
         rounded-full border ${c.border} ${c.bg} p-2.5 ${c.text}
         shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md
         cursor-pointer
@@ -288,4 +300,6 @@ export function LocateButton({ activeRoute }: LocateButtonProps) {
       )}
     </button>
   );
+
+  return portalContainer ? createPortal(button, portalContainer) : button;
 }
