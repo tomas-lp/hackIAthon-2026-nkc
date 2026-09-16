@@ -95,7 +95,17 @@ export function SafeZoneModal({
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
-        <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isSubmitting}
+          className="absolute top-5 right-5 rounded-full p-1.5 text-zinc-400 hover:text-zinc-700 dark:text-slate-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#0b101d] transition-colors cursor-pointer disabled:opacity-50"
+          aria-label="Cerrar modal"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight pr-6">
           {title}
         </h2>
 

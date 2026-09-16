@@ -191,6 +191,9 @@ export function RegionsDashboard({
   const handleBackToList = () => {
     setIsFocusedRegionView(false);
     setSelectedRegionId(null);
+    setIsDrawing(false);
+    setDraftPoints([]);
+    setShowNamePopup(false);
   };
 
   const isSelectedBarrio = useMemo(() => {
@@ -237,8 +240,8 @@ export function RegionsDashboard({
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans">
-      {/* Botón Volver a la lista de regiones (arriba a la izquierda en vista de mapa enfocada) */}
-      {isFocusedRegionView && (
+      {/* Botón Volver a la lista de regiones (arriba a la izquierda en vista de mapa enfocada o creando zona) */}
+      {(isFocusedRegionView || isDrawing) && (
         <div className="absolute top-6 left-6 z-[100]">
           <TooltipSign label="Volver a la lista de regiones" position="right">
             <button
@@ -353,18 +356,6 @@ export function RegionsDashboard({
           onConfirm={handleConfirmName}
           onCancel={handleCancelDrawing}
         />
-      )}
-
-      {/* Botones de acción durante el dibujo */}
-      {isDrawing && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
-          <button
-            onClick={handleCancelDrawing}
-            className="flex items-center justify-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-6 py-2.5 text-sm font-bold text-red-600 dark:text-[#f87171] shadow-xl transition-all duration-200 hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            Cancelar
-          </button>
-        </div>
       )}
     </div>
   );

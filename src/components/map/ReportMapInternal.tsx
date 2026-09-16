@@ -578,6 +578,7 @@ export default function ReportMapInternal({
       <MapContainer
         center={CORRIENTES_CENTER}
         zoom={INITIAL_ZOOM}
+        maxZoom={20}
         scrollWheelZoom={true}
         zoomControl={false}
         attributionControl={false}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/Switch";
-import { Pencil, X, Check, Trash2, ChevronDown } from "lucide-react";
+import { Pencil, X, Check, Trash2, ChevronDown, Plus } from "lucide-react";
 
 interface AdminTopBarProps {
   tabs: string[];
@@ -109,14 +109,6 @@ export function AdminTopBar({
               </span>
             </Switch.Option>
           )}
-
-          <div className="h-3.5 w-px bg-zinc-400/30 dark:bg-slate-600/60 mx-0.5 z-10" />
-          <button
-            onClick={onAddList}
-            className="relative z-10 h-7 px-3.5 text-xs font-semibold text-zinc-700 hover:text-zinc-950 dark:text-white dark:hover:text-white transition-colors duration-200 cursor-pointer whitespace-nowrap flex items-center justify-center"
-          >
-            Nueva +
-          </button>
         </Switch>
 
         {/* Menú desplegable flotante (SOLO cuando hay 2 o más listas y se presiona por 2da vez) */}
@@ -149,32 +141,44 @@ export function AdminTopBar({
         )}
       </div>
 
-      {/* Botones de acción normal (Editar y Eliminar): absolutos a la derecha
-          del switch para no afectar el ancho del contenedor (sin layout shift) */}
+      {/* Botones de acción: absolutos a la derecha del switch */}
       <div
-        className={`absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-2 origin-left transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-          showEditButton && !isEditingRegions
+        className={`absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-2 origin-left transition-all duration-300 ${
+          !isEditingRegions
             ? "translate-x-0 opacity-100 scale-100 pointer-events-auto"
             : "translate-x-6 opacity-0 scale-90 pointer-events-none"
         }`}
       >
         <button
-          onClick={onStartEditing}
-          title="Editar zonas"
-          aria-label="Editar zonas"
+          onClick={onAddList}
+          title="Nueva lista personalizada"
+          aria-label="Nueva lista personalizada"
           className="h-9 w-9 aspect-square min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md text-zinc-700 dark:text-white transition-colors duration-200 hover:bg-zinc-200/80 dark:hover:bg-slate-700/80 active:scale-95 cursor-pointer shrink-0"
         >
-          <Pencil className="h-4 w-4 text-zinc-700 dark:text-white shrink-0" />
+          <Plus className="h-4 w-4 text-zinc-700 dark:text-white shrink-0" />
         </button>
 
-        <button
-          onClick={onDeleteList}
-          title="Eliminar lista personalizada"
-          aria-label="Eliminar lista personalizada"
-          className="h-9 w-9 aspect-square min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md text-zinc-700 dark:text-white transition-colors duration-200 hover:bg-zinc-200/80 dark:hover:bg-slate-700/80 active:scale-95 cursor-pointer shrink-0"
-        >
-          <Trash2 className="h-4 w-4 text-zinc-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 shrink-0" />
-        </button>
+        {showEditButton && (
+          <>
+            <button
+              onClick={onStartEditing}
+              title="Editar zonas"
+              aria-label="Editar zonas"
+              className="h-9 w-9 aspect-square min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md text-zinc-700 dark:text-white transition-colors duration-200 hover:bg-zinc-200/80 dark:hover:bg-slate-700/80 active:scale-95 cursor-pointer shrink-0 animate-in fade-in zoom-in-95 duration-200"
+            >
+              <Pencil className="h-4 w-4 text-zinc-700 dark:text-white shrink-0" />
+            </button>
+
+            <button
+              onClick={onDeleteList}
+              title="Eliminar lista personalizada"
+              aria-label="Eliminar lista personalizada"
+              className="h-9 w-9 aspect-square min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md text-zinc-700 dark:text-white transition-colors duration-200 hover:bg-zinc-200/80 dark:hover:bg-slate-700/80 active:scale-95 cursor-pointer shrink-0 animate-in fade-in zoom-in-95 duration-200"
+            >
+              <Trash2 className="h-4 w-4 text-zinc-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 shrink-0" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Botones de confirmación/cancelación durante el modo edición:
