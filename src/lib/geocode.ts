@@ -39,14 +39,10 @@ async function fetchAddress(lat: number, lon: number): Promise<string> {
   const houseNumber = address.house_number;
   const locality =
     address.city || address.town || address.village || address.suburb;
-  const state = address.state || address.province;
-  const country = address.country;
 
   const formattedAddress = [
     street && houseNumber ? `${street} ${houseNumber}` : street || houseNumber,
     locality,
-    state,
-    country,
   ].filter(Boolean);
 
   return (

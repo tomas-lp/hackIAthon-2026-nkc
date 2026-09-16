@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
 import { useEffect, useState } from "react";
-import { formatDate, formatLocationAddress } from "@/lib/format";
+import { formatDate, formatMapLocationAddress } from "@/lib/format";
 import { MapDetailRow } from "@/components/map/MapDetailRow";
 import { MapDetailShell } from "@/components/map/MapDetailShell";
 
@@ -77,7 +77,7 @@ export function SafeZoneDetailSidebar({
     if (!activeSafeZone) return;
 
     // Si ya tenemos dirección completa desde la BD, no llamamos a Nominatim
-    if (formatLocationAddress(activeSafeZone)) {
+    if (formatMapLocationAddress(activeSafeZone)) {
       return;
     }
 
@@ -99,7 +99,7 @@ export function SafeZoneDetailSidebar({
   if (!activeSafeZone) return null;
 
   const displayAddress =
-    formatLocationAddress(activeSafeZone) ??
+    formatMapLocationAddress(activeSafeZone) ??
     asyncAddress ??
     `${activeSafeZone.localidad || "Corrientes"}, ${activeSafeZone.departamento || "Capital"}`;
 
@@ -144,7 +144,7 @@ export function SafeZoneDetailSidebar({
             className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-white transition-colors active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm ${
               buttonColor === "red"
                 ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-500 hover:bg-blue-600"
+                : "bg-[#435bb5] hover:bg-[#364ba0] active:bg-[#2d3e84] border border-transparent dark:bg-[#435ebd] dark:hover:bg-[#4f6cd1] dark:active:bg-[#364ea3] dark:border-[#5270d8] dark:text-white"
             }`}
           >
             {isNavigating ? (
