@@ -74,17 +74,20 @@ export function NewListModal({
         className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-200 font-sans"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={handleClose}
+          disabled={isSubmitting}
+          className="absolute top-5 right-5 rounded-full p-1.5 text-zinc-400 hover:text-zinc-700 dark:text-slate-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#0b101d] transition-colors cursor-pointer disabled:opacity-50"
+          aria-label="Cerrar modal"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start justify-between gap-3 pr-6">
           <h3 className="text-base font-bold text-zinc-900 dark:text-white leading-snug pt-0.5">
             {onSave ? "Nueva lista" : "Nombre de la nueva lista"}
           </h3>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-full p-1 text-zinc-400 dark:text-slate-400 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-700 dark:hover:text-white transition cursor-pointer shrink-0 -mt-1 -mr-1"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">

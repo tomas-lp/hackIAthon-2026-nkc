@@ -17,6 +17,8 @@ import { HeatPoint } from "@/lib/heatmap";
 
 export interface RouteResult {
   zone: SafeZone;
+  /** Origen GPS usado para calcular la ruta ([lat, lng]) */
+  origin: [number, number];
   /** Coordenadas [lat, lng] de la polilínea */
   polyline: [number, number][];
   /** Distancia total en metros */
@@ -298,6 +300,7 @@ export async function routeToZone(
     const cost = computeRouteCost(c.distanceM, riskScore);
     return {
       zone,
+      origin: userLocation,
       polyline: c.polyline,
       distanceM: c.distanceM,
       durationSec: c.durationSec,

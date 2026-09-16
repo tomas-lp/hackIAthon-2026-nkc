@@ -32,6 +32,13 @@ function SatellitePane() {
       const pane = map.createPane("satellitePane");
       pane.style.zIndex = "200";
     }
+    let labelsPane = map.getPane("satelliteLabelsPane");
+    if (!labelsPane) {
+      labelsPane = map.createPane("satelliteLabelsPane");
+    }
+    labelsPane.style.zIndex = "500";
+    labelsPane.style.pointerEvents = "none";
+    labelsPane.style.filter = "brightness(2.2) contrast(1.5)";
   }, [map]);
 
   return null;
@@ -88,14 +95,17 @@ export function MapTileLayers({
           attribution={MAP_TILES.esriSatellite.attribution}
           url={MAP_TILES.esriSatellite.url}
           maxZoom={MAP_TILES.esriSatellite.maxZoom}
+          maxNativeZoom={MAP_TILES.esriSatellite.maxNativeZoom}
         />
         <TileLayer
           key="esri-satellite-manual-labels"
+          className="satellite-labels-layer"
           attribution={MAP_TILES.dark.attribution}
           url={MAP_TILES.darkLabels.url}
           subdomains={MAP_TILES.darkLabels.subdomains}
-          maxZoom={MAP_TILES.darkLabels.maxZoom}
-          pane="shadowPane"
+          maxZoom={22}
+          maxNativeZoom={MAP_TILES.darkLabels.maxZoom}
+          pane="satelliteLabelsPane"
         />
       </>
     );
@@ -123,14 +133,17 @@ export function MapTileLayers({
           attribution={MAP_TILES.esriSatellite.attribution}
           url={MAP_TILES.esriSatellite.url}
           maxZoom={MAP_TILES.esriSatellite.maxZoom}
+          maxNativeZoom={MAP_TILES.esriSatellite.maxNativeZoom}
         />
         <TileLayer
           key="esri-satellite-fallback-labels"
+          className="satellite-labels-layer"
           attribution={MAP_TILES.dark.attribution}
           url={MAP_TILES.darkLabels.url}
           subdomains={MAP_TILES.darkLabels.subdomains}
-          maxZoom={MAP_TILES.darkLabels.maxZoom}
-          pane="shadowPane"
+          maxZoom={22}
+          maxNativeZoom={MAP_TILES.darkLabels.maxZoom}
+          pane="satelliteLabelsPane"
         />
       </>
     );

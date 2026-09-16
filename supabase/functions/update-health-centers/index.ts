@@ -33,8 +33,13 @@ interface OsmElement {
 
 interface HealthCenterRow {
   osm_id: number;
+  fuente_principal: "OSM";
+  fuente_id: string;
+  fuente_url: string;
+  es_activo: true;
   nombre: string;
   tipo: "SAPS" | "CAPS" | "HOSPITAL";
+  provincia: "Corrientes";
   localidad: string | null;
   departamento: string | null;
   direccion: string | null;
@@ -98,6 +103,11 @@ function mapOsmElement(el: OsmElement): HealthCenterRow | null {
 
   return {
     osm_id: el.id,
+    fuente_principal: "OSM",
+    fuente_id: String(el.id),
+    fuente_url: "https://overpass-api.de/api/interpreter",
+    es_activo: true,
+    provincia: "Corrientes",
     nombre,
     tipo: mapAmenityToTipo(tags["amenity"], tags["healthcare"]),
     localidad:
@@ -204,7 +214,9 @@ Deno.serve(async (req: Request) => {
     // 3. Obtener osm_ids actuales para calcular bajas
     const { data: currentRows, error: fetchErr } = await supabase
       .from("health_centers")
-      .select("osm_id");
+      .select("osm_id, fuente_principal")
+      .eq("fuente_principal", "OSM")
+      .not("osm_id", "is", null);
 
     if (fetchErr) throw fetchErr;
 
@@ -226,18 +238,20 @@ Deno.serve(async (req: Request) => {
       upsertedCount += batch.length;
     }
 
-    // 5. Eliminar centros que ya no están en OSM
+    // 5. Desactivar únicamente centros cuya fuente canónica es OSM.
+    // Nunca se eliminan registros IDECorr o manuales.
     const newOsmIds = new Set(rows.map((r) => r.osm_id));
     const idsToDelete = [...currentOsmIds].filter((id) => !newOsmIds.has(id));
 
-    let deletedCount = 0;
+    let deactivatedCount = 0;
     if (idsToDelete.length > 0) {
-      const { error: deleteErr } = await supabase
+      const { error: deactivateErr } = await supabase
         .from("health_centers")
-        .delete()
+        .update({ es_activo: false })
+        .eq("fuente_principal", "OSM")
         .in("osm_id", idsToDelete);
-      if (deleteErr) throw deleteErr;
-      deletedCount = idsToDelete.length;
+      if (deactivateErr) throw deactivateErr;
+      deactivatedCount = idsToDelete.length;
     }
 
     const insertedCount = rows.filter(
@@ -252,7 +266,7 @@ Deno.serve(async (req: Request) => {
         total: rows.length,
         inserted: insertedCount,
         updated: updatedCount,
-        deleted: deletedCount,
+        deactivated: deactivatedCount,
       }),
       { headers: { "Content-Type": "application/json" } }
     );

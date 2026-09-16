@@ -90,7 +90,7 @@ export function CustomPointDetailSidebar({
               })
             }
             disabled={isNavigating}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#435bb5] hover:bg-[#364ba0] active:bg-[#2d3e84] text-white border border-transparent dark:bg-[#435ebd] dark:hover:bg-[#4f6cd1] dark:active:bg-[#364ea3] dark:border-[#5270d8] dark:text-white px-3 py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isNavigating ? (
               <Loader2 className="h-4 w-4 animate-spin" />

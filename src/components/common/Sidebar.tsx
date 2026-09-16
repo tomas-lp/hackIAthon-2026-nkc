@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
@@ -105,6 +106,9 @@ function FilterDropdown({
     </div>
   );
 }
+
+import "overlayscrollbars/overlayscrollbars.css";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 
 interface SidebarProps {
   reports: Report[];
@@ -371,22 +375,30 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex flex-col gap-3 z-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+      className={`flex flex-col gap-3 z-100 transition-all duration-300 ease-in-out ${
         isExpanded
-          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
-          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
+          ? "w-[320px] max-w-[320px] h-screen rounded-none m-0 pt-[30px] pl-[32px] pr-[16px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
+          : `${isAdmin ? "w-[304px] max-w-[304px]" : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px]"} m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl`
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center shadow-xs">
-          <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
-            INU
-          </div>
-          <span className="text-xs text-white/90 leading-3.5 font-medium">
-            Sistema de Alerta
-            <br />
-            para Inundaciones
-          </span>
+        <div>
+          <Image
+            src="/logo_primary.svg"
+            alt="INU - Sistema de Alerta para Inundaciones"
+            width={100}
+            height={32}
+            className="block dark:hidden"
+            priority
+          />
+          <Image
+            src="/logo_white.svg"
+            alt="INU - Sistema de Alerta para Inundaciones"
+            width={100}
+            height={32}
+            className="hidden dark:block"
+            priority
+          />
         </div>
         {onCollapse && (
           <TooltipSign label="Ocultar panel" position="right" delayMs={500}>
@@ -521,7 +533,18 @@ export function Sidebar({
               )}
 
               {!loading && !error && visibleReports.length > 0 && (
-                <div className="gap-2 flex flex-col overflow-y-auto custom-scrollbar pr-1">
+                <OverlayScrollbarsComponent
+                  defer
+                  className="gap-2 flex flex-col h-full"
+                  options={{
+                    overflow: { x: "hidden", y: "scroll" },
+                    scrollbars: {
+                      theme: "inu-table-scrollbar",
+                      autoHide: "leave",
+                      visibility: "auto",
+                    },
+                  }}
+                >
                   {visibleReports.map((report) => (
                     <ReportCard
                       key={report.id}
@@ -531,7 +554,7 @@ export function Sidebar({
                       isAdmin={isAdmin}
                     />
                   ))}
-                </div>
+                </OverlayScrollbarsComponent>
               )}
             </div>
           </div>

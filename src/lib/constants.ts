@@ -58,6 +58,7 @@ export const MAP_TILES = {
     url: "https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution:
       'Imágenes satelitales &copy; <a href="https://www.esri.com/">Esri</a> — Source: Esri, Maxar, Earthstar Geographics',
-    maxZoom: 19,
+    maxZoom: 22,
+    maxNativeZoom: 19,
   },
 };
