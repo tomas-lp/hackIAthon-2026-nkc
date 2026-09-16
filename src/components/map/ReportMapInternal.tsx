@@ -555,14 +555,23 @@ export default function ReportMapInternal({
       className={`relative w-full h-full min-h-[500px] font-sans ${!showEvacuationCenters ? "hide-sz" : ""} ${!showMedicalCenters ? "hide-hc" : ""}`}
     >
       <style>{`
+        .hide-sz .custom-safe-zone-marker {
+          pointer-events: none !important;
+        }
         .hide-sz .custom-safe-zone-marker .marker-inner {
           opacity: 0 !important;
           transform: scale(0.4) translateY(10px) !important;
           pointer-events: none !important;
         }
+        .hide-hc .custom-health-center-marker {
+          pointer-events: none !important;
+        }
         .hide-hc .custom-health-center-marker .marker-inner {
           opacity: 0 !important;
           transform: scale(0.4) translateY(10px) !important;
+          pointer-events: none !important;
+        }
+        .custom-health-center-marker.is-hidden {
           pointer-events: none !important;
         }
       `}</style>
@@ -644,12 +653,14 @@ export default function ReportMapInternal({
                   }}
                   zIndexOffset={isSelected ? 1100 : 1000}
                 >
-                  <MapTooltip variant="marker" offset={[0, -14]}>
-                    <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>{sz.nombre}</span>
-                    </div>
-                  </MapTooltip>
+                  {showEvacuationCenters && (
+                    <MapTooltip variant="marker" offset={[0, -14]}>
+                      <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>{sz.nombre}</span>
+                      </div>
+                    </MapTooltip>
+                  )}
                 </Marker>
               );
             })}
@@ -673,12 +684,14 @@ export default function ReportMapInternal({
                   }}
                   zIndexOffset={isSelected ? 1100 : 1000}
                 >
-                  <MapTooltip variant="marker">
-                    <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
-                      <PlusSquare className="h-3.5 w-3.5 text-red-600" />
-                      <span>{hc.nombre}</span>
-                    </div>
-                  </MapTooltip>
+                  {showMedicalCenters && isVisible && (
+                    <MapTooltip variant="marker">
+                      <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                        <PlusSquare className="h-3.5 w-3.5 text-red-600" />
+                        <span>{hc.nombre}</span>
+                      </div>
+                    </MapTooltip>
+                  )}
                 </Marker>
               );
             })}

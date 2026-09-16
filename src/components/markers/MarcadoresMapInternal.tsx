@@ -167,7 +167,7 @@ export default function MarcadoresMapInternal({
       )}
 
       {/* Referencias en la esquina inferior izquierda (igual que en Home) */}
-      <div className="absolute bottom-4 left-4 z-[999] hidden sm:flex items-center gap-3 bg-white/90 dark:bg-[#161f36]/90 backdrop-blur-md rounded-full px-3.5 py-1.5 border border-gray-200 dark:border-[#2b395b] shadow-sm text-xs font-medium text-zinc-700 dark:text-slate-200">
+      <div className="absolute bottom-4 left-4 z-[999] hidden sm:flex items-center gap-3 bg-white/90 dark:bg-[#0b101d]/80 backdrop-blur-md rounded-full px-3.5 py-1.5 border border-gray-200 dark:border-[#2b395b]/80 shadow-sm text-xs font-medium text-zinc-700 dark:text-slate-200">
         <span className="font-semibold text-zinc-900 dark:text-white">
           Referencias
         </span>

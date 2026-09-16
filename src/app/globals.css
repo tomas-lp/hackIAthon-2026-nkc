@@ -264,7 +264,15 @@ path.leaflet-interactive:focus {
   background: #94a3b8;
 }
 
-.inu-table-scrollbar.os-scrollbar {
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #2b395b;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3d4a6e;
+}
+
+.inu-table-scrollbar.os-scrollbar-vertical {
   --os-size: 12px;
   --os-padding-perpendicular: 2px;
   --os-padding-axis: 4px;
@@ -278,10 +286,17 @@ path.leaflet-interactive:focus {
   visibility: visible !important;
 }
 
-.dark .inu-table-scrollbar.os-scrollbar {
+.dark .inu-table-scrollbar.os-scrollbar-vertical {
   --os-handle-bg: #cccccc;
   --os-handle-bg-hover: #ffffff;
   --os-handle-bg-active: #ffffff;
+}
+
+.inu-table-scrollbar.os-scrollbar-horizontal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* When selected: scale up, thicker border, strong shadow, and strong bounce */
