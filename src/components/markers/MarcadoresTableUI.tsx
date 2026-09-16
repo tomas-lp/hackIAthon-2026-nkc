@@ -940,7 +940,7 @@ export function MarcadoresTableUI({
                             }}
                             className={`grid w-full items-center group transition-colors cursor-pointer ${
                               isEditing
-                                ? "bg-amber-50/60 dark:bg-amber-950/40"
+                                ? "bg-zinc-100/80 dark:bg-[#233154]"
                                 : isSelected
                                   ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
                                   : isChecked
@@ -1083,7 +1083,7 @@ export function MarcadoresTableUI({
                                     }
                                     onClick={(e) => e.stopPropagation()}
                                     placeholder="0"
-                                    className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all"
+                                    className="w-24 rounded-xl border border-gray-300 dark:border-[#2b395b] bg-white/90 dark:bg-[#1c2744] shadow-2xs px-3 py-1.5 text-xs text-zinc-700 dark:text-slate-100 font-bold outline-none focus:border-zinc-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-zinc-200 dark:focus:ring-blue-900 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   />
                                 ) : marker.capacidad_maxima !== null &&
                                   marker.capacidad_maxima !== undefined ? (
