@@ -66,10 +66,7 @@ export function Switch({
   return (
     <SwitchContext.Provider value={{ value, onValueChange, register }}>
       <div
-        className={
-          className ??
-          "relative flex items-center h-9 gap-1 rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 p-1 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md"
-        }
+        className={`relative flex items-center h-9 gap-1 rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 p-1 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md ${className}`}
       >
         <div
           className={`absolute left-0 top-1 bottom-1 rounded-full bg-white/95 dark:bg-slate-700 shadow-sm backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.34,1.22,0.64,1)] pointer-events-none ${

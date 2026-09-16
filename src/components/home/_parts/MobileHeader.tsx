@@ -138,13 +138,13 @@ export function MobileHeader({
   if (isHidden) return null;
 
   return (
-    <div className="sm:hidden absolute top-0 left-0 right-0 z-200 pointer-events-none">
+    <div className="sm:hidden absolute top-0 left-0 right-0 z-9999 pointer-events-none">
       {/* Header bar */}
       <motion.div
         ref={searchContainerRef}
         animate={{ height: showSearchResults ? "auto" : 52 }}
         transition={{ type: "spring", stiffness: 360, damping: 24 }}
-        className="pointer-events-auto relative mx-4 mt-4 flex flex-col overflow-visible rounded-2xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/80 dark:bg-[#0b101d]/85 px-2 py-2 backdrop-blur-md shadow-xl"
+        className="pointer-events-auto relative mx-4 mt-4 flex flex-col overflow-visible rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/85 px-2 py-2 backdrop-blur-md shadow-xl"
       >
         <div className="flex h-9 min-w-0 w-full items-center justify-between gap-3">
           <AnimatePresence initial={false}>
@@ -154,7 +154,7 @@ export function MobileHeader({
                 animate={{ width: 72, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="shrink-0 overflow-hidden"
+                className="shrink-0 overflow-hidden ml-1"
               >
                 <Image
                   src="/logo_primary.svg"

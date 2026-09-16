@@ -8,9 +8,11 @@ import { ChevronDown, Check, Filter } from "lucide-react";
 export function FilterDropdown({
   value,
   onChange,
+  dropUp = false,
 }: {
   value: ReportType | "TODOS" | "";
   onChange: (val: ReportType | "TODOS") => void;
+  dropUp?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +55,9 @@ export function FilterDropdown({
       </button>
 
       <div
-        className={`absolute right-0 top-full mt-2 z-50 w-48 flex flex-col rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-lg dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out origin-top ${
+        className={`absolute right-0 z-50 w-48 flex flex-col rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-lg dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out ${
+          dropUp ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top"
+        } ${
           isOpen
             ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
             : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
