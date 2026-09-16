@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "import:idecorr": "node scripts/import-idecorr-geodata.mjs",
     "format": "prettier --write .",
     "prepare": "husky"
   },

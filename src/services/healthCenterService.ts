@@ -37,6 +37,8 @@ export const healthCenterService = {
     const { data, error } = await supabase
       .from("health_centers")
       .select("*")
+      .eq("es_activo", true)
+      .ilike("provincia", "corrientes")
       .order("nombre", { ascending: true });
 
     if (error) {
@@ -58,6 +60,8 @@ export const healthCenterService = {
       .from("health_centers")
       .select("*")
       .eq("tipo", tipo)
+      .eq("es_activo", true)
+      .ilike("provincia", "corrientes")
       .order("nombre", { ascending: true });
 
     if (error) {
@@ -81,6 +85,8 @@ export const healthCenterService = {
     const { data, error } = await supabase
       .from("health_centers")
       .select("*")
+      .eq("es_activo", true)
+      .ilike("provincia", "corrientes")
       .not("lat", "is", null)
       .not("lon", "is", null);
 
