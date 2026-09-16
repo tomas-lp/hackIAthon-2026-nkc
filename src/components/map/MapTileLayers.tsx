@@ -38,7 +38,6 @@ function SatellitePane() {
     }
     labelsPane.style.zIndex = "500";
     labelsPane.style.pointerEvents = "none";
-    labelsPane.style.filter = "brightness(2.2) contrast(1.5)";
   }, [map]);
 
   return null;
