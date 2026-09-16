@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
@@ -381,15 +382,23 @@ export function Sidebar({
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center shadow-xs">
-          <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
-            INU
-          </div>
-          <span className="text-xs text-white/90 leading-3.5 font-medium">
-            Sistema de Alerta
-            <br />
-            para Inundaciones
-          </span>
+        <div>
+          <Image
+            src="/logo_primary.svg"
+            alt="INU - Sistema de Alerta para Inundaciones"
+            width={100}
+            height={32}
+            className="block dark:hidden"
+            priority
+          />
+          <Image
+            src="/logo_white.svg"
+            alt="INU - Sistema de Alerta para Inundaciones"
+            width={100}
+            height={32}
+            className="hidden dark:block"
+            priority
+          />
         </div>
         {onCollapse && (
           <TooltipSign label="Ocultar panel" position="right" delayMs={500}>
