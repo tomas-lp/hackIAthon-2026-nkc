@@ -179,6 +179,19 @@ body {
   filter: brightness(2) contrast(1.4);
 }
 
+/* White street names and avenue labels in satellite view (both light and dark mode) */
+.satellite-labels-layer,
+img.satellite-labels-layer,
+.leaflet-satelliteLabels-pane,
+.leaflet-satellitelabels-pane,
+.leaflet-pane.leaflet-satelliteLabels-pane,
+.leaflet-pane.leaflet-satellitelabels-pane,
+.leaflet-pane.leaflet-satelliteLabelsPane-pane,
+div[class*="satelliteLabels"] {
+  pointer-events: none !important;
+  filter: brightness(2.2) contrast(1.5) !important;
+}
+
 /* Dark mode attribution control */
 .dark .leaflet-control-attribution {
   background: rgba(26, 31, 46, 0.85) !important;
