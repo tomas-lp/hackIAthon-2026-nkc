@@ -5,7 +5,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-inu: #303870;
+  --color-inu: #435bb5;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
   --color-primary: #8fcdff;
@@ -179,6 +179,19 @@ body {
   filter: brightness(2) contrast(1.4);
 }
 
+/* White street names and avenue labels in satellite view with crisp dark outline for legibility */
+.leaflet-pane.leaflet-satelliteLabelsPane-pane,
+.leaflet-pane.leaflet-satelliteLabels-pane {
+  pointer-events: none !important;
+  filter: brightness(2.2) drop-shadow(0 0 1px #000000)
+    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85)) !important;
+}
+
+.leaflet-pane.leaflet-satelliteLabelsPane-pane img,
+.leaflet-pane.leaflet-satelliteLabels-pane img {
+  filter: none !important;
+}
+
 /* Dark mode attribution control */
 .dark .leaflet-control-attribution {
   background: rgba(26, 31, 46, 0.85) !important;
@@ -264,7 +277,15 @@ path.leaflet-interactive:focus {
   background: #94a3b8;
 }
 
-.inu-table-scrollbar.os-scrollbar {
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #2b395b;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3d4a6e;
+}
+
+.inu-table-scrollbar.os-scrollbar-vertical {
   --os-size: 12px;
   --os-padding-perpendicular: 2px;
   --os-padding-axis: 4px;
@@ -278,10 +299,17 @@ path.leaflet-interactive:focus {
   visibility: visible !important;
 }
 
-.dark .inu-table-scrollbar.os-scrollbar {
+.dark .inu-table-scrollbar.os-scrollbar-vertical {
   --os-handle-bg: #cccccc;
   --os-handle-bg-hover: #ffffff;
   --os-handle-bg-active: #ffffff;
+}
+
+.inu-table-scrollbar.os-scrollbar-horizontal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* When selected: scale up, thicker border, strong shadow, and strong bounce */

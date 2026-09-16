@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters, ReportType } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
@@ -22,6 +23,8 @@ import {
   X,
   MapPin,
   Info,
+  ShieldCheck,
+  SquarePlus,
 } from "lucide-react";
 
 function FilterDropdown({
@@ -106,6 +109,9 @@ function FilterDropdown({
   );
 }
 
+import "overlayscrollbars/overlayscrollbars.css";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+
 interface SidebarProps {
   reports: Report[];
   filters: ReportFilters;
@@ -173,10 +179,10 @@ function ReportCard({
   return (
     <button
       onClick={() => onSelect(report)}
-      className={`shrink-0 w-full rounded-2xl border text-left transition overflow-hidden ${
+      className={`shrink-0 w-full text-left transition overflow-hidden ${
         isSelected
-          ? "border-slate-500 dark:border-[#3d5691] bg-gray-200 dark:bg-[#233154]"
-          : "border-gray-200 dark:border-[#2b395b] bg-white/80 dark:bg-[#161f36]/80 hover:border-zinc-300 dark:hover:border-[#3d5691]/60 hover:bg-zinc-100 dark:hover:bg-[#1e2a4a]"
+          ? "bg-zinc-50 dark:bg-[#1e2a4a]"
+          : "bg-transparent hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -371,22 +377,30 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex flex-col gap-3 z-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+      className={`flex flex-col gap-3 z-100 transition-all duration-300 ease-in-out ${
         isExpanded
-          ? "w-[304px] max-w-[304px] h-screen rounded-none m-0 pt-[30px] pl-[30px] pr-[14px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
-          : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px] m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl"
+          ? "w-[320px] max-w-[320px] h-screen rounded-none m-0 pt-[30px] pl-[32px] pr-[16px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
+          : `${isAdmin ? "w-[304px] max-w-[304px]" : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px]"} m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl`
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2 bg-inu py-1.5 px-3 rounded-xl items-center shadow-xs">
-          <div className="font-black text-3xl leading-7 logo flex justify-center items-center text-white rounded-xl">
-            INU
-          </div>
-          <span className="text-xs text-white/90 leading-3.5 font-medium">
-            Sistema de Alerta
-            <br />
-            para Inundaciones
-          </span>
+        <div>
+          <Image
+            src="/logo_primary.svg"
+            alt="INU - Sistema de Alerta para Inundaciones"
+            width={100}
+            height={32}
+            className="block dark:hidden"
+            priority
+          />
+          <Image
+            src="/logo_white.svg"
+            alt="INU - Sistema de Alerta para Inundaciones"
+            width={100}
+            height={32}
+            className="hidden dark:block"
+            priority
+          />
         </div>
         {onCollapse && (
           <TooltipSign label="Ocultar panel" position="right" delayMs={500}>
@@ -438,53 +452,62 @@ export function Sidebar({
 
             {/* Menú desplegable con coincidencias de búsqueda */}
             {isSearchFocused && markerSearchQuery.trim().length > 0 && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 overflow-y-auto custom-scrollbar rounded-2xl border border-gray-200/90 dark:border-[#2b395b] bg-white/98 dark:bg-[#161f36]/98 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
-                {searchResults.length > 0 ? (
-                  searchResults.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSelectSearchResult(item)}
-                      className="flex flex-col gap-1 rounded-xl p-2.5 text-left transition-colors cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-[#1e2a4a] border border-transparent hover:border-gray-200/60 dark:hover:border-[#2b395b]/60 group"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-zinc-900 dark:text-slate-100 group-hover:text-black dark:group-hover:text-white truncate">
-                          {item.nombre}
-                        </span>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
-                            item.category === "EVACUACION"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800/60"
-                              : "bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800/60"
-                          }`}
+              <div className="absolute left-0 top-full mt-1.5 z-50 w-full max-h-64 rounded-2xl border border-gray-200/50 dark:border-[#2b395b]/80 bg-white/75 dark:bg-[#0b101d]/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+                <OverlayScrollbarsComponent
+                  defer
+                  className="h-full w-full max-h-64"
+                  options={{
+                    overflow: { x: "hidden", y: "scroll" },
+                    scrollbars: {
+                      theme: "inu-table-scrollbar",
+                      autoHide: "leave",
+                      visibility: "auto",
+                    },
+                  }}
+                >
+                  <div className="flex flex-col w-full divide-y divide-gray-100 dark:divide-[#222e4d]">
+                    {searchResults.length > 0 ? (
+                      searchResults.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleSelectSearchResult(item)}
+                          className="flex items-center gap-3 p-3 text-left transition-colors cursor-pointer bg-transparent hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a] group"
                         >
-                          {item.category === "EVACUACION" ? (
-                            <Info className="h-2.5 w-2.5 stroke-[2.5]" />
-                          ) : (
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                              className="h-2.5 w-2.5"
-                            >
-                              <path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z" />
-                            </svg>
-                          )}
-                          <span>{item.tipo}</span>
-                        </span>
+                          <div
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center ${
+                              item.category === "EVACUACION"
+                                ? "text-emerald-600 dark:text-emerald-500"
+                                : "text-red-500 dark:text-red-400"
+                            }`}
+                          >
+                            {item.category === "EVACUACION" ? (
+                              <ShieldCheck className="h-5 w-5" />
+                            ) : (
+                              <SquarePlus className="h-5 w-5" />
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold text-zinc-900 dark:text-slate-100 group-hover:text-black dark:group-hover:text-white truncate">
+                              {item.nombre}
+                            </span>
+                            <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                              <MapPin className="h-3 w-3 shrink-0 text-zinc-400 dark:text-slate-500" />
+                              <span className="truncate">{item.ubicacion}</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-6 text-center text-xs text-zinc-400 dark:text-slate-500 font-medium">
+                        No se encontraron marcadores para &quot;
+                        {markerSearchQuery}
+                        &quot;
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-slate-400 font-medium truncate">
-                        <MapPin className="h-3 w-3 shrink-0 text-zinc-400 dark:text-slate-500" />
-                        <span className="truncate">{item.ubicacion}</span>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-6 text-center text-xs text-zinc-400 dark:text-slate-500 font-medium">
-                    No se encontraron marcadores para &quot;{markerSearchQuery}
-                    &quot;
+                    )}
                   </div>
-                )}
+                </OverlayScrollbarsComponent>
               </div>
             )}
           </div>
@@ -501,7 +524,7 @@ export function Sidebar({
               />
             </div>
 
-            <div className="flex flex-col flex-1 rounded-2xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-2 overflow-hidden max-h-[56vh]">
+            <div className="flex flex-col flex-1 rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-xs overflow-hidden max-h-[56vh]">
               {loading && (
                 <div className="rounded-xl border border-dashed border-zinc-200 dark:border-[#2b395b] px-3 py-16 text-center text-xs text-zinc-400 dark:text-slate-500 font-medium">
                   Cargando alertas...
@@ -521,17 +544,30 @@ export function Sidebar({
               )}
 
               {!loading && !error && visibleReports.length > 0 && (
-                <div className="gap-2 flex flex-col overflow-y-auto custom-scrollbar pr-1">
-                  {visibleReports.map((report) => (
-                    <ReportCard
-                      key={report.id}
-                      report={report}
-                      isSelected={selectedReport?.id === report.id}
-                      onSelect={onSelectReport}
-                      isAdmin={isAdmin}
-                    />
-                  ))}
-                </div>
+                <OverlayScrollbarsComponent
+                  defer
+                  className="flex flex-col h-full"
+                  options={{
+                    overflow: { x: "hidden", y: "scroll" },
+                    scrollbars: {
+                      theme: "inu-table-scrollbar",
+                      autoHide: "leave",
+                      visibility: "auto",
+                    },
+                  }}
+                >
+                  <div className="flex flex-col w-full divide-y divide-gray-100 dark:divide-[#222e4d]">
+                    {visibleReports.map((report) => (
+                      <ReportCard
+                        key={report.id}
+                        report={report}
+                        isSelected={selectedReport?.id === report.id}
+                        onSelect={onSelectReport}
+                        isAdmin={isAdmin}
+                      />
+                    ))}
+                  </div>
+                </OverlayScrollbarsComponent>
               )}
             </div>
           </div>

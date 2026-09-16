@@ -159,6 +159,20 @@ export function MarcadoresDashboard({
 
   // Click en el mapa para capturar ubicación
   const handleMapClickToCreate = async (lat: number, lng: number) => {
+    // Restaura el cursor y muestra el marcador rebotando de inmediato
+    setIsCreating(false);
+    setDraftLocation({
+      lat,
+      lng,
+      localidad: "Corrientes",
+      departamento: "Capital",
+      direccion: `Lat ${lat.toFixed(4)}, Lon ${lng.toFixed(4)}`,
+      fullAddress: "",
+    });
+
+    // Mostramos el modal de inmediato con la info básica
+    setShowCreationModal(true);
+
     let loc = {
       direccion: `Lat ${lat.toFixed(4)}, Lon ${lng.toFixed(4)}`,
       localidad: "Corrientes",
@@ -168,19 +182,18 @@ export function MarcadoresDashboard({
 
     try {
       loc = await resolveLocationDetails(lat, lng);
+      // Actualizamos los detalles con los datos resueltos
+      setDraftLocation({
+        lat,
+        lng,
+        localidad: loc.localidad,
+        departamento: loc.departamento,
+        direccion: loc.direccion,
+        fullAddress: loc.fullAddress,
+      });
     } catch {
       // Ignorar fallback
     }
-
-    setDraftLocation({
-      lat,
-      lng,
-      localidad: loc.localidad,
-      departamento: loc.departamento,
-      direccion: loc.direccion,
-      fullAddress: loc.fullAddress,
-    });
-    setShowCreationModal(true);
   };
 
   // Guardar nuevo marcador
@@ -451,22 +464,6 @@ export function MarcadoresDashboard({
             draftLocation={draftLocation}
             onMapClickToCreate={handleMapClickToCreate}
           />
-
-          {/* Botones de acción durante el modo creación */}
-          {isCreating && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-3">
-              <button
-                onClick={() => {
-                  setIsCreating(false);
-                  setDraftLocation(null);
-                  setIsMapVisible(false);
-                }}
-                className="flex items-center justify-center gap-2 rounded-xl border border-red-200/80 dark:border-[#f87171]/40 bg-white dark:bg-[#1e2a4a] px-6 py-2.5 text-sm font-bold text-red-600 dark:text-[#f87171] shadow-xl transition-all duration-200 hover:bg-red-50/60 dark:hover:bg-[#25355d] hover:border-red-300 dark:hover:border-[#f87171]/70 dark:hover:text-[#fca5a5] hover:scale-105 active:scale-95 cursor-pointer"
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
         </section>
       )}
 

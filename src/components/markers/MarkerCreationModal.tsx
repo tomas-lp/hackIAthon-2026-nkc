@@ -8,6 +8,7 @@ import {
   PlusSquare,
   MapPin,
   Pencil,
+  ChevronDown,
 } from "lucide-react";
 import { SafeZoneType } from "@/types/safeZone";
 import { HealthCenterType } from "@/types/healthCenter";
@@ -16,6 +17,67 @@ import {
   SAFE_ZONE_TYPE_LABELS,
   HEALTH_CENTER_TYPE_LABELS,
 } from "@/types/marker";
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  disabled: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || "";
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isOpen) setIsOpen(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div
+      className={`relative w-full ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!disabled) setIsOpen(!isOpen);
+      }}
+    >
+      <div className="w-full flex items-center justify-between rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white cursor-pointer hover:bg-zinc-100 dark:hover:bg-[#161f36] transition-all">
+        <span className="truncate pr-4">{selectedLabel}</span>
+        <ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400 shrink-0" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full mt-1.5 left-0 w-full z-50 bg-white dark:bg-[#0b101d] border border-gray-200 dark:border-[#2b395b] rounded-xl shadow-lg overflow-hidden py-1 max-h-60 overflow-y-auto">
+          {options.map((opt) => (
+            <div
+              key={opt.value}
+              className={`px-3.5 py-2 text-xs cursor-pointer transition-colors ${
+                opt.value === value
+                  ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-semibold"
+                  : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-100 dark:hover:bg-[#161f36]"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export interface MarkerFormData {
   category: MarkerCategory;
@@ -143,14 +205,16 @@ export function MarkerCreationModal({
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/30 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#161f36] p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto font-sans custom-scrollbar">
         <button
+          type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-zinc-400 dark:text-slate-400 transition-colors hover:bg-zinc-100 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-white cursor-pointer"
           disabled={isSubmitting}
+          className="absolute top-5 right-5 rounded-full p-1.5 text-zinc-400 hover:text-zinc-700 dark:text-slate-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#0b101d] transition-colors cursor-pointer disabled:opacity-50"
+          aria-label="Cerrar modal"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
+        <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white tracking-tight pr-6">
           Nuevo Marcador
         </h2>
 
@@ -175,11 +239,11 @@ export function MarkerCreationModal({
             disabled={isSubmitting}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               category === "SALUD"
-                ? "bg-white dark:bg-[#161f36] text-blue-700 dark:text-blue-400 shadow-2xs font-bold"
+                ? "bg-white dark:bg-[#161f36] text-red-700 dark:text-red-400 shadow-2xs font-bold"
                 : "text-zinc-600 dark:text-slate-400 hover:text-zinc-900 dark:hover:text-white"
             }`}
           >
-            <PlusSquare className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <PlusSquare className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
             <span>Atención Médica</span>
           </button>
         </div>
@@ -204,66 +268,50 @@ export function MarkerCreationModal({
             />
           </div>
 
-          {/* Subtype dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
-              Tipo de{" "}
-              {category === "EVACUACION" ? "evacuación" : "centro de salud"} *
-            </label>
-            {category === "EVACUACION" ? (
-              <select
-                value={tipoEvacuacion}
-                onChange={(e) =>
-                  setTipoEvacuacion(e.target.value as SafeZoneType)
-                }
-                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all cursor-pointer"
-                disabled={isSubmitting}
-              >
-                {SAFE_ZONE_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    className="dark:bg-[#161f36] dark:text-white"
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select
-                value={tipoSalud}
-                onChange={(e) =>
-                  setTipoSalud(e.target.value as HealthCenterType)
-                }
-                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all cursor-pointer"
-                disabled={isSubmitting}
-              >
-                {HEALTH_CENTER_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    className="dark:bg-[#161f36] dark:text-white"
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          {/* Campos específicos por categoría */}
+          {category === "EVACUACION" ? (
+            <div className="flex gap-3">
+              {/* Tipo de evacuación */}
+              <div className="flex flex-col gap-1.5 w-[70%]">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
+                  Tipo de evacuación *
+                </label>
+                <CustomSelect
+                  value={tipoEvacuacion}
+                  onChange={(val) => setTipoEvacuacion(val as SafeZoneType)}
+                  options={SAFE_ZONE_OPTIONS}
+                  disabled={isSubmitting}
+                />
+              </div>
 
-          {/* Capacidad máxima (solo en evacuación) */}
-          {category === "EVACUACION" && (
+              {/* Capacidad máxima */}
+              <div className="flex flex-col gap-1.5 w-[30%]">
+                <label
+                  className="text-xs font-semibold text-zinc-700 dark:text-slate-300 truncate"
+                  title="Capacidad (Opcional)"
+                >
+                  Capacidad
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Ej. 150"
+                  value={capacidadMaxima}
+                  onChange={(e) => setCapacidadMaxima(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          ) : (
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
-                Capacidad máxima de personas (Opcional)
+                Tipo de centro de salud *
               </label>
-              <input
-                type="number"
-                min="1"
-                placeholder="Ej. 150"
-                value={capacidadMaxima}
-                onChange={(e) => setCapacidadMaxima(e.target.value)}
-                className="rounded-xl border border-gray-200 dark:border-[#2b395b] bg-zinc-50/60 dark:bg-[#0b101d] px-3.5 py-2 text-xs text-zinc-900 dark:text-white outline-none focus:bg-white dark:focus:bg-[#0b101d] focus:border-zinc-400 dark:focus:border-blue-500 focus:ring-1 focus:ring-zinc-300 dark:focus:ring-blue-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-slate-500"
+              <CustomSelect
+                value={tipoSalud}
+                onChange={(val) => setTipoSalud(val as HealthCenterType)}
+                options={HEALTH_CENTER_OPTIONS}
                 disabled={isSubmitting}
               />
             </div>
@@ -273,7 +321,7 @@ export function MarkerCreationModal({
           {category === "EVACUACION" && (
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-zinc-700 dark:text-slate-300">
-                Descripción / Observaciones (Opcional)
+                Descripción / Observaciones
               </label>
               <textarea
                 placeholder="Detalles sobre el punto de encuentro, servicios disponibles, etc."

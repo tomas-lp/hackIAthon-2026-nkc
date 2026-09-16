@@ -74,6 +74,40 @@ function MapClickHandler({
   return null;
 }
 
+// Subcomponente para mostrar un marcador gris siguiendo el mouse
+function HoverMarker({ isCreating }: { isCreating: boolean }) {
+  const [position, setPosition] = useState<L.LatLng | null>(null);
+
+  useMapEvents({
+    mousemove(e) {
+      if (isCreating) {
+        setPosition(e.latlng);
+      }
+    },
+    mouseout() {
+      setPosition(null);
+    },
+  });
+
+  if (!isCreating || !position) return null;
+
+  const genericGrayIcon = L.divIcon({
+    className: "bg-transparent border-none",
+    html: `<div style="width: 16px; height: 16px; background: #9ca3af; border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+
+  return (
+    <Marker
+      position={position}
+      icon={genericGrayIcon}
+      zIndexOffset={3000}
+      interactive={false}
+    />
+  );
+}
+
 // Subcomponente para sincronizar el nivel de zoom y redibujar iconos escalados
 function ZoomWatcher({ onZoomChange }: { onZoomChange: (z: number) => void }) {
   const map = useMapEvents({
@@ -117,7 +151,7 @@ export default function MarcadoresMapInternal({
 
   return (
     <div
-      className={`relative ${className} ${isCreating ? "cursor-crosshair" : ""}`}
+      className={`relative ${className} ${isCreating ? "!cursor-none [&_.leaflet-container]:!cursor-none [&_.leaflet-interactive]:!cursor-none" : ""}`}
     >
       {/* Banner superior flotante cuando está en modo creación */}
       {isCreating && (
@@ -133,7 +167,7 @@ export default function MarcadoresMapInternal({
       )}
 
       {/* Referencias en la esquina inferior izquierda (igual que en Home) */}
-      <div className="absolute bottom-4 left-4 z-[999] hidden sm:flex items-center gap-3 bg-white/90 dark:bg-[#161f36]/90 backdrop-blur-md rounded-full px-3.5 py-1.5 border border-gray-200 dark:border-[#2b395b] shadow-sm text-xs font-medium text-zinc-700 dark:text-slate-200">
+      <div className="absolute bottom-4 left-4 z-[999] hidden sm:flex items-center gap-3 bg-white/90 dark:bg-[#0b101d]/80 backdrop-blur-md rounded-full px-3.5 py-1.5 border border-gray-200 dark:border-[#2b395b]/80 shadow-sm text-xs font-medium text-zinc-700 dark:text-slate-200">
         <span className="font-semibold text-zinc-900 dark:text-white">
           Referencias
         </span>
@@ -194,6 +228,7 @@ export default function MarcadoresMapInternal({
           isCreating={isCreating}
           onMapClick={onMapClickToCreate}
         />
+        <HoverMarker isCreating={isCreating} />
 
         {/* Marcadores guardados */}
         {markers.map((marker) => {
@@ -268,8 +303,8 @@ export default function MarcadoresMapInternal({
 
                     {marker.capacidad_maxima !== null &&
                       marker.capacidad_maxima !== undefined && (
-                        <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 font-semibold mt-1 pt-1 border-t border-gray-100 dark:border-[#2b395b]">
-                          <span className="flex items-center gap-1 text-zinc-500 dark:text-slate-400 font-normal">
+                        <div className="flex items-center justify-between font-semibold text-zinc-700 mt-1 border-t border-gray-100 pt-1 dark:border-[#2b395b] dark:text-slate-300">
+                          <span className="flex items-center gap-1 font-normal text-zinc-500 dark:text-slate-400">
                             <Users className="h-3.5 w-3.5" />
                             Capacidad:
                           </span>

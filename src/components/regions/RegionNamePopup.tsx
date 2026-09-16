@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { RegionLista } from "@/types/region";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, X } from "lucide-react";
 
 interface RegionNamePopupProps {
   listas: RegionLista[];
@@ -65,7 +65,16 @@ export function RegionNamePopup({
 
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2000] bg-white dark:bg-[#161f36] rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-[#2b395b] w-[340px] flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-200 font-sans">
-      <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="absolute top-5 right-5 rounded-full p-1.5 text-zinc-400 hover:text-zinc-700 dark:text-slate-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#0b101d] transition-colors cursor-pointer"
+        aria-label="Cerrar modal"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <h3 className="text-base font-bold text-zinc-900 dark:text-white pr-6">
         Nueva zona
       </h3>
 

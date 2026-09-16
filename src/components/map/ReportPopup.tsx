@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Report } from "@/types/report";
-import { formatDate, formatReportAddress } from "@/lib/format";
+import { formatDate, formatMapLocationAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { heatColor } from "@/lib/heatmap";
 import { resolveAddress } from "@/lib/geocode";
@@ -34,7 +34,7 @@ export function ReportPopup({ report, fetchAddress }: ReportPopupProps) {
   }
 
   // Construir dirección completa desde campos guardados en BD
-  const storedAddress = formatReportAddress(report);
+  const storedAddress = formatMapLocationAddress(report);
 
   useEffect(() => {
     // Si ya tenemos datos de la BD no hacemos la llamada a Nominatim

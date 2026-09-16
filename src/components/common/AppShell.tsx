@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div
         className={`min-h-screen transition-[padding] duration-300 ease-in-out ${
-          isAdmin && !isHome && !collapsed && !hidden ? "pl-[304px]" : "pl-0"
+          isAdmin && !isHome && !collapsed && !hidden ? "pl-[320px]" : "pl-0"
         }`}
       >
         {children}

@@ -457,22 +457,32 @@ export function RegionsTableUI({
       ...(isDeleteMode ? [{ id: "select", header: "" }] : []),
       {
         id: "nombre",
-        accessorFn: (row) => row.nombre,
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.nombre,
         header: "Nombre",
         sortFn: sortFn_alphanumeric,
       },
       {
         id: "localidad",
-        accessorFn: (row) => row.localidad,
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.localidad,
         header: "Localidad",
         sortFn: sortFn_text,
       },
       {
         id: "cantidadReclamos",
-        accessorFn: (row) => row.cantidadReclamos,
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.cantidadReclamos,
         header: "Cantidad de reclamos",
         sortDescFirst: true,
-        sortFn: (rowA, rowB, columnId) => {
+        sortFn: (
+          rowA: any /* eslint-disable-line @typescript-eslint/no-explicit-any */,
+          rowB: any /* eslint-disable-line @typescript-eslint/no-explicit-any */,
+          columnId: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => {
           const a = Number(rowA.getValue(columnId)) || 0;
           const b = Number(rowB.getValue(columnId)) || 0;
           return a - b;
@@ -480,10 +490,16 @@ export function RegionsTableUI({
       },
       {
         id: "ultimaAyuda",
-        accessorFn: (row) => row.ultimaAyuda ?? "",
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.ultimaAyuda ?? "",
         header: "Última ayuda",
         sortDescFirst: true,
-        sortFn: (rowA, rowB, columnId) => {
+        sortFn: (
+          rowA: any /* eslint-disable-line @typescript-eslint/no-explicit-any */,
+          rowB: any /* eslint-disable-line @typescript-eslint/no-explicit-any */,
+          columnId: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => {
           const timeA = parseDateValue(rowA.getValue(columnId));
           const timeB = parseDateValue(rowB.getValue(columnId));
           if (timeA === timeB) return 0;
@@ -492,10 +508,16 @@ export function RegionsTableUI({
       },
       {
         id: "reclamosActivos",
-        accessorFn: (row) => row.reclamosActivos,
+        accessorFn: (
+          row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => row.reclamosActivos,
         header: "Reclamos activos",
         sortDescFirst: true,
-        sortFn: (rowA, rowB, columnId) => {
+        sortFn: (
+          rowA: any /* eslint-disable-line @typescript-eslint/no-explicit-any */,
+          rowB: any /* eslint-disable-line @typescript-eslint/no-explicit-any */,
+          columnId: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+        ) => {
           const a = Number(rowA.getValue(columnId)) || 0;
           const b = Number(rowB.getValue(columnId)) || 0;
           return a - b;
@@ -511,13 +533,18 @@ export function RegionsTableUI({
     features: regionTableFeatures,
     data: filteredRegiones as RegionTableRow[],
     columns: regionColumns,
-    getRowId: (row) => row.id,
+    getRowId: (
+      row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+    ) => row.id,
     initialState: { sorting: [{ id: "nombre", desc: false }] },
   });
 
   const sortedRegiones = regionTable
     .getRowModel()
-    .rows.map((row) => row.original);
+    .rows.map(
+      (row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) =>
+        row.original
+    );
   const activeSortField = (
     [
       "nombre",
@@ -546,13 +573,24 @@ export function RegionsTableUI({
   // Manejo de checkboxes
   const isAllSelected =
     sortedRegiones.length > 0 &&
-    sortedRegiones.every((r) => selectedRowIds.has(r.id));
+    sortedRegiones.every(
+      (r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) =>
+        selectedRowIds.has(r.id)
+    );
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedRowIds(new Set());
     } else {
-      setSelectedRowIds(new Set(sortedRegiones.map((r) => r.id)));
+      setSelectedRowIds(
+        new Set(
+          sortedRegiones.map(
+            (
+              r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+            ) => r.id
+          )
+        )
+      );
     }
   };
 
@@ -630,19 +668,28 @@ export function RegionsTableUI({
       "Fecha de creación",
     ];
 
-    const rows = sortedRegiones.map((r) => [
-      `"${r.nombre.replace(/"/g, '""')}"`,
-      `"${r.localidad}"`,
-      r.cantidadReclamos,
-      r.ultimaAyuda ? `"${r.ultimaAyuda}"` : "null",
-      r.reclamosActivos,
-      `"${(r.lista_nombre || "Lista 1").replace(/"/g, '""')}"`,
-      `"${new Date(r.created_at).toLocaleDateString()}"`,
-    ]);
+    const rows = sortedRegiones.map(
+      (r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => [
+        `"${r.nombre.replace(/"/g, '""')}"`,
+        `"${r.localidad}"`,
+        r.cantidadReclamos,
+        r.ultimaAyuda ? `"${r.ultimaAyuda}"` : "null",
+        r.reclamosActivos,
+        `"${(r.lista_nombre || "Lista 1").replace(/"/g, '""')}"`,
+        `"${new Date(r.created_at).toLocaleDateString()}"`,
+      ]
+    );
 
     const csvContent =
       "\uFEFF" +
-      [headers.join(";"), ...rows.map((row) => row.join(";"))].join("\n");
+      [
+        headers.join(";"),
+        ...rows.map(
+          (
+            row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+          ) => row.join(";")
+        ),
+      ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -914,16 +961,18 @@ export function RegionsTableUI({
             <thead className="bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
               <tr
                 style={{ gridTemplateColumns: regionGridTemplateColumns }}
-                className="grid w-full items-center border-b border-gray-200 dark:border-[#2b395b] select-none"
+                className="grid w-full items-stretch border-b border-gray-200 dark:border-[#2b395b] select-none"
               >
                 {isDeleteMode && (
                   <th className="w-12 px-4 py-3.5 text-left hover:bg-zinc-100/80 dark:hover:bg-[#233154] transition-colors animate-fade-kpi">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
-                    />
+                    <div className="flex items-center h-full">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-500 text-zinc-900 focus:ring-zinc-500 cursor-pointer"
+                      />
+                    </div>
                   </th>
                 )}
 
@@ -936,7 +985,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Nombre</span>
                     {sortField === "nombre" ? (
                       sortOrder === "asc" ? (
@@ -959,7 +1008,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Localidad</span>
                     {sortField === "localidad" ? (
                       sortOrder === "asc" ? (
@@ -982,7 +1031,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Cantidad de reclamos</span>
                     {sortField === "cantidadReclamos" ? (
                       sortOrder === "asc" ? (
@@ -1005,7 +1054,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Última ayuda</span>
                     {sortField === "ultimaAyuda" ? (
                       sortOrder === "asc" ? (
@@ -1028,7 +1077,7 @@ export function RegionsTableUI({
                       : "text-zinc-600 dark:text-slate-200 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5">
+                  <div className="flex items-center justify-start gap-1.5 h-full">
                     <span className="leading-snug">Reclamos activos</span>
                     {sortField === "reclamosActivos" ? (
                       sortOrder === "asc" ? (
@@ -1099,7 +1148,7 @@ export function RegionsTableUI({
                           }}
                           className={`grid w-full items-center group transition-colors cursor-pointer ${
                             isEditing
-                              ? "bg-amber-50/60 dark:bg-amber-950/40"
+                              ? "bg-zinc-100/80 dark:bg-[#233154]"
                               : isSelected
                                 ? "bg-blue-50/90 dark:bg-blue-900/30 font-bold"
                                 : isChecked
@@ -1164,7 +1213,7 @@ export function RegionsTableUI({
                             onClick={(e) => e.stopPropagation()}
                           >
                             {isEditing ? (
-                              <div className="flex items-center justify-start gap-1.5">
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-start gap-1.5">
                                 <button
                                   type="button"
                                   onClick={handleConfirmEdit}

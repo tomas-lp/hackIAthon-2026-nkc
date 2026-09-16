@@ -120,12 +120,6 @@ export function RangeCalendarModal({
         <div className="text-xs font-bold text-zinc-900 dark:text-white">
           <span>Seleccionar rango de fechas</span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-zinc-400 dark:text-slate-400 hover:text-zinc-700 dark:hover:text-white transition cursor-pointer"
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Navegación Mes/Año */}
