@@ -73,23 +73,23 @@ export function LayerControls({
                 <div
                   className={`w-16 h-16 rounded-[14px] border-[2.5px] flex items-center justify-center transition-all ${
                     !showSatellite
-                      ? "border-teal-600 bg-teal-50 dark:bg-teal-900/30"
+                      ? "border-inu dark:border-white bg-white dark:bg-inu"
                       : "border-transparent bg-gray-100 dark:bg-[#161f36] group-hover:bg-gray-200 dark:group-hover:bg-[#1e2a4a]"
                   }`}
                 >
                   <Map
                     className={`h-7 w-7 ${
                       !showSatellite
-                        ? "text-teal-600 dark:text-teal-400"
-                        : "text-zinc-500 dark:text-zinc-400"
+                        ? "text-inu dark:text-white"
+                        : "text-zinc-800 dark:text-slate-200"
                     }`}
                   />
                 </div>
                 <span
                   className={`text-xs font-semibold ${
                     !showSatellite
-                      ? "text-teal-700 dark:text-teal-400"
-                      : "text-zinc-600 dark:text-zinc-400"
+                      ? "text-inu dark:text-white"
+                      : "text-zinc-800 dark:text-slate-200"
                   }`}
                 >
                   Predeterminado
@@ -105,23 +105,23 @@ export function LayerControls({
                 <div
                   className={`w-16 h-16 rounded-[14px] border-[2.5px] flex items-center justify-center transition-all ${
                     showSatellite
-                      ? "border-teal-600 bg-teal-50 dark:bg-teal-900/30"
+                      ? "border-inu dark:border-white bg-white dark:bg-inu"
                       : "border-transparent bg-gray-100 dark:bg-[#161f36] group-hover:bg-gray-200 dark:group-hover:bg-[#1e2a4a]"
                   }`}
                 >
                   <Satellite
                     className={`h-7 w-7 ${
                       showSatellite
-                        ? "text-teal-600 dark:text-teal-400"
-                        : "text-zinc-500 dark:text-zinc-400"
+                        ? "text-inu dark:text-white"
+                        : "text-zinc-800 dark:text-slate-200"
                     }`}
                   />
                 </div>
                 <span
                   className={`text-xs font-semibold ${
                     showSatellite
-                      ? "text-teal-700 dark:text-teal-400"
-                      : "text-zinc-600 dark:text-zinc-400"
+                      ? "text-inu dark:text-white"
+                      : "text-zinc-800 dark:text-slate-200"
                   }`}
                 >
                   Satelital
