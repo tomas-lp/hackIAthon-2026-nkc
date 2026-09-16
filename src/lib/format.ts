@@ -83,5 +83,78 @@ export function formatLocationAddress(record: {
   return parts.join(", ");
 }
 
+export interface LocationAddressRecord {
+  direccion?: string | null;
+  barrio?: string | null;
+  localidad?: string | null;
+  provincia?: string | null;
+  departamento?: string | null;
+}
+
+function normalizeLocationPart(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Formato corto para los detalles del mapa.
+ * Solo muestra "Dirección, Localidad" y omite provincia y país.
+ */
+export function formatMapLocationAddress(
+  record: LocationAddressRecord
+): string | null {
+  const rawAddress = record.direccion?.trim();
+  const barrio = record.barrio?.trim();
+  const locality = record.localidad?.trim();
+  const province = record.provincia?.trim();
+
+  if (!rawAddress && !barrio && !locality) {
+    return null;
+  }
+
+  let address = rawAddress || (barrio ? `Barrio ${barrio}` : "");
+
+  // Si la dirección ya viene completa, conserva solo lo anterior a la localidad.
+  // Esto evita mostrar nuevamente provincia y país desde datos geocodificados.
+  if (rawAddress && locality && rawAddress.includes(",")) {
+    const parts = rawAddress.split(",").map((part) => part.trim());
+    const localityIndex = parts.findIndex(
+      (part, index) =>
+        index > 0 &&
+        normalizeLocationPart(part) === normalizeLocationPart(locality)
+    );
+
+    if (localityIndex > 0) {
+      address = parts.slice(0, localityIndex).join(", ");
+    } else {
+      while (parts.length > 1) {
+        const lastPart = normalizeLocationPart(parts[parts.length - 1]);
+        const isCountry = lastPart === "argentina";
+        const isProvince =
+          !!province && lastPart === normalizeLocationPart(province);
+
+        if (!isCountry && !isProvince) break;
+        parts.pop();
+      }
+      address = parts.join(", ");
+    }
+  }
+
+  const addressPart = address.trim();
+  if (!locality) return addressPart || null;
+
+  if (
+    addressPart &&
+    normalizeLocationPart(addressPart).includes(normalizeLocationPart(locality))
+  ) {
+    return addressPart;
+  }
+
+  return [addressPart, locality].filter(Boolean).join(", ") || null;
+}
+
 /** @deprecated Usar formatLocationAddress */
 export const formatReportAddress = formatLocationAddress;

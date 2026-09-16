@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, MapPin, Navigation, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Loader2 } from "lucide-react";
 import { resolveAddress } from "@/lib/geocode";
+import { MapDetailRow } from "@/components/map/MapDetailRow";
+import { MapDetailShell } from "@/components/map/MapDetailShell";
 
 interface CustomPointDetailSidebarProps {
   customPoint: { lat: number; lng: number } | null;
@@ -71,40 +73,15 @@ export function CustomPointDetailSidebar({
     `Lat ${activePoint.lat.toFixed(4)}, Lng ${activePoint.lng.toFixed(4)}`;
 
   return (
-    <aside
-      className={`absolute right-4 top-28 z-[1000] w-80 max-w-80 rounded-2xl border border-gray-200 dark:border-[#2b395b] bg-white/50 dark:bg-[#0b101d]/80 backdrop-blur-xs p-2.5 transition-all duration-300 ease-in-out ${
-        isClosing || !isOpen
-          ? "translate-x-[120%] opacity-0 pointer-events-none"
-          : "translate-x-0 opacity-100"
-      }`}
-    >
-      <div className="flex items-center justify-between mb-2 px-1.5 pt-1">
-        <span className="text-sm font-semibold text-zinc-800 dark:text-white tracking-tight">
-          Ubicación seleccionada
-        </span>
-        <button
-          onClick={handleClose}
-          className="rounded-full p-1.5 text-zinc-500 dark:text-slate-400 transition-colors hover:bg-zinc-200/50 dark:hover:bg-[#1e2a4a] hover:text-zinc-800 dark:hover:text-white cursor-pointer"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="flex flex-col rounded-[14px] border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] p-3.5 gap-4">
-        <div className="flex items-start gap-2.5 text-xs p-3 bg-zinc-50 dark:bg-[#0b101d] border border-zinc-100 dark:border-[#2b395b] rounded-xl">
-          <MapPin className="h-4 w-4 text-zinc-400 dark:text-slate-500 mt-0.5 shrink-0" />
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium text-zinc-800 dark:text-slate-100 leading-relaxed">
-              {displayAddress}
-            </span>
-            <span className="text-[10px] text-zinc-400 dark:text-slate-500 font-mono">
-              {activePoint.lat.toFixed(5)}, {activePoint.lng.toFixed(5)}
-            </span>
-          </div>
-        </div>
-
-        {onNavigate && (
+    <MapDetailShell
+      title="Ubicación seleccionada"
+      isOpen={isOpen}
+      isClosing={isClosing}
+      onClose={handleClose}
+      footer={
+        onNavigate ? (
           <button
+            type="button"
             onClick={() =>
               onNavigate({
                 lat: activePoint.lat,
@@ -122,8 +99,19 @@ export function CustomPointDetailSidebar({
             )}
             {isNavigating ? "Calculando…" : "Cómo llegar"}
           </button>
-        )}
-      </div>
-    </aside>
+        ) : undefined
+      }
+    >
+      <dl className="flex flex-col">
+        <MapDetailRow icon={<MapPin className="h-4 w-4" />} label="Ubicación">
+          <span className="block text-zinc-800 dark:text-slate-100">
+            {displayAddress}
+          </span>
+          <span className="mt-1 block font-mono text-[10px] font-normal text-zinc-400 dark:text-slate-500">
+            {activePoint.lat.toFixed(5)}, {activePoint.lng.toFixed(5)}
+          </span>
+        </MapDetailRow>
+      </dl>
+    </MapDetailShell>
   );
 }

@@ -303,8 +303,8 @@ export default function MarcadoresMapInternal({
 
                     {marker.capacidad_maxima !== null &&
                       marker.capacidad_maxima !== undefined && (
-                        <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 font-semibold mt-1 pt-1 border-t border-gray-100 dark:border-[#2b395b]">
-                          <span className="flex items-center gap-1 text-zinc-500 dark:text-slate-400 font-normal">
+                        <div className="flex items-center justify-between font-semibold text-zinc-700 mt-1 border-t border-gray-100 pt-1 dark:border-[#2b395b] dark:text-slate-300">
+                          <span className="flex items-center gap-1 font-normal text-zinc-500 dark:text-slate-400">
                             <Users className="h-3.5 w-3.5" />
                             Capacidad:
                           </span>
