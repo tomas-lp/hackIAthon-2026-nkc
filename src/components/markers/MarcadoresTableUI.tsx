@@ -781,7 +781,7 @@ export function MarcadoresTableUI({
 
       {/* Tabla con scrollbar fijo bloqueado en espacio que no causa movimientos */}
       <div className="w-full rounded-xl border border-gray-200/80 dark:border-[#2b395b] bg-white dark:bg-[#161f36] overflow-hidden shadow-xs dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] animate-list-slide-left">
-        <div className="overflow-x-auto custom-scrollbar">
+        <div className="overflow-x-auto">
           <table className="block w-full min-w-[960px] text-left text-xs relative border-separate border-spacing-0">
             <thead className="table w-full table-fixed bg-zinc-50/95 dark:bg-[#1c2744] shadow-2xs">
               {table
@@ -1098,11 +1098,11 @@ export function MarcadoresTableUI({
 
                             {/* Acciones — botones redondos con color de fuente normal */}
                             <td
-                              className="px-3 py-3 text-center"
+                              className="px-3 py-3 text-center relative"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {isEditing ? (
-                                <div className="flex items-center justify-start gap-1.5">
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-start gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => handleConfirmEdit(marker)}
