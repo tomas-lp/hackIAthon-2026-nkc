@@ -136,8 +136,8 @@ export function LayerControls({
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                  <Check className="h-4 w-4" strokeWidth={4} />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs">
+                  <Check className="h-3.5 w-3.5" strokeWidth={4} />
                 </div>
                 <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
                   Centros de evacuación
@@ -169,7 +169,7 @@ export function LayerControls({
                       onClick={() => {
                         onCreateEvacuationCenter();
                       }}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[#161f36] text-slate-200 border border-[#2b395b] hover:bg-[#233154] hover:text-white transition-colors cursor-pointer shadow-xs"
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-[#161f36] text-zinc-600 dark:text-slate-200 border border-gray-200/80 dark:border-[#2b395b] hover:bg-zinc-50 dark:hover:bg-[#233154] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer shadow-xs"
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
@@ -181,8 +181,8 @@ export function LayerControls({
             {/* Centros de At. Médica */}
             <div className="flex items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-600">
-                  <Plus className="h-4 w-4" strokeWidth={3} />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-2xs">
+                  <Plus className="h-3.5 w-3.5" strokeWidth={3} />
                 </div>
                 <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
                   Centros de at. médica
@@ -214,7 +214,7 @@ export function LayerControls({
                       onClick={() => {
                         onCreateMedicalCenter();
                       }}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[#161f36] text-slate-200 border border-[#2b395b] hover:bg-[#233154] hover:text-white transition-colors cursor-pointer shadow-xs"
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-[#161f36] text-zinc-600 dark:text-slate-200 border border-gray-200/80 dark:border-[#2b395b] hover:bg-zinc-50 dark:hover:bg-[#233154] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer shadow-xs"
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
