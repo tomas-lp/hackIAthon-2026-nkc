@@ -45,8 +45,8 @@ export function LayerControls({
             onClick={() => setIsPopoverOpen((prev) => !prev)}
             className={`flex items-center justify-center rounded-full border p-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-200 cursor-pointer ${
               isPopoverOpen
-                ? "bg-zinc-200/90 dark:bg-slate-700/90 text-zinc-950 dark:text-white border-zinc-300 dark:border-slate-500 shadow-sm"
-                : "bg-white/70 dark:bg-slate-800/70 text-zinc-700 dark:text-slate-200 hover:bg-white/90 dark:hover:bg-slate-700/90 border-white/50 dark:border-white/10"
+                ? "bg-zinc-200/90 dark:bg-[#161f36] text-zinc-950 dark:text-white border-zinc-300 dark:border-[#2b395b] shadow-sm"
+                : "bg-white/70 dark:bg-[#0b101d]/80 text-zinc-700 dark:text-slate-200 hover:bg-white/90 dark:hover:bg-[#161f36] border-white/50 dark:border-[#2b395b]/80"
             }`}
           >
             <Layers className="h-5 w-5" />
@@ -55,7 +55,7 @@ export function LayerControls({
 
         {/* Popover Panel with Spring Bounce Slide Animation */}
         <div
-          className={`absolute bottom-14 left-0 w-[304px] rounded-2xl border border-gray-200/80 dark:border-slate-600/80 bg-white/60 dark:bg-slate-800/90 p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          className={`absolute bottom-14 left-0 w-[304px] rounded-2xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/60 dark:bg-[#0b101d]/90 p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 z-50 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             isPopoverOpen
               ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
               : "translate-y-8 opacity-0 scale-95 pointer-events-none"
@@ -74,7 +74,7 @@ export function LayerControls({
                   className={`w-16 h-16 rounded-[14px] border-[2.5px] flex items-center justify-center transition-all ${
                     !showSatellite
                       ? "border-teal-600 bg-teal-50 dark:bg-teal-900/30"
-                      : "border-transparent bg-gray-100 dark:bg-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-600"
+                      : "border-transparent bg-gray-100 dark:bg-[#161f36] group-hover:bg-gray-200 dark:group-hover:bg-[#1e2a4a]"
                   }`}
                 >
                   <Map
@@ -106,7 +106,7 @@ export function LayerControls({
                   className={`w-16 h-16 rounded-[14px] border-[2.5px] flex items-center justify-center transition-all ${
                     showSatellite
                       ? "border-teal-600 bg-teal-50 dark:bg-teal-900/30"
-                      : "border-transparent bg-gray-100 dark:bg-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-600"
+                      : "border-transparent bg-gray-100 dark:bg-[#161f36] group-hover:bg-gray-200 dark:group-hover:bg-[#1e2a4a]"
                   }`}
                 >
                   <Satellite
@@ -130,7 +130,7 @@ export function LayerControls({
             </div>
           </div>
 
-          <div className="h-[1px] w-full bg-gray-200/80 dark:bg-slate-700/80" />
+          <div className="h-[1px] w-full bg-gray-200/80 dark:bg-[#2b395b]/80" />
 
           {/* Centros de Evacuación */}
           <div className="flex flex-col gap-3">
@@ -169,7 +169,7 @@ export function LayerControls({
                       onClick={() => {
                         onCreateEvacuationCenter();
                       }}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[#161f36] text-slate-200 border border-[#2b395b] hover:bg-[#233154] hover:text-white transition-colors cursor-pointer shadow-xs"
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
@@ -214,7 +214,7 @@ export function LayerControls({
                       onClick={() => {
                         onCreateMedicalCenter();
                       }}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[#161f36] text-slate-200 border border-[#2b395b] hover:bg-[#233154] hover:text-white transition-colors cursor-pointer shadow-xs"
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
@@ -227,7 +227,7 @@ export function LayerControls({
       </div>
 
       {/* References Legend Capsule (Unificada con mapa de calor) */}
-      <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/50 dark:border-white/10 bg-white/75 dark:bg-slate-800/85 px-4 py-2 text-xs font-bold text-zinc-800 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md">
+      <div className="flex flex-wrap items-center gap-3 rounded-full border border-white/50 dark:border-[#2b395b]/80 bg-white/75 dark:bg-[#0b101d]/80 px-4 py-2 text-xs font-bold text-zinc-800 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md">
         <span className="text-zinc-900 dark:text-white font-extrabold">
           Referencias
         </span>
