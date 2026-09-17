@@ -110,10 +110,7 @@ function SwitchOption({
         ctx.onValueChange(value);
         if (onClick) onClick();
       }}
-      className={
-        className ??
-        "relative z-10 h-7 px-3.5 text-xs cursor-pointer select-none whitespace-nowrap flex items-center justify-center transition-colors duration-200"
-      }
+      className={`relative z-10 h-7 px-3.5 text-xs cursor-pointer select-none whitespace-nowrap flex items-center justify-center transition-colors duration-200 ${className}`}
     >
       <span className="relative inline-flex items-center justify-center leading-none">
         {/* Ghost bold copy reserves max width so the font-weight swap

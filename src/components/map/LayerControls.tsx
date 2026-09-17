@@ -14,6 +14,7 @@ interface LayerControlsProps {
   onCreateEvacuationCenter?: () => void;
   onCreateMedicalCenter?: () => void;
   isHidden?: boolean;
+  isAdmin?: boolean;
 }
 
 export function LayerControls({
@@ -26,12 +27,13 @@ export function LayerControls({
   onCreateEvacuationCenter,
   onCreateMedicalCenter,
   isHidden,
+  isAdmin = false,
 }: LayerControlsProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   return (
     <div
-      className={`absolute bottom-[20dvh] left-4 w-[calc(100vw-2rem)] sm:bottom-4 sm:w-auto z-1 flex flex-row items-end justify-between sm:items-center gap-3 transition-all duration-300 ease-in-out ${
+      className={`absolute ${isAdmin ? "bottom-4" : "bottom-[20dvh]"} left-4 w-[calc(100vw-2rem)] sm:bottom-4 sm:w-auto z-1 flex flex-row items-end justify-between sm:items-center gap-3 transition-all duration-300 ease-in-out ${
         isHidden
           ? "translate-y-20 opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100"

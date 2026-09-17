@@ -226,8 +226,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
         <div className="absolute inset-0 bg-black/10 pointer-events-none z-[1000] transition-opacity duration-300">
           <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
             <span className="font-semibold text-gray-800 dark:text-white text-sm">
-              Dibuja la región · clickeá para añadir puntos · doble click al
-              primer punto para cerrar
+              Dibuja el polígono a crear.
             </span>
           </div>
         </div>

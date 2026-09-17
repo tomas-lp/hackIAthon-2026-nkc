@@ -32,6 +32,7 @@ import { AdminTopBar } from "./_parts/AdminTopBar";
 import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
 import { MobileHeader } from "./_parts/MobileHeader";
+import { AdminMobileHeader } from "./_parts/AdminMobileHeader";
 import type { MobileAlertsSheetProps } from "./_parts/MobileAlertsSheet";
 
 const MobileAlertsSheet = dynamic<MobileAlertsSheetProps>(
@@ -427,8 +428,10 @@ export function HomeDashboard({
         />
       )}
 
-      {/* Mobile-only: Header flotante con logo y buscador */}
-      {!isAdmin && (
+      {/* Mobile-only: Header flotante */}
+      {isAdmin ? (
+        <AdminMobileHeader isHidden={hideMainUI} />
+      ) : (
         <MobileHeader
           safeZones={safeZoneSel.safeZones}
           healthCenters={healthSel.healthCenters}
@@ -493,10 +496,9 @@ export function HomeDashboard({
       )}
 
       {isEditingRegions && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[500] bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
+        <div className="text-nowrap absolute top-32 sm:top-16 left-1/2 -translate-x-1/2 z-[500] bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
           <span className="font-semibold text-gray-800 dark:text-white text-xs sm:text-sm">
-            Dibuja la región · clickeá para añadir puntos · doble click al
-            primer punto para cerrar · presiona Esc para cancelar
+            Dibujá una región o editá una existente.
           </span>
         </div>
       )}
@@ -567,6 +569,7 @@ export function HomeDashboard({
             isAdmin ? () => safeZoneSel.setIsCreatingSafeZone(true) : undefined
           }
           isHidden={hideMainUI}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -579,7 +582,9 @@ export function HomeDashboard({
         onClearError={mapRouting.clearRoute}
       />
 
-      <div className="absolute right-4 top-20 sm:top-4 z-[1000] flex flex-col items-end gap-2">
+      <div
+        className={`absolute right-4 sm:top-4 z-[1000] flex flex-col items-end gap-2 ${isAdmin ? "top-34" : "top-20"}`}
+      >
         <AuthWidget
           isAdmin={isAdmin}
           onLoginClick={() => setShowLoginModal(true)}
