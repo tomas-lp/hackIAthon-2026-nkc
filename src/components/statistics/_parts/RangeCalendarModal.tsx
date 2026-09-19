@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface RangeCalendarModalProps {
   isOpen: boolean;
@@ -172,9 +172,9 @@ export function RangeCalendarModal({
               onMouseEnter={() => setHoverDate(dayStr)}
               className={`h-8 w-8 text-xs font-semibold rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                 isStart || isEnd
-                  ? "bg-blue-600 text-white font-bold shadow-xs scale-105"
+                  ? "bg-[#435bb5] dark:bg-[#435ebd] text-white font-bold shadow-xs scale-105"
                   : inRange
-                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200"
+                    ? "bg-[#435bb5]/15 dark:bg-[#435ebd]/25 text-[#2d3e84] dark:text-[#a8b8f0]"
                     : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-100 dark:hover:bg-[#25355d] dark:hover:text-white"
               }`}
             >

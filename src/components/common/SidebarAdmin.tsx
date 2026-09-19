@@ -7,6 +7,7 @@ const adminMenuOptions = [
   { label: "Mapa", href: "/" },
   { label: "Marcadores", href: "/marcadores" },
   { label: "Regiones", href: "/regiones-personalizadas" },
+  { label: "Reportes", href: "/reportes" },
   { label: "Panel de Administración", href: "/estadisticas" },
 ];
 
@@ -16,6 +17,7 @@ export function SidebarAdmin() {
     "/": "Mapa",
     "/marcadores": "Marcadores",
     "/regiones-personalizadas": "Regiones",
+    "/reportes": "Reportes",
     "/estadisticas": "Panel de Administración",
   };
   const activeTab = pathToTab[pathname] ?? "Mapa";
