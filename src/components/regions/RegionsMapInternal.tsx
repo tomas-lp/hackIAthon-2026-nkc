@@ -116,6 +116,15 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
   const showBarriosLayer =
     props.showAllBarrios || activeHeaderTab === "Barrios" || isSelectedBarrio;
 
+  const reportsKey = useMemo(
+    () =>
+      validReports
+        .map((r) => r.id)
+        .sort()
+        .join(","),
+    [validReports]
+  );
+
   return (
     <div className="relative w-full h-full min-h-125 font-sans">
       <MapContainer
@@ -135,7 +144,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
         {/* Polígonos de barrios de la API PostGIS con resaltado y cantidad de reclamos */}
         {showBarriosLayer && barriosGeoJson && (
           <GeoJSON
-            key={`barrios-layer-regiones-${isDark ? "dark" : "light"}`}
+            key={`barrios-layer-regiones-${isDark ? "dark" : "light"}-${reportsKey}`}
             data={barriosGeoJson as unknown as GeoJSON.GeoJsonObject}
             style={(feature) => {
               const isSelected = feature?.properties?.id === selectedRegionId;
@@ -143,7 +152,7 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
                 color: isSelected ? "#2563eb" : "#3b82f6",
                 weight: isSelected ? 3 : 2,
                 opacity: 0.9,
-                fillColor: "#3b82f6",
+                fillColor: isSelected ? "#2563eb" : "#3b82f6",
                 fillOpacity: isSelected ? 0.65 : 0.25,
               };
             }}
@@ -158,10 +167,16 @@ export default function RegionsMapInternal(props: RegionsMapInternalProps) {
                 const countText =
                   count === 1
                     ? "1 reclamo en esta zona"
-                    : `${count} reclamos en esta zona`;
+                    : count > 1
+                      ? `${count} reclamos en esta zona`
+                      : "Sin reclamos en esta zona";
 
                 layer.bindTooltip(
-                  buildMapTooltipHtml({ title: nombre, subtitle: countText }),
+                  buildMapTooltipHtml({
+                    title: nombre,
+                    subtitle: countText,
+                    italic: count === 0,
+                  }),
                   {
                     sticky: true,
                     direction: "top",

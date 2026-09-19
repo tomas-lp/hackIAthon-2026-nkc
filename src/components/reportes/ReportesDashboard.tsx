@@ -30,14 +30,38 @@ export function ReportesDashboard({
     });
   }, []);
 
-  // Eliminar reportes localmente (sin backend en esta iteración)
+  // Eliminar reportes en backend y actualizar estado local
   const handleDeleteReports = useCallback(async (ids: string[]) => {
-    setReports((prev) => prev.filter((r) => !ids.includes(r.id)));
-    setEstadosMap((prev) => {
-      const next = new Map(prev);
-      ids.forEach((id) => next.delete(id));
-      return next;
-    });
+    try {
+      const res = await fetch("/api/reports", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || "Error al eliminar reportes en el servidor"
+        );
+      }
+
+      setReports((prev) => prev.filter((r) => !ids.includes(r.id)));
+      setEstadosMap((prev) => {
+        const next = new Map(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    } catch (err) {
+      console.error("Error al eliminar reportes:", err);
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Error al eliminar reportes. Por favor intenta nuevamente."
+      );
+    }
   }, []);
 
   return (
