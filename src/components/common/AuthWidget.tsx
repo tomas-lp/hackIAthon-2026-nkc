@@ -53,7 +53,7 @@ export function AuthWidget({
 
   return (
     <div
-      className={`${inline ? "relative" : "absolute right-4 top-20 sm:top-4"} z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out pointer-events-none ${
+      className={`${inline ? "relative" : "absolute right-4 top-4"} z-[1000] flex flex-col items-end gap-2 transition-all duration-300 ease-in-out pointer-events-none ${
         isHidden ? "-translate-y-20 opacity-0" : "translate-y-0 opacity-100"
       }`}
     >

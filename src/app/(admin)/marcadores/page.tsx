@@ -37,7 +37,7 @@ export default async function MarcadoresPage() {
   ]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-zinc-100 dark:bg-[#0b101d]">
+    <div className="relative min-h-[calc(100svh-4.5rem)] sm:min-h-screen overflow-hidden bg-zinc-100 dark:bg-[#0b101d]">
       <MarcadoresDashboard
         initialSafeZones={safeZones}
         initialHealthCenters={healthCenters}

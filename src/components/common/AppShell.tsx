@@ -4,6 +4,7 @@ import { createContext, useContext, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Sidebar } from "@/components/common/Sidebar";
+import { AdminMobileHeader } from "@/components/home/_parts/AdminMobileHeader";
 import { useAuth } from "@/hooks/home/useAuth";
 
 interface AdminSidebarContextValue {
@@ -11,6 +12,8 @@ interface AdminSidebarContextValue {
   setCollapsed: (collapsed: boolean) => void;
   hidden: boolean;
   setHidden: (hidden: boolean) => void;
+  isHeaderHidden: boolean;
+  setIsHeaderHidden: (hidden: boolean) => void;
 }
 
 const AdminSidebarContext = createContext<AdminSidebarContextValue | null>(
@@ -30,13 +33,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { currentUser } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
   const isAdmin = !!currentUser;
   const isHome = pathname === "/";
   const showAdminSidebar = isAdmin;
 
   return (
     <AdminSidebarContext.Provider
-      value={{ collapsed, setCollapsed, hidden, setHidden }}
+      value={{
+        collapsed,
+        setCollapsed,
+        hidden,
+        setHidden,
+        isHeaderHidden,
+        setIsHeaderHidden,
+      }}
     >
       {showAdminSidebar && (
         <div
@@ -62,6 +73,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {isAdmin && <AdminMobileHeader isHidden={isHeaderHidden} />}
+
       {isAdmin && (
         <button
           type="button"
@@ -83,9 +96,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <div
-        className={`min-h-screen transition-[padding] duration-300 ease-in-out ${
-          isAdmin && !isHome && !collapsed && !hidden ? "pl-[320px]" : "pl-0"
-        }`}
+        className={`transition-[padding] duration-300 ease-in-out bg-zinc-100 ${
+          isAdmin && !isHome && !collapsed && !hidden ? "sm:pl-80" : "pl-0"
+        } ${isAdmin && !isHome ? "pt-18 sm:pt-0" : ""}`}
       >
         {children}
       </div>

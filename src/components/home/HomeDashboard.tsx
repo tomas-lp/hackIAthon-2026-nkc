@@ -32,7 +32,6 @@ import { AdminTopBar } from "./_parts/AdminTopBar";
 import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
 import { MobileHeader } from "./_parts/MobileHeader";
-import { AdminMobileHeader } from "./_parts/AdminMobileHeader";
 import type { MobileAlertsSheetProps } from "./_parts/MobileAlertsSheet";
 
 const MobileAlertsSheet = dynamic<MobileAlertsSheetProps>(
@@ -59,6 +58,7 @@ export function HomeDashboard({
     collapsed: adminSidebarCollapsed,
     setCollapsed: setAdminSidebarCollapsed,
     setHidden: setAdminSidebarHidden,
+    setIsHeaderHidden,
   } = useAdminSidebar();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [localSidebarCollapsed, setLocalSidebarCollapsed] = useState(false);
@@ -346,7 +346,8 @@ export function HomeDashboard({
 
   useEffect(() => {
     setAdminSidebarHidden(isAdmin && hideMainUI);
-  }, [hideMainUI, isAdmin, setAdminSidebarHidden]);
+    setIsHeaderHidden(isAdmin && hideMainUI);
+  }, [hideMainUI, isAdmin, setAdminSidebarHidden, setIsHeaderHidden]);
 
   useEffect(() => {
     syncUrl(
@@ -428,10 +429,8 @@ export function HomeDashboard({
         />
       )}
 
-      {/* Mobile-only: Header flotante */}
-      {isAdmin ? (
-        <AdminMobileHeader isHidden={hideMainUI} />
-      ) : (
+      {/* Mobile-only: Header flotante (usuario normal) */}
+      {!isAdmin && (
         <MobileHeader
           safeZones={safeZoneSel.safeZones}
           healthCenters={healthSel.healthCenters}

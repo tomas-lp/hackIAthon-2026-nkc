@@ -357,7 +357,7 @@ export function MarcadoresDashboard({
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans">
+    <div className="relative h-[calc(100svh-4.5rem)] sm:h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans">
       {/* Botón flotante para volver a la tabla si está en mapa enfocado */}
       {isMapVisible && (
         <div className="absolute left-6 top-6 z-[100]">
@@ -408,7 +408,7 @@ export function MarcadoresDashboard({
       {/* Contenido Principal: Tabla de Marcadores o Mapa Limpio */}
       {!isMapVisible ? (
         <div
-          className={`flex-1 flex flex-col h-full overflow-y-auto pt-8 pb-6 transition-all duration-300 ease-in-out ${"px-6"}`}
+          className={`flex-1 flex flex-col h-full overflow-y-auto pt-2 sm:pt-16 pb-6 transition-all duration-300 ease-in-out px-4 sm:px-6`}
         >
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
             {/* Encabezado Superior */}
