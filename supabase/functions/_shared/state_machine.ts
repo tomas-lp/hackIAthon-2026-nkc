@@ -294,7 +294,7 @@ export async function processMessage(
 
           const weather = await fetchCurrentWeather(coords.lat, coords.lon);
           const precipMm = weather ? weather.precip_mm : 0;
-          const climaFuente = weather ? "WeatherAPI" : "Desconocida";
+          const climaFuente = weather ? weather.fuente : "Desconocida";
           session.datos_temporales.lluvia_mm = precipMm;
           session.datos_temporales.clima_fuente = climaFuente;
 
@@ -393,7 +393,7 @@ export async function processMessage(
           message.location.longitude
         );
         const precipMm = weather ? weather.precip_mm : 0;
-        const climaFuente = weather ? "WeatherAPI" : "Desconocida";
+        const climaFuente = weather ? weather.fuente : "Desconocida";
         session.datos_temporales.lluvia_mm = precipMm;
         session.datos_temporales.clima_fuente = climaFuente;
 
