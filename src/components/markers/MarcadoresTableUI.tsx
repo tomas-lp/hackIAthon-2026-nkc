@@ -596,7 +596,7 @@ export function MarcadoresTableUI({
         {/* Lado Izquierdo: Filtro Tipo y Filtro Región */}
         <div className="flex flex-wrap items-center gap-4">
           {/* Filtro Tipo */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-zinc-600 dark:text-slate-200">
               Tipo de marcador:
             </span>
@@ -617,7 +617,7 @@ export function MarcadoresTableUI({
           {/* Filtro Región (Barrios y Listas personalizadas) */}
           <div
             ref={regionOverflowRef}
-            className="relative flex items-center gap-2"
+            className="relative flex flex-wrap items-center gap-2"
           >
             <span className="text-xs font-semibold text-zinc-600 dark:text-slate-200">
               Región:

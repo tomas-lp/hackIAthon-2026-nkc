@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportType } from "@/types/report";
 import { BarriosFeatureCollection } from "@/services/barrioService";
 import { isPointInGeoJSONGeometry } from "@/lib/geometry";
 import { Switch } from "@/components/ui/Switch";
 import { RangeCalendarModal } from "./RangeCalendarModal";
+import { ChevronDown, Check } from "lucide-react";
 
 export type PeriodType = "HOY" | "7DIAS" | "RANGO";
 
@@ -21,6 +22,14 @@ interface MetricCardsProps {
   onTypeChange: (type: ReportType | "TODOS") => void;
 }
 
+const TYPE_OPTIONS: { value: ReportType | "TODOS"; label: string }[] = [
+  { value: "TODOS", label: "Todos" },
+  { value: "INUNDACION_URBANA", label: "Inundación" },
+  { value: "LLUVIAS_FUERTES", label: "Lluvias fuertes" },
+  { value: "GRANIZO", label: "Granizo" },
+  { value: "ANEGAMIENTO_VIVIENDA", label: "Anegamiento" },
+];
+
 export function MetricCards({
   reports,
   barriosGeoJson,
@@ -33,6 +42,21 @@ export function MetricCards({
   onTypeChange,
 }: MetricCardsProps) {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        typeDropdownRef.current &&
+        !typeDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsTypeDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 1. Total de reclamos
   const totalReclamos = reports.length;
@@ -82,7 +106,7 @@ export function MetricCards({
         {/* Lado Izquierdo: Periodo y Tipo de Reclamo */}
         <div className="flex flex-wrap items-center gap-4">
           {/* Filtro Periodo */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
               Periodo:
             </span>
@@ -105,13 +129,63 @@ export function MetricCards({
           </div>
 
           {/* Filtro Tipo de Reclamo */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-zinc-600 dark:text-slate-400">
               Tipo de reclamo:
             </span>
+
+            {/* Mobile: dropdown flotante */}
+            <div ref={typeDropdownRef} className="relative sm:hidden">
+              <button
+                type="button"
+                onClick={() => setIsTypeDropdownOpen((p) => !p)}
+                className="flex items-center gap-1.5 h-9 rounded-full border border-gray-200/60 dark:border-slate-600/60 bg-white/50 dark:bg-slate-800/60 px-3.5 text-xs font-semibold text-zinc-800 dark:text-slate-100 shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] backdrop-blur-md transition-all cursor-pointer"
+              >
+                <span>
+                  {TYPE_OPTIONS.find((o) => o.value === selectedType)?.label ??
+                    "Todos"}
+                </span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 text-zinc-400 transition-transform duration-300 ${
+                    isTypeDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isTypeDropdownOpen && (
+                <div className="absolute top-full mt-2 left-0 z-50 flex flex-col rounded-2xl border border-gray-200/60 dark:border-[#2b395b] bg-white/95 dark:bg-[#161f36] backdrop-blur-md shadow-[0_7px_50px_0px_rgb(0,0,0,0.1)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-40 overflow-hidden p-1.5 animate-in fade-in zoom-in-95">
+                  {TYPE_OPTIONS.map((opt) => {
+                    const isSelected = selectedType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          onTypeChange(opt.value);
+                          setIsTypeDropdownOpen(false);
+                        }}
+                        className={`flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-zinc-100 dark:bg-[#233154] font-bold text-zinc-950 dark:text-white shadow-xs"
+                            : "text-zinc-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-950 dark:hover:text-white font-medium"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && (
+                          <Check className="h-3.5 w-3.5 text-zinc-900 dark:text-white ml-2" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop: Switch */}
             <Switch
               value={selectedType}
               onValueChange={(val) => onTypeChange(val as ReportType | "TODOS")}
+              className="hidden sm:flex"
             >
               <Switch.Option value="TODOS">Todos</Switch.Option>
               <Switch.Option value="INUNDACION_URBANA">

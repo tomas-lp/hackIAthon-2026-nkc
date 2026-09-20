@@ -759,7 +759,10 @@ export function RegionsTableUI({
       {/* Controles de Filtro Superiores y Acciones (Alineados en altura y con mismo sombreado) */}
       <div className="flex flex-wrap items-center justify-between gap-4 w-full py-1">
         {/* Lado Izquierdo: Filtro Región con Switch animado y dropdown select */}
-        <div ref={overflowRef} className="relative flex items-center gap-2">
+        <div
+          ref={overflowRef}
+          className="relative flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-zinc-600 dark:text-slate-200">
             Región:
           </span>
