@@ -38,6 +38,11 @@ export function useReports(
     if (initialReportId) setSelectedReportId(initialReportId);
   }, [initialReportId]);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReports(initialReports);
+  }, [initialReports]);
+
   const [filters, setFilters] = useState<ReportFilters>({
     tipo: "TODOS",
     busqueda: "",

@@ -7,11 +7,16 @@ import {
 import { Report, ReportFilters } from "@/types/report";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import {
+  createClient as createPureClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 
 export interface IReportService {
   getReports(filters?: ReportFilters): Promise<Report[]>;
   getAllReports(): Promise<Report[]>;
   getReportById(id: string): Promise<Report | null>;
+  deleteReports(ids: string[]): Promise<boolean>;
 }
 
 const REPORT_TYPES: Report["tipo"][] = [
@@ -186,27 +191,82 @@ export class SupabaseReportService implements IReportService {
     return filtered;
   }
 
+  private isClockSkewError(
+    error: { message?: string; code?: string } | null | undefined
+  ): boolean {
+    if (!error) return false;
+    const msg = typeof error.message === "string" ? error.message : "";
+    return msg.includes("JWT issued at future") || error.code === "PGRST303";
+  }
+
+  private getAnonClient(): SupabaseClient {
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+    const supabaseKey = (
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      ""
+    ).trim();
+    return createPureClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  private async executeWithClockSkewRetry<T>(
+    runQuery: (
+      client: SupabaseClient
+    ) => Promise<{
+      data: T | null;
+      error: { message?: string; code?: string } | null;
+    }>
+  ): Promise<{
+    data: T | null;
+    error: { message?: string; code?: string } | null;
+  }> {
+    const client = (await this.getSupabase()) as unknown as SupabaseClient;
+    let result = await runQuery(client);
+
+    if (this.isClockSkewError(result.error)) {
+      // Reintentar tras breve espera por deriva de reloj (clock skew)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      result = await runQuery(client);
+
+      // Si persiste por el JWT del usuario desfasado, consultar con cliente anónimo (reports es pública)
+      if (this.isClockSkewError(result.error)) {
+        const anonClient = this.getAnonClient();
+        result = await runQuery(anonClient);
+      }
+    }
+
+    return result;
+  }
+
   async getReports(filters?: ReportFilters): Promise<Report[]> {
     // Reportes >24 hs se excluyen del cálculo y del mapa.
     const since = new Date(
       Date.now() - MAX_EDAD_REPORTE_HORAS * 3600000
     ).toISOString();
 
-    const supabase = await this.getSupabase();
-    let query = supabase
-      .from("reports")
-      .select("*")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false });
+    const { data, error } = await this.executeWithClockSkewRetry(
+      async (supabase) => {
+        let query = supabase
+          .from("reports")
+          .select("*")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false });
 
-    if (filters?.tipo && filters.tipo !== "TODOS") {
-      query = query.eq("tipo", filters.tipo);
-    }
-    if (filters?.busqueda && filters.busqueda.trim() !== "") {
-      query = query.ilike("descripcion", `%${filters.busqueda.trim()}%`);
-    }
+        if (filters?.tipo && filters.tipo !== "TODOS") {
+          query = query.eq("tipo", filters.tipo);
+        }
+        if (filters?.busqueda && filters.busqueda.trim() !== "") {
+          query = query.ilike("descripcion", `%${filters.busqueda.trim()}%`);
+        }
 
-    const { data, error } = await query;
+        return await query;
+      }
+    );
 
     if (error) {
       console.error("Supabase getReports error:", error.message);
@@ -221,11 +281,14 @@ export class SupabaseReportService implements IReportService {
   }
 
   async getAllReports(): Promise<Report[]> {
-    const supabase = await this.getSupabase();
-    const { data, error } = await supabase
-      .from("reports")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await this.executeWithClockSkewRetry(
+      async (supabase) => {
+        return await supabase
+          .from("reports")
+          .select("*")
+          .order("created_at", { ascending: false });
+      }
+    );
 
     if (error) {
       console.error("Supabase getAllReports error:", error.message);
@@ -238,18 +301,35 @@ export class SupabaseReportService implements IReportService {
   }
 
   async getReportById(id: string): Promise<Report | null> {
-    const supabase = await this.getSupabase();
-    const { data, error } = await supabase
-      .from("reports")
-      .select("*")
-      .eq("id", id)
-      .limit(1)
-      .single();
+    const { data, error } = await this.executeWithClockSkewRetry(
+      async (supabase) => {
+        return await supabase
+          .from("reports")
+          .select("*")
+          .eq("id", id)
+          .limit(1)
+          .single();
+      }
+    );
+
     if (error || !data) {
       console.error("Supabase getReportById error:", error?.message);
       return null;
     }
-    return this.mapDbRowToReport(data);
+    return this.mapDbRowToReport(data as ReportDbRow);
+  }
+
+  async deleteReports(ids: string[]): Promise<boolean> {
+    if (!ids || ids.length === 0) return true;
+    const { error } = await this.executeWithClockSkewRetry(async (supabase) => {
+      const res = await supabase.from("reports").delete().in("id", ids);
+      return { data: null, error: res.error };
+    });
+    if (error) {
+      console.error("Supabase deleteReports error:", error.message);
+      return false;
+    }
+    return true;
   }
 }
 

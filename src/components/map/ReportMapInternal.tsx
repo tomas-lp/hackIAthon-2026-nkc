@@ -19,6 +19,8 @@ import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
 import { RegionPersonalizada } from "@/types/region";
 import { buildHeatPoints } from "@/lib/heatmap";
+import { isPointInGeoJSONGeometry } from "@/lib/geometry";
+import { formatTitleCase } from "@/lib/format";
 import { HeatLayer } from "./HeatLayer";
 import { MapController } from "./MapController";
 import { MapSizeInvalidator } from "./MapSizeInvalidator";
@@ -250,13 +252,56 @@ function createCustomPinIcon(
   });
 }
 
-function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
+function BarriosLayer({
+  data,
+  reports,
+}: {
+  data: GeoJSON.FeatureCollection;
+  reports: Report[];
+}) {
   const map = useMap();
   const { isDark } = useDarkMode();
 
+  // Calcular reclamos activos de las últimas 24 horas por barrio
+  const barrioReportsCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!data?.features || reports.length === 0) return map;
+
+    for (const feature of data.features) {
+      const barrioId = feature.properties?.id;
+      if (!barrioId || !feature.geometry) continue;
+
+      let count = 0;
+      for (const report of reports) {
+        if (
+          Number.isFinite(report.latitud) &&
+          Number.isFinite(report.longitud) &&
+          isPointInGeoJSONGeometry(
+            [report.latitud, report.longitud],
+            feature.geometry
+          )
+        ) {
+          count++;
+        }
+      }
+      map.set(barrioId, count);
+    }
+
+    return map;
+  }, [data, reports]);
+
+  const reportsKey = useMemo(
+    () =>
+      reports
+        .map((r) => r.id)
+        .sort()
+        .join(","),
+    [reports]
+  );
+
   return (
     <GeoJSON
-      key={`barrios-layer-${isDark ? "dark" : "light"}`}
+      key={`barrios-layer-${isDark ? "dark" : "light"}-${reportsKey}`}
       data={data}
       style={() => ({
         color: "#3b82f6",
@@ -266,8 +311,12 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
         fillOpacity: 0.25,
       })}
       onEachFeature={(feature, layer) => {
-        const nombre = feature.properties?.nombre ?? "";
-        const reportCount = feature.properties?.report_count ?? 0;
+        const rawName = feature.properties?.nombre ?? "";
+        const nombre = formatTitleCase(rawName);
+        const barrioId = feature.properties?.id;
+        const reportCount = barrioId
+          ? (barrioReportsCountMap.get(barrioId) ?? 0)
+          : 0;
         const hasReports = reportCount > 0;
         const subtitle = hasReports
           ? `${reportCount} ${reportCount === 1 ? "reporte" : "reportes"}`
@@ -296,7 +345,10 @@ function BarriosLayer({ data }: { data: GeoJSON.FeatureCollection }) {
             (e.target as L.Path).bringToFront();
           },
           mouseout(e) {
-            (e.target as L.Path).setStyle({ fillOpacity: 0.25, weight: 2 });
+            (e.target as L.Path).setStyle({
+              fillOpacity: 0.25,
+              weight: 2,
+            });
           },
           click(e) {
             e.originalEvent?.stopPropagation();
@@ -592,7 +644,7 @@ export default function ReportMapInternal({
 
         {/* Capa de polígonos de barrios — solo cuando Barrios está activo (variante interna) */}
         {showBarrios && barriosGeoJson && (
-          <BarriosLayer data={barriosGeoJson} />
+          <BarriosLayer data={barriosGeoJson} reports={validReports} />
         )}
 
         <ZoomTracker onZoomChange={setCurrentZoom} />
