@@ -33,3 +33,36 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const ids: string[] = body?.ids;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: "Se requiere un array de IDs para eliminar" },
+        { status: 400 }
+      );
+    }
+
+    const success = await reportService.deleteReports(ids);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Error al eliminar los reportes de la base de datos" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, count: ids.length },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error deleting reports:", error);
+    return NextResponse.json(
+      { error: "Error al procesar la solicitud de eliminación" },
+      { status: 500 }
+    );
+  }
+}
