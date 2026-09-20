@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useReports } from "@/hooks/useReports";
 import { useUrlSelection } from "@/hooks/useUrlSelection";
 import { ReportDetailSidebar } from "@/components/map/ReportDetailSidebar";
@@ -30,6 +31,13 @@ import { useMapRouting } from "@/hooks/home/useMapRouting";
 import { AdminTopBar } from "./_parts/AdminTopBar";
 import { RouteBanner } from "./_parts/RouteBanner";
 import { EditingBar } from "./_parts/EditingBar";
+import { MobileHeader } from "./_parts/MobileHeader";
+import type { MobileAlertsSheetProps } from "./_parts/MobileAlertsSheet";
+
+const MobileAlertsSheet = dynamic<MobileAlertsSheetProps>(
+  () => import("./_parts/MobileAlertsSheet").then((m) => m.MobileAlertsSheet),
+  { ssr: false }
+);
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeMapView } from "./HomeMapView";
 import { useAdminSidebar } from "@/components/common/AppShell";
@@ -50,6 +58,7 @@ export function HomeDashboard({
     collapsed: adminSidebarCollapsed,
     setCollapsed: setAdminSidebarCollapsed,
     setHidden: setAdminSidebarHidden,
+    setIsHeaderHidden,
   } = useAdminSidebar();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [localSidebarCollapsed, setLocalSidebarCollapsed] = useState(false);
@@ -337,7 +346,8 @@ export function HomeDashboard({
 
   useEffect(() => {
     setAdminSidebarHidden(isAdmin && hideMainUI);
-  }, [hideMainUI, isAdmin, setAdminSidebarHidden]);
+    setIsHeaderHidden(isAdmin && hideMainUI);
+  }, [hideMainUI, isAdmin, setAdminSidebarHidden, setIsHeaderHidden]);
 
   useEffect(() => {
     syncUrl(
@@ -419,6 +429,33 @@ export function HomeDashboard({
         />
       )}
 
+      {/* Mobile-only: Header flotante (usuario normal) */}
+      {!isAdmin && (
+        <MobileHeader
+          safeZones={safeZoneSel.safeZones}
+          healthCenters={healthSel.healthCenters}
+          onSelectSafeZone={(zone) => {
+            setShowEvacuationCenters(true);
+            safeZoneSel.setSelectedSafeZone(zone);
+            setSelectedReport(null);
+            healthSel.setSelectedHealthCenter(null);
+            safeZoneSel.setIsEditingSafeZones(false);
+            safeZoneSel.setIsCreatingSafeZone(false);
+            safeZoneSel.setDraftLocation(null);
+          }}
+          onSelectHealthCenter={(center) => {
+            setShowMedicalCenters(true);
+            healthSel.setSelectedHealthCenter(center);
+            setSelectedReport(null);
+            safeZoneSel.setSelectedSafeZone(null);
+            safeZoneSel.setIsEditingSafeZones(false);
+            safeZoneSel.setIsCreatingSafeZone(false);
+            safeZoneSel.setDraftLocation(null);
+          }}
+          isHidden={hideMainUI}
+        />
+      )}
+
       {!isAdmin && (
         <TooltipSign label="Mostrar panel" position="right" delayMs={500}>
           <button
@@ -458,10 +495,9 @@ export function HomeDashboard({
       )}
 
       {isEditingRegions && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[500] bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
+        <div className="text-nowrap absolute top-32 sm:top-16 left-1/2 -translate-x-1/2 z-[500] bg-white/90 dark:bg-[#161f36]/95 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-200 dark:border-[#2b395b] pointer-events-auto">
           <span className="font-semibold text-gray-800 dark:text-white text-xs sm:text-sm">
-            Dibuja la región · clickeá para añadir puntos · doble click al
-            primer punto para cerrar · presiona Esc para cancelar
+            Dibujá una región o editá una existente.
           </span>
         </div>
       )}
@@ -532,6 +568,7 @@ export function HomeDashboard({
             isAdmin ? () => safeZoneSel.setIsCreatingSafeZone(true) : undefined
           }
           isHidden={hideMainUI}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -544,16 +581,25 @@ export function HomeDashboard({
         onClearError={mapRouting.clearRoute}
       />
 
-      <AuthWidget
-        isAdmin={isAdmin}
-        onLoginClick={() => setShowLoginModal(true)}
-        onLogoutClick={async () => {
-          const { logoutFromSession } = await import("@/app/auth/actions");
-          await logoutFromSession();
-          window.location.reload();
-        }}
-        isHidden={hideMainUI}
-      />
+      <div
+        className={`absolute right-4 sm:top-4 z-[1000] flex flex-col items-end gap-2 ${isAdmin ? "top-34" : "top-20"}`}
+      >
+        <AuthWidget
+          isAdmin={isAdmin}
+          onLoginClick={() => setShowLoginModal(true)}
+          onLogoutClick={async () => {
+            const { logoutFromSession } = await import("@/app/auth/actions");
+            await logoutFromSession();
+            window.location.reload();
+          }}
+          isHidden={hideMainUI}
+          inline
+        />
+        <div
+          id="mobile-top-controls"
+          className="flex items-center justify-center"
+        />
+      </div>
 
       <LoginModal
         isOpen={showLoginModal}
@@ -761,6 +807,24 @@ export function HomeDashboard({
         onClose={() => setIsDeleteListModalOpen(false)}
         onConfirm={handleConfirmDeleteList}
       />
+
+      {/* Mobile-only: Bottom sheet con alertas y filtros */}
+      {!isAdmin && (
+        <MobileAlertsSheet
+          reports={reports}
+          filters={filters}
+          loading={loading}
+          error={error}
+          selectedReport={selectedReport}
+          onSelectReport={(report) => {
+            setSelectedReport(report);
+            safeZoneSel.setSelectedSafeZone(null);
+            healthSel.setSelectedHealthCenter(null);
+          }}
+          onUpdateFilter={updateFilter}
+          isHidden={hideMainUI}
+        />
+      )}
     </main>
   );
 }

@@ -43,6 +43,8 @@
   --map-popup-bg: #ffffff;
   --map-popup-color: #09090b;
   --map-popup-border: #e4e4e7;
+
+  --mobile-tabs-height: 70px;
 }
 
 /* ─── Dark mode tokens ──────────────────────────────────────────── */
