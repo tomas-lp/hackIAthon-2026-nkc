@@ -9,105 +9,18 @@ import {
   SAFE_ZONE_TYPE_LABELS,
   HEALTH_CENTER_TYPE_LABELS,
 } from "@/types/marker";
-import { formatDate, formatReportAddress } from "@/lib/format";
-import { TYPE_CONFIG } from "@/lib/constants";
-import { resolveAddress } from "@/lib/geocode";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 import { SidebarAdmin } from "@/components/common/SidebarAdmin";
+import { FilterDropdown } from "@/components/home/_parts/FilterDropdown";
+import { ReportCard } from "@/components/home/_parts/ReportCard";
 import {
   ChevronLeft,
-  ChevronDown,
-  Check,
-  Filter,
   Search,
   X,
   MapPin,
-  Info,
   ShieldCheck,
   SquarePlus,
 } from "lucide-react";
-
-function FilterDropdown({
-  value,
-  onChange,
-}: {
-  value: ReportType | "TODOS" | "";
-  onChange: (val: ReportType | "TODOS") => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const options: { value: ReportType | "TODOS"; label: string }[] = [
-    { value: "TODOS", label: "Todos" },
-    ...(Object.keys(TYPE_CONFIG) as ReportType[]).map((type) => ({
-      value: type,
-      label: TYPE_CONFIG[type].label,
-    })),
-  ];
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center justify-center gap-1.5 rounded-full border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-slate-200 transition hover:bg-gray-50 dark:hover:bg-[#1e2a4a] cursor-pointer"
-      >
-        <Filter className="h-4 w-4" />
-        Filtrar
-        <ChevronDown
-          className={`h-3 w-3 ml-1 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <div
-        className={`absolute right-0 top-full mt-2 z-50 w-48 flex flex-col rounded-xl border border-gray-200 dark:border-[#2b395b] bg-white dark:bg-[#161f36] shadow-lg dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out origin-top ${
-          isOpen
-            ? "max-h-[300px] opacity-100 pointer-events-auto p-1.5"
-            : "max-h-0 opacity-0 pointer-events-none !p-0 !border-transparent"
-        }`}
-      >
-        {options.map((opt) => {
-          const isSelected = opt.value === (value || "TODOS");
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setIsOpen(false);
-              }}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
-                isSelected
-                  ? "bg-gray-100 dark:bg-[#233154] font-semibold text-zinc-900 dark:text-white"
-                  : "text-zinc-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-[#1e2a4a] hover:text-zinc-900 dark:hover:text-white"
-              }`}
-            >
-              <span>{opt.label}</span>
-              {isSelected && (
-                <Check className="h-4 w-4 text-zinc-700 dark:text-slate-300" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 import "overlayscrollbars/overlayscrollbars.css";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
@@ -140,79 +53,6 @@ interface SidebarProps {
   onNavigateToNearestHealthCenter?: () => void;
   isNavigatingNearestHealthCenter?: boolean;
   fullHeight?: boolean;
-}
-
-function ReportCard({
-  report,
-  isSelected,
-  onSelect,
-  isAdmin,
-}: {
-  report: Report;
-  isSelected: boolean;
-  onSelect: (report: Report) => void;
-  isAdmin?: boolean;
-}) {
-  const storedAddress = formatReportAddress(report);
-  const [address, setAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (storedAddress) return; // ya tenemos datos de la BD
-
-    let isCancelled = false;
-
-    resolveAddress(report.latitud, report.longitud)
-      .then((resolved) => {
-        if (!isCancelled) setAddress(resolved);
-      })
-      .catch(() => {
-        if (!isCancelled) setAddress("Ubicación no disponible");
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [report.latitud, report.longitud, storedAddress]);
-
-  const typeLabel = TYPE_CONFIG[report.tipo].label;
-
-  return (
-    <button
-      onClick={() => onSelect(report)}
-      className={`shrink-0 w-full text-left transition overflow-hidden ${
-        isSelected
-          ? "bg-zinc-50 dark:bg-[#1e2a4a]"
-          : "bg-transparent hover:bg-zinc-50/80 dark:hover:bg-[#1e2a4a]"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col p-3">
-          <span className="text-sm font-medium text-black dark:text-slate-100">
-            {typeLabel}
-          </span>
-          <span
-            className="text-xs font-medium text-black/50 dark:text-slate-400"
-            suppressHydrationWarning
-          >
-            {formatDate(report.fecha)}
-          </span>
-          <span
-            className="text-xs font-medium text-black/80 dark:text-slate-300"
-            title={storedAddress ?? address ?? report.descripcion}
-          >
-            {storedAddress ?? address ?? "Dirección no disponible"}
-          </span>
-        </div>
-        {isAdmin && (
-          <div className="flex flex-col items-end p-3 gap-1">
-            <span className="rounded-full bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-300 w-fit text-nowrap">
-              {report.puntajeBase} pts
-            </span>
-          </div>
-        )}
-      </div>
-    </button>
-  );
 }
 
 export function Sidebar({
@@ -377,7 +217,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex flex-col gap-3 z-100 transition-all duration-300 ease-in-out ${
+      className={`hidden sm:flex flex-col gap-3 z-100 transition-all duration-300 ease-in-out ${
         isExpanded
           ? "w-[320px] max-w-[320px] h-screen rounded-none m-0 pt-[30px] pl-[32px] pr-[16px] pb-[30px] bg-white dark:bg-[#0b101d] border-r border-gray-200/80 dark:border-[#2b395b]/80 shadow-md"
           : `${isAdmin ? "w-[304px] max-w-[304px]" : "w-80 max-w-80 sm:w-[370px] sm:max-w-[370px]"} m-4 rounded-3xl border border-gray-200/80 dark:border-[#2b395b]/80 bg-white/50 dark:bg-[#0b101d]/80 p-4 backdrop-blur-md max-h-[88vh] shadow-xl`

@@ -72,10 +72,10 @@ export function EstadisticasDashboard({
   }, [allReports, selectedType, period, startDate, endDate]);
 
   return (
-    <div className="relative flex h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans text-zinc-900 dark:text-slate-100">
+    <div className="relative flex h-[calc(100svh-4.5rem)] sm:h-screen w-full overflow-hidden bg-zinc-100 dark:bg-[#0b101d] font-sans text-zinc-900 dark:text-slate-100">
       {/* Área Principal con la misma estructura y espaciado que Regiones y Marcadores */}
       <div
-        className={`flex-1 flex flex-col h-full overflow-y-auto pt-16 pb-12 transition-all duration-300 ease-in-out ${"px-6"}`}
+        className={`flex-1 flex flex-col h-full overflow-y-auto pt-2 sm:pt-16 pb-12 transition-all duration-300 ease-in-out px-4 sm:px-6`}
       >
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 font-sans flex flex-col gap-5">
           {/* Encabezado Superior */}

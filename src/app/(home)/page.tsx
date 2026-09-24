@@ -16,7 +16,7 @@ export default async function CrisisGraphPage() {
   const listas = user ? await regionService.getLists(supabase) : [];
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-zinc-100 ">
+    <main className="relative flex flex-col h-screen w-screen overflow-hidden bg-zinc-100">
       <HomeDashboard
         initialReports={reports}
         initialListas={listas}

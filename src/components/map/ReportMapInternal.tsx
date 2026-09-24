@@ -786,7 +786,10 @@ export default function ReportMapInternal({
           />
         )}
 
-        {!isAdmin && <LocateButton activeRoute={activeRoute} />}
+        <LocateButton
+          activeRoute={activeRoute}
+          containerId="mobile-top-controls"
+        />
 
         {/* Ruta segura activa — solo visible en modo usuario */}
         {activeRoute && (
