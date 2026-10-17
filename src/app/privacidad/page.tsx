@@ -30,7 +30,7 @@ export default function PrivacidadPage() {
             Política de Privacidad
           </h1>
           <p className="mt-2 text-base text-zinc-500">
-            Inu - Sistema de Alertas e Inundaciones
+            Faro - Sistema de Alertas e Inundaciones
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export default function PrivacidadPage() {
               1. Introducción
             </h2>
             <p>
-              En <strong>Inu</strong> (disponible en{" "}
+              En <strong>Faro</strong> (disponible en{" "}
               <code className="rounded bg-zinc-100 px-1 py-0.5 text-sm font-mono text-zinc-800">
                 inu-app.inu-bdc.workers.dev
               </code>
@@ -118,7 +118,7 @@ export default function PrivacidadPage() {
               </li>
             </ul>
             <p className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl text-zinc-700 italic">
-              <strong>Nota Importante:</strong> Inu no comercializa, alquila ni
+              <strong>Nota Importante:</strong> Faro no comercializa, alquila ni
               vende su información personal a terceros bajo ninguna
               circunstancia.
             </p>
@@ -169,7 +169,7 @@ export default function PrivacidadPage() {
                 <li>
                   Use como asunto del mensaje:{" "}
                   <span className="font-mono bg-zinc-200/60 px-1 py-0.5 rounded text-zinc-900">
-                    Eliminar datos personales - Inu
+                    Eliminar datos personales - Faro
                   </span>
                   .
                 </li>
@@ -223,7 +223,7 @@ export default function PrivacidadPage() {
 
         {/* Footer */}
         <div className="mt-12 border-t border-zinc-100 pt-6 text-center text-xs text-zinc-400">
-          © {new Date().getFullYear()} Inu - Sistema de Alertas e Inundaciones.
+          © {new Date().getFullYear()} Faro - Sistema de Alertas e Inundaciones.
           Todos los derechos reservados.
         </div>
       </div>

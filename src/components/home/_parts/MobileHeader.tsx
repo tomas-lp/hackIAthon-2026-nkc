@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { FaroLogo } from "@/components/common/FaroLogo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
@@ -15,7 +15,7 @@ import {
   MapPin,
   ShieldCheck,
   SquarePlus,
-  Radio,
+  RadioTower,
 } from "lucide-react";
 import { LoraAntenna } from "@/types/loraAntenna";
 
@@ -188,22 +188,7 @@ export function MobileHeader({
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="shrink-0 overflow-hidden ml-1"
               >
-                <Image
-                  src="/logo_primary.svg"
-                  alt="INU - Sistema de Alerta para Inundaciones"
-                  width={72}
-                  height={24}
-                  className="block dark:hidden"
-                  priority
-                />
-                <Image
-                  src="/logo_white.svg"
-                  alt="INU - Sistema de Alerta para Inundaciones"
-                  width={72}
-                  height={24}
-                  className="hidden dark:block"
-                  priority
-                />
+                <FaroLogo width={72} height={24} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -274,14 +259,14 @@ export function MobileHeader({
                         item.category === "EVACUACION"
                           ? "text-emerald-600 dark:text-emerald-500"
                           : (item.category as string) === "LORA"
-                            ? "text-indigo-600 dark:text-indigo-400"
+                            ? "text-purple-600 dark:text-purple-400"
                             : "text-red-500 dark:text-red-400"
                       }`}
                     >
                       {item.category === "EVACUACION" ? (
                         <ShieldCheck className="h-5 w-5" />
                       ) : (item.category as string) === "LORA" ? (
-                        <Radio className="h-5 w-5" />
+                        <RadioTower className="h-5 w-5" />
                       ) : (
                         <SquarePlus className="h-5 w-5" />
                       )}

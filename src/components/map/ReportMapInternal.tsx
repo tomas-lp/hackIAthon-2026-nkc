@@ -26,7 +26,7 @@ import { MapController } from "./MapController";
 import { MapSizeInvalidator } from "./MapSizeInvalidator";
 import { LocateButton } from "./LocateButton";
 import { SafeRoute } from "./SafeRoute";
-import { ShieldCheck, PlusSquare, Radio } from "lucide-react";
+import { ShieldCheck, PlusSquare, RadioTower } from "lucide-react";
 import { RouteResult } from "@/lib/routing";
 import { LoraAntenna } from "@/types/loraAntenna";
 import {
@@ -258,46 +258,50 @@ function createCustomPinIcon(
 }
 
 function createLoraAntennaIcon(zoom: number, isSelected: boolean = false) {
-  const minSize = 22;
-  const maxSize = 38;
+  const minSize = 12;
+  const maxSize = 22;
   let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
   size = Math.max(minSize, Math.min(maxSize, size));
 
-  const bgColor = isSelected ? "#4338ca" : "#6366f1";
+  if (isSelected) {
+    size = Math.round(size * 1.25);
+  }
+
+  const bgColor = isSelected ? "#7e22ce" : "#9333ea";
 
   return L.divIcon({
     className: `custom-lora-antenna-marker ${isSelected ? "selected" : ""}`,
     html: `
-      <div class="marker-inner ${isSelected ? "animate-pulse ring-4 ring-indigo-400/50" : ""}" style="
+      <div class="marker-inner ${isSelected ? "animate-pulse" : ""}" style="
+        background-color: ${bgColor};
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        border: ${isSelected ? "2px solid #ffffff" : "1.5px solid #ffffff"};
+        box-shadow: ${
+          isSelected
+            ? "0 0 0 3px rgba(147, 51, 234, 0.45), 0 3px 8px rgba(0,0,0,0.35)"
+            : "0 2px 5px rgba(0,0,0,0.3)"
+        };
         display: flex;
         align-items: center;
         justify-content: center;
-        width: ${size}px;
-        height: ${size * 1.18}px;
-        filter: drop-shadow(0 3px 6px rgba(79, 70, 229, 0.45));
-        position: relative;
-        transform-origin: bottom center;
-        transition: transform 0.2s ease;
+        color: #ffffff;
       ">
-        <svg width="100%" height="100%" viewBox="0 0 26 31" fill="${bgColor}" stroke="#ffffff" stroke-width="1.2">
-          <path d="M13 2C7.48 2 3 6.48 3 12c0 6.5 10 17 10 17s10-10.5 10-17c0-5.52-4.48-10-10-10z" stroke-linejoin="round" stroke-linecap="round"/>
-          <circle cx="13" cy="11.5" r="7.5" fill="#ffffff" stroke="none"/>
+        <svg width="${Math.round(size * 0.65)}" height="${Math.round(size * 0.65)}" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9"/>
+          <path d="M7.8 4.7a6.14 6.14 0 0 0-.8 7.5"/>
+          <circle cx="12" cy="9" r="2" fill="#ffffff"/>
+          <path d="M16.2 4.8c2 2 2.26 5.11.8 7.47"/>
+          <path d="M19.1 1.9a9.96 9.96 0 0 1 0 14.1"/>
+          <path d="M9.5 18h5"/>
+          <path d="m8 22 4-11 4 11"/>
         </svg>
-        <div style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: ${size * 0.46}px; height: ${size * 0.46}px; display: flex; align-items: center; justify-content: center; color: ${bgColor};">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
-            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
-            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
-            <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
-            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
-            <path d="M19.1 4.9c3.9 3.9 3.9 10.2 0 14.1"/>
-            <path d="M12 14v7"/>
-          </svg>
-        </div>
       </div>
     `,
-    iconSize: [size, size * 1.18],
-    iconAnchor: [size / 2, size * 1.18],
-    popupAnchor: [0, -size * 1.18],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
   });
 }
 
@@ -844,11 +848,11 @@ export default function ReportMapInternal({
                     }}
                     zIndexOffset={isSelected ? 1150 : 1050}
                   >
-                    <MapTooltip variant="marker" offset={[0, -20]}>
+                    <MapTooltip variant="marker" offset={[0, -14]}>
                       <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
-                        <Radio className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <RadioTower className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                         <span>{antenna.nombre}</span>
-                        <span className="rounded bg-indigo-100 dark:bg-indigo-950/80 px-1 py-0.2 text-[9px] font-mono text-indigo-700 dark:text-indigo-300">
+                        <span className="rounded bg-purple-100 dark:bg-purple-950/80 px-1 py-0.2 text-[9px] font-mono text-purple-700 dark:text-purple-300">
                           LoRa
                         </span>
                       </div>

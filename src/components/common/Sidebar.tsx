@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { FaroLogo } from "@/components/common/FaroLogo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Report, ReportFilters } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
@@ -20,7 +20,7 @@ import {
   MapPin,
   ShieldCheck,
   SquarePlus,
-  Radio,
+  RadioTower,
 } from "lucide-react";
 import { LoraAntenna } from "@/types/loraAntenna";
 
@@ -250,23 +250,8 @@ export function Sidebar({
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <div>
-          <Image
-            src="/logo_primary.svg"
-            alt="INU - Sistema de Alerta para Inundaciones"
-            width={100}
-            height={32}
-            className="block dark:hidden"
-            priority
-          />
-          <Image
-            src="/logo_white.svg"
-            alt="INU - Sistema de Alerta para Inundaciones"
-            width={100}
-            height={32}
-            className="hidden dark:block"
-            priority
-          />
+        <div className="flex items-center">
+          <FaroLogo width={100} height={32} />
         </div>
         {onCollapse && (
           <TooltipSign label="Ocultar panel" position="right" delayMs={500}>
@@ -346,14 +331,14 @@ export function Sidebar({
                               item.category === "EVACUACION"
                                 ? "text-emerald-600 dark:text-emerald-500"
                                 : (item.category as string) === "LORA"
-                                  ? "text-indigo-600 dark:text-indigo-400"
+                                  ? "text-purple-600 dark:text-purple-400"
                                   : "text-red-500 dark:text-red-400"
                             }`}
                           >
                             {item.category === "EVACUACION" ? (
                               <ShieldCheck className="h-5 w-5" />
                             ) : (item.category as string) === "LORA" ? (
-                              <Radio className="h-5 w-5" />
+                              <RadioTower className="h-5 w-5" />
                             ) : (
                               <SquarePlus className="h-5 w-5" />
                             )}

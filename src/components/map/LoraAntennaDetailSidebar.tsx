@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { LoraAntenna } from "@/types/loraAntenna";
 import {
-  Radio,
+  RadioTower,
   MapPin,
   Navigation,
   Loader2,
   Wifi,
   Activity,
   BatteryCharging,
-  AlignLeft,
   Info,
 } from "lucide-react";
 import { formatDate } from "@/lib/format";
@@ -74,7 +73,7 @@ export function LoraAntennaDetailSidebar({
         type="button"
         onClick={onNavigate}
         disabled={isNavigating}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white border border-transparent dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:active:bg-indigo-700 px-3 py-2.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white border border-transparent dark:bg-purple-600 dark:hover:bg-purple-500 dark:active:bg-purple-700 px-3 py-2.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm"
       >
         {isNavigating ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -94,8 +93,8 @@ export function LoraAntennaDetailSidebar({
       onClose={handleClose}
       footer={actionFooter}
       headerExtra={
-        <span className="flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-800/60">
-          <Radio className="h-3 w-3 animate-pulse" />
+        <span className="flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800/60">
+          <RadioTower className="h-3 w-3 animate-pulse" />
           LoRa {activeAntenna.frecuencia}
         </span>
       }
@@ -120,8 +119,8 @@ export function LoraAntennaDetailSidebar({
       </div>
 
       {/* Banner explicativo de tecnología LoRa */}
-      <div className="flex items-start gap-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/50 p-2.5 text-[11px] text-indigo-950 dark:text-indigo-200">
-        <Info className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+      <div className="flex items-start gap-2 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-800/50 p-2.5 text-[11px] text-purple-950 dark:text-purple-200">
+        <Info className="h-4 w-4 shrink-0 text-purple-600 dark:text-purple-400 mt-0.5" />
         <p className="leading-relaxed">
           Esta estación recibe y propaga reportes de emergencia de ciudadanos
           vía radiofrecuencia LoRa sin depender de antenas 4G ni Internet.
@@ -144,7 +143,7 @@ export function LoraAntennaDetailSidebar({
         </MapDetailRow>
 
         <MapDetailRow
-          icon={<Radio className="h-4 w-4" />}
+          icon={<RadioTower className="h-4 w-4" />}
           label="Canal de enlace"
         >
           {activeAntenna.canal}
@@ -162,15 +161,6 @@ export function LoraAntennaDetailSidebar({
         <MapDetailRow icon={<MapPin className="h-4 w-4" />} label="Ubicación">
           {displayAddress}
         </MapDetailRow>
-
-        {activeAntenna.descripcion && (
-          <MapDetailRow
-            icon={<AlignLeft className="h-4 w-4" />}
-            label="Detalles del nodo"
-          >
-            {activeAntenna.descripcion}
-          </MapDetailRow>
-        )}
       </dl>
     </MapDetailShell>
   );

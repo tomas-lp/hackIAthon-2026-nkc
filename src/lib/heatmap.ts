@@ -14,19 +14,21 @@ export interface HeatmapConfig {
 }
 
 export const HEATMAP_CONFIG: HeatmapConfig = {
-  radius: 30,
-  blur: 20,
-  radiusMeters: 100,
+  radius: 32,
+  blur: 22,
+  radiusMeters: 140,
   maxZoom: 12,
-  minOpacity: 0.05,
+  minOpacity: 0.32,
   gradient: {
-    0.2: "#facc15", // Amarillo
-    0.4: "#fb923c", // Naranja claro
-    0.6: "#f97316", // Naranja intenso
-    0.8: "#ef4444", // Rojo
-    1.0: "#dc2626", // Rojo brillante
+    0.1: "#fde047", // Amarillo luminoso
+    0.25: "#facc15", // Amarillo intenso
+    0.45: "#fb923c", // Naranja cálido
+    0.65: "#f97316", // Naranja intenso
+    0.8: "#ef4444", // Rojo potente
+    0.95: "#dc2626", // Rojo fuego
+    1.0: "#991b1b", // Rojo carmesí profundo / crítico
   },
-  maxIntensity: 80,
+  maxIntensity: 50,
 };
 
 export function metersToPixels(
@@ -48,8 +50,8 @@ export function heatmapRadiusAt(
 
   const px = metersToPixels(radiusMeters, latitud, zoom);
 
-  const r = Math.max(12, Math.min(150, Math.round(px)));
-  const b = Math.max(8, Math.min(100, Math.round(px * (blur / radius))));
+  const r = Math.max(22, Math.min(160, Math.round(px)));
+  const b = Math.max(16, Math.min(110, Math.round(px * (blur / radius))));
 
   return { radius: r, blur: b };
 }
@@ -59,7 +61,8 @@ export function normalizeIntensity(
   maxIntensidad: number
 ): number {
   if (!Number.isFinite(intensidad) || intensidad <= 0) return 0;
-  return Math.min(intensidad / maxIntensidad, 1);
+  const ratio = Math.min(intensidad / maxIntensidad, 1);
+  return Math.min(1, Math.max(0.12, Math.pow(ratio, 0.75)));
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {

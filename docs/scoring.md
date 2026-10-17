@@ -163,20 +163,22 @@ Los parámetros que controlan las reglas de visualización, área de influencia 
 ````markdown
 ```typescript
 export const HEATMAP_CONFIG: HeatmapConfig = {
-  radius: 30, // Proporción interna del pincel para el difuminado visual.
-  blur: 20, // Nivel de suavizado en los bordes de cada mancha.
-  radiusMeters: 100, // Área de influencia física real de cada reporte (100 metros).
+  radius: 32, // Proporción interna del pincel para el difuminado visual.
+  blur: 22, // Nivel de suavizado en los bordes de cada mancha.
+  radiusMeters: 140, // Área de influencia física real de cada reporte (140 metros).
   maxZoom: 12, // Nivel de acercamiento base para la escala gráfica.
-  minOpacity: 0.05, // Opacidad mínima requerida para dibujar un punto.
+  minOpacity: 0.32, // Opacidad mínima para auras nítidas y vibrantes.
   gradient: {
-    // Escala cromática aplicada sobre la opacidad final.
-    0.2: "#facc15", // Amarillo
-    0.4: "#fb923c", // Naranja claro
-    0.6: "#f97316", // Naranja intenso
-    0.8: "#ef4444", // Rojo
-    1.0: "#dc2626", // Rojo brillante
+    // Escala cromática de alta intensidad aplicada sobre la opacidad final.
+    0.1: "#fde047", // Amarillo luminoso
+    0.25: "#facc15", // Amarillo intenso
+    0.45: "#fb923c", // Naranja cálido
+    0.65: "#f97316", // Naranja intenso
+    0.8: "#ef4444", // Rojo potente
+    0.95: "#dc2626", // Rojo fuego
+    1.0: "#991b1b", // Rojo carmesí profundo / crítico
   },
-  maxIntensity: 80, // Umbral de intensidad máxima para regular la opacidad (y alcanzar el rojo).
+  maxIntensity: 50, // Umbral de intensidad máxima para regular la opacidad y alcanzar el rojo.
 };
 ```
 ````

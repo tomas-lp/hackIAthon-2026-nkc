@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { FaroLogo } from "@/components/common/FaroLogo";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Menu, X } from "lucide-react";
@@ -41,22 +41,7 @@ export function AdminMobileHeader({
         className="pointer-events-auto relative mx-4 mt-4 flex flex-col overflow-visible rounded-3xl border border-gray-200/80 bg-white/50 px-2 py-2 shadow-xl backdrop-blur-md dark:border-[#2b395b]/80 dark:bg-[#0b101d]/85"
       >
         <div className="flex h-9 w-full items-center justify-between gap-3">
-          <Image
-            src="/logo_primary.svg"
-            alt="INU - Sistema de Alerta para Inundaciones"
-            width={72}
-            height={24}
-            className="block dark:hidden"
-            priority
-          />
-          <Image
-            src="/logo_white.svg"
-            alt="INU - Sistema de Alerta para Inundaciones"
-            width={72}
-            height={24}
-            className="hidden dark:block"
-            priority
-          />
+          <FaroLogo width={72} height={24} />
 
           <button
             type="button"

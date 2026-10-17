@@ -94,6 +94,7 @@ export function HeatLayer({ points }: HeatLayerProps) {
         radius: initial.radius,
         blur: initial.blur,
         maxZoom,
+        max: 1.0,
         minOpacity,
         gradient,
       });
@@ -104,7 +105,7 @@ export function HeatLayer({ points }: HeatLayerProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = (layer as any)._canvas as HTMLCanvasElement | undefined;
       if (canvas) {
-        canvas.style.opacity = "0.8";
+        canvas.style.opacity = "0.95";
       }
 
       const onZoomEnd = () => {

@@ -94,7 +94,7 @@ export function RegionsSidebar({
           <Link href="/">
             <div className="flex items-center gap-2">
               <div className="font-black text-4xl leading-8 logo flex justify-center items-center text-white rounded-2xl">
-                INU
+                Faro
               </div>
               <span className="text-md text-white/90 leading-4">
                 Regiones

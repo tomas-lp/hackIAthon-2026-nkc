@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Plus, Satellite, Map, Check, Radio } from "lucide-react";
+import { Layers, Plus, Satellite, Map, Check, RadioTower } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface LayerControlsProps {
@@ -232,8 +232,8 @@ export function LayerControls({
             {/* Antenas LoRa */}
             <div className="flex items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-2xs">
-                  <Radio className="h-3.5 w-3.5" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xs">
+                  <RadioTower className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
                   Antenas LoRa (Red Emergencia)
@@ -245,7 +245,7 @@ export function LayerControls({
                   suppressHydrationWarning
                   onClick={() => setShowLoraAntennas?.((prev) => !prev)}
                   className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    showLoraAntennas ? "bg-indigo-600" : "bg-zinc-300"
+                    showLoraAntennas ? "bg-purple-600" : "bg-zinc-300"
                   }`}
                 >
                   <span
@@ -297,8 +297,8 @@ export function LayerControls({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-white shadow-2xs">
-            <Radio className="h-2.5 w-2.5" />
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xs">
+            <RadioTower className="h-2.5 w-2.5" />
           </div>
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
             Antenas LoRa
@@ -320,7 +320,7 @@ export function LayerControls({
             className="h-2 w-16 shrink-0 sm:w-20 rounded-full shadow-2xs"
             style={{
               background:
-                "linear-gradient(to right, #facc15, #fb923c, #f97316, #ef4444, #dc2626)",
+                "linear-gradient(to right, #fde047, #facc15, #fb923c, #f97316, #ef4444, #dc2626, #991b1b)",
             }}
           />
           <span className="shrink-0 text-[10px] font-mono font-bold text-zinc-600 dark:text-slate-300">

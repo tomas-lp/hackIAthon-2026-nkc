@@ -10,7 +10,7 @@ const manrope = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Inu | Sistema de Alertas e Inundaciones",
+  title: "Faro | Sistema de Alertas e Inundaciones",
   description:
     "Plataforma de reportes ciudadanos e inundaciones para la Provincia de Corrientes.",
 };

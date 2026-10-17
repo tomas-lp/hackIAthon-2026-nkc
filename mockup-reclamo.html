@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Inú — Mockup Mobile Light (Reclamo & Login)</title>
+  <title>Faro — Mockup Mobile Light (Reclamo & Login)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & Variables (Inú Light Design System) ────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -181,9 +181,10 @@
     /* ── Phone Frame Mockup (Modo Celular) ─────────────────────── */
     .phone-device {
       width: 390px;
-      min-height: 844px;
+      min-height: 720px;
+      height: 720px;
       background: var(--bg-card);
-      border-radius: 46px;
+      border-radius: 44px;
       box-shadow: var(--shadow-device);
       position: relative;
       display: flex;
@@ -275,73 +276,63 @@
     .lora-banner {
       background: var(--lora-bg);
       border-bottom: 1px solid var(--lora-border);
-      padding: 12px 18px;
+      padding: 9px 16px;
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      align-items: center;
+      gap: 10px;
       animation: fadeIn 0.3s ease;
     }
 
     .lora-icon-wrap {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
       background: #fde68a;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       color: var(--lora-amber);
-      margin-top: 1px;
     }
 
     .lora-info {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
     }
 
     .lora-badge-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 3px;
     }
 
     .lora-status-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--lora-amber);
-      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
       animation: pulse 1.8s infinite;
     }
 
     .lora-title {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 800;
       color: var(--lora-text);
       letter-spacing: -0.01em;
     }
 
-    .lora-band-chip {
-      background: #ffffff;
-      border: 1px solid var(--lora-border);
-      color: var(--lora-text);
-      font-size: 0.62rem;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: var(--radius-full);
-      margin-left: auto;
-    }
-
     .lora-desc {
       font-size: 0.72rem;
       color: #78350f;
-      line-height: 1.45;
+      line-height: 1.3;
     }
 
     .lora-desc strong {
       color: #451a03;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     /* ── App Navigation Header (Fiel a MobileHeader Inú) ───────── */
@@ -538,98 +529,6 @@
       display: flex;
     }
 
-    /* ── Sub-items Dinámicos ───────────────────────────────────── */
-    .subitems-container {
-      margin-top: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .sub-chip-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .sub-pill {
-      background: #ffffff;
-      border: 1px solid var(--border-main);
-      color: var(--text-secondary);
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 7px 12px;
-      border-radius: var(--radius-full);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-    }
-
-    .sub-pill:hover {
-      border-color: #cbd5e1;
-      background: var(--bg-subtle);
-    }
-
-    .sub-pill.selected {
-      background: var(--inu-primary);
-      color: #ffffff;
-      border-color: var(--inu-primary);
-      font-weight: 700;
-      box-shadow: 0 2px 6px rgba(67, 91, 181, 0.25);
-    }
-
-    /* ── Severity Indicator (Gravedad) ─────────────────────────── */
-    .severity-panel {
-      margin-top: 10px;
-      background: var(--bg-subtle);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .severity-info {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    .severity-subtext {
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .severity-val {
-      font-size: 0.78rem;
-      font-weight: 800;
-      color: var(--text-main);
-    }
-
-    .severity-meters {
-      display: flex;
-      gap: 5px;
-    }
-
-    .sev-dot {
-      width: 18px;
-      height: 6px;
-      border-radius: 3px;
-      background: #e2e8f0;
-      transition: background-color 0.2s ease;
-    }
-
-    .sev-dot.lvl-1 { background: #10b981; }
-    .sev-dot.lvl-2 { background: #f59e0b; }
-    .sev-dot.lvl-3 { background: #f97316; }
-    .sev-dot.lvl-4 { background: #ef4444; }
-
     /* ── Form Inputs ───────────────────────────────────────────── */
     .form-group {
       display: flex;
@@ -684,130 +583,22 @@
       box-shadow: 0 0 0 3px rgba(67, 91, 181, 0.12);
     }
 
-    /* ── Photo Evidence Upload Zone ────────────────────────────── */
-    .upload-zone {
-      border: 2px dashed #cbd5e1;
+    /* ── Ubicación Simple (Sin detalles excesivos) ─────────────── */
+    .location-simple-box {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border-main);
       border-radius: var(--radius-md);
-      background: var(--bg-subtle);
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-align: center;
-    }
-
-    .upload-zone:hover {
-      border-color: var(--inu-primary);
-      background: #f0f4ff;
-    }
-
-    .cam-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--inu-soft);
-      color: var(--inu-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .upload-main-text {
-      font-size: 0.78rem;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 0.82rem;
       font-weight: 700;
-      color: var(--text-main);
     }
 
-    .upload-hint {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      line-height: 1.35;
-    }
-
-    .photo-preview {
-      display: none;
-      width: 100%;
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      position: relative;
-      background: #0f172a;
-    }
-
-    .photo-preview img {
-      width: 100%;
-      height: 120px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .photo-preview .remove-photo {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(15, 23, 42, 0.75);
-      color: #ffffff;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    /* ── Location / GPS Card ───────────────────────────────────── */
-    .location-box {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .location-icon-box {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: var(--inu-soft);
+    .location-simple-box svg {
       color: var(--inu-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .location-details {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .location-address {
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: var(--text-main);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .location-coords {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      font-family: monospace;
-      margin-top: 2px;
-    }
-
-    .location-badge {
-      background: #ecfdf5;
-      color: #047857;
-      border: 1px solid #a7f3d0;
-      font-size: 0.65rem;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: var(--radius-full);
       flex-shrink: 0;
     }
 
@@ -1158,7 +949,7 @@
         <rect width="24" height="24" rx="6" fill="#435bb5"/>
         <path d="M6 16c2-2 4-2 6 0s4 2 6 0M6 12c2-2 4-2 6 0s4 2 6 0M6 8c2-2 4-2 6 0s4 2 6 0" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
-      <span class="toolbar-title">Inú Mobile Mockup</span>
+      <span class="toolbar-title">Faro Mobile Mockup</span>
       <span class="toolbar-badge">Modo Claro</span>
     </div>
 
@@ -1208,38 +999,13 @@
         </div>
       </div>
 
-      <!-- AVISO SIN INTERNET / ENVÍO POR LORA -->
-      <div class="lora-banner">
-        <div class="lora-icon-wrap">
-          <!-- Antena / Radio Tower SVG -->
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
-            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
-            <circle cx="12" cy="12" r="2" fill="currentColor"/>
-            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
-            <path d="M19.1 4.9c3.9 3.9 3.9 10.2 0 14.1"/>
-            <path d="M12 14v7"/>
-          </svg>
-        </div>
-        <div class="lora-info">
-          <div class="lora-badge-row">
-            <span class="lora-status-dot"></span>
-            <span class="lora-title">Sin Internet • Red LoRa Activa</span>
-            <span class="lora-band-chip">AU915 MHz</span>
-          </div>
-          <p class="lora-desc">
-            No se detecta señal 4G ni WiFi. Tu reclamo se emitirá por <strong>radiofrecuencia LoRa</strong> y llegará a Defensa Civil a través de los nodos repetidores locales.
-          </p>
-        </div>
-      </div>
-
       <!-- Header de navegación Inú -->
       <div class="app-header">
         <div class="header-logo-group">
           <svg class="inu-logo-svg" viewBox="0 0 623 199" fill="none">
             <path d="M19 151C32.4 161.6 45.8 161.6 59.2 151C72.7 140.4 86.1 140.4 99.5 151C112.9 161.6 126.3 161.6 139.7 151C153.2 140.4 166.6 140.4 180 151M19 184C32.4 194.6 45.8 194.6 59.2 184C72.7 173.5 86.1 173.5 99.5 184C112.9 194.6 126.3 194.6 139.7 184C153.2 173.5 166.6 173.5 180 184M19 118C32.4 128.5 45.8 128.5 59.2 118C72.7 107.4 86.1 107.4 99.5 118C112.9 128.5 126.3 128.5 139.7 118C153.2 107.4 166.6 107.4 180 118" stroke="#435BB5" stroke-width="8" stroke-linecap="round"/>
             <path d="M99.5 7.5C109.6 7.5 119.3 11.6 126.4 18.8C133.5 26.1 137.5 35.9 137.5 46.2V93.5H56.7V46.2C56.7 35.9 60.7 26.1 67.8 18.8C74.9 11.6 84.6 7.5 99.5 7.5Z" fill="#435BB5"/>
-            <path d="M235.8 193V5.8H271.2V193H235.8ZM405.8 193V126.7C405.8 123.5 405.6 119.4 405.3 114.5C405 109.5 403.9 104.4 402 99.4C400.2 94.4 397.2 90.2 393.1 86.8C389 83.4 383.2 81.7 375.7 81.7C372.6 81.7 369.4 82.2 365.9 83.2C362.4 84.1 359.2 86 356.2 88.7C353.1 91.4 350.6 95.4 348.6 100.7C346.7 106 345.8 113 345.8 121.8L325.5 112.1C325.5 101 327.7 90.6 332.2 80.9C336.7 71.2 343.5 63.4 352.5 57.4C361.6 51.4 373.1 48.4 386.8 48.4C397.8 48.4 406.8 50.3 413.7 54C420.7 57.8 426.1 62.5 429.9 68.2C433.8 73.9 436.5 79.9 438.2 86.1C439.8 92.3 440.8 97.9 441.2 103C441.5 108.2 441.7 111.9 441.7 114.2V193H405.8ZM527.7 197.2C516.7 197.2 507.7 195.3 500.8 191.6C493.8 187.8 488.4 183.1 484.5 177.4C480.7 171.7 478 165.7 476.3 159.6C474.7 153.4 473.7 147.7 473.3 142.6C473 137.4 472.8 133.7 472.8 131.4V52.6H508.7V118.9C508.7 122.1 508.9 126.2 509.2 131.3C509.6 136.2 510.7 141.2 512.5 146.2C514.3 151.2 517.2 155.4 521.3 158.8C525.5 162.2 531.3 163.9 538.9 163.9C541.9 163.9 545.2 163.4 548.6 162.5C552.1 161.5 555.3 159.7 558.4 157C561.4 154.2 563.9 150.2 565.8 144.9C567.8 139.5 568.8 132.5 568.8 123.8L589 133.5C589 144.6 586.8 155 582.3 164.7C577.8 174.4 571 182.2 561.9 188.2C552.9 194.2 541.5 197.2 527.7 197.2ZM573.2 193V146.5H568.8V52.6H604.4V193H573.2Z" fill="#435BB5"/>
+            <text x="210" y="160" font-family="'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="160" letter-spacing="-0.03em" fill="#435BB5">Faro</text>
           </svg>
           <div class="header-title-badge">
             <h1>Generar Reclamo</h1>
@@ -1252,17 +1018,41 @@
         </button>
       </div>
 
+      <!-- AVISO SIN INTERNET / ENVÍO POR LORA (Debajo de la cabecera) -->
+      <div class="lora-banner">
+        <div class="lora-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9"/>
+            <path d="M7.8 4.7a6.14 6.14 0 0 0-.8 7.5"/>
+            <circle cx="12" cy="9" r="2" fill="currentColor"/>
+            <path d="M16.2 4.8c2 2 2.26 5.11.8 7.47"/>
+            <path d="M19.1 1.9a9.96 9.96 0 0 1 0 14.1"/>
+            <path d="M9.5 18h5"/>
+            <path d="m8 22 4-11 4 11"/>
+          </svg>
+        </div>
+        <div class="lora-info">
+          <div class="lora-badge-row">
+            <span class="lora-status-dot"></span>
+            <span class="lora-title">Sin internet</span>
+          </div>
+          <p class="lora-desc">
+            El reclamo se enviará por <strong>red LoRa</strong>
+          </p>
+        </div>
+      </div>
+
       <!-- Contenido scrolleable del formulario -->
       <div class="screen-content">
 
-        <!-- 1. SELECCIÓN DE CATÁSTROFE / EMERGENCIA -->
+        <!-- 1. SELECCIÓN DE CATÁSTROFE / RECLAMO + SUBTIPOS DINÁMICOS -->
         <div class="ui-card">
           <div class="ui-card-header">
             <span class="ui-card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               Tipo de Catástrofe / Reclamo
             </span>
-            <span class="badge-step">Paso 1 de 4</span>
+            <span class="badge-step">SOS LoRa</span>
           </div>
 
           <div class="categories-grid" id="catGrid">
@@ -1334,93 +1124,6 @@
           </div>
         </div>
 
-        <!-- 2. SUB-ITEMS ESPECÍFICOS DE LA CATÁSTROFE -->
-        <div class="ui-card">
-          <div class="ui-card-header">
-            <span class="ui-card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span id="subSectionTitle">Situación detectada</span>
-            </span>
-            <span class="badge-step">Paso 2 de 4</span>
-          </div>
-
-          <div class="subitems-container">
-            <div class="sub-chip-list" id="subChips">
-              <!-- Cargado dinámicamente según la categoría -->
-            </div>
-
-            <!-- Nivel de Gravedad Calculado -->
-            <div class="severity-panel">
-              <div class="severity-info">
-                <span class="severity-subtext">Gravedad del incidente</span>
-                <span class="severity-val" id="severityText">Moderada</span>
-              </div>
-              <div class="severity-meters">
-                <div class="sev-dot lvl-1" id="dot1"></div>
-                <div class="sev-dot lvl-2" id="dot2"></div>
-                <div class="sev-dot" id="dot3"></div>
-                <div class="sev-dot" id="dot4"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. DESCRIPCIÓN Y UBICACIÓN -->
-        <div class="ui-card">
-          <div class="ui-card-header">
-            <span class="ui-card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Ubicación y Detalle
-            </span>
-            <span class="badge-step">Paso 3 de 4</span>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 14px;">
-            <div class="location-box">
-              <div class="location-icon-box">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
-              </div>
-              <div class="location-details">
-                <div class="location-address">Av. Costanera Gral. San Martín 1150</div>
-                <div class="location-coords">Corrientes Capital · -27.4612, -58.8354</div>
-              </div>
-              <span class="location-badge">GPS Fijado</span>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Mensaje para el equipo de auxilio</label>
-            <textarea class="inu-textarea" placeholder="Ej: Hay familias con niños aisladas en la manzana 4, el agua sigue subiendo y se cortó el tendido eléctrico..."></textarea>
-          </div>
-        </div>
-
-        <!-- 4. EVIDENCIA FOTOGRÁFICA -->
-        <div class="ui-card">
-          <div class="ui-card-header">
-            <span class="ui-card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              Fotografía de Evidencia
-            </span>
-            <span class="badge-step">Paso 4 de 4</span>
-          </div>
-
-          <div class="upload-zone" id="uploadZone" onclick="simulatePhotoUpload()">
-            <div class="cam-circle">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            </div>
-            <span class="upload-main-text">Tocar para tomar foto o adjuntar</span>
-            <p class="upload-hint">
-              Se comprime automáticamente para transmisión en paquetes de radio LoRa sin Internet.
-            </p>
-          </div>
-
-          <div class="photo-preview" id="photoPreview">
-            <!-- Mock imagen simulando calle con anegamiento -->
-            <img src="https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80" alt="Evidencia" />
-            <button class="remove-photo" onclick="removePhoto(event)">✕</button>
-          </div>
-        </div>
-
       </div>
 
       <!-- Barra Inferior Fija para Envío -->
@@ -1428,12 +1131,8 @@
         <button class="btn-inu-primary" onclick="showSuccessModal()">
           <!-- Send Icon -->
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          <span>Transmitir Reclamo Vía LoRa</span>
+          <span>Enviar reclamo</span>
         </button>
-        <span class="btn-subnote">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-          Radioenlace directo a Defensa Civil Corrientes · Canal SOS 915 MHz
-        </span>
       </div>
 
       <!-- Modal de Éxito de Transmisión LoRa -->
@@ -1482,7 +1181,7 @@
             <svg class="login-brand-logo" viewBox="0 0 623 199" fill="none">
               <path d="M19 151C32.4 161.6 45.8 161.6 59.2 151C72.7 140.4 86.1 140.4 99.5 151C112.9 161.6 126.3 161.6 139.7 151C153.2 140.4 166.6 140.4 180 151M19 184C32.4 194.6 45.8 194.6 59.2 184C72.7 173.5 86.1 173.5 99.5 184C112.9 194.6 126.3 194.6 139.7 184C153.2 173.5 166.6 173.5 180 184M19 118C32.4 128.5 45.8 128.5 59.2 118C72.7 107.4 86.1 107.4 99.5 118C112.9 128.5 126.3 128.5 139.7 118C153.2 107.4 166.6 107.4 180 118" stroke="#435BB5" stroke-width="8" stroke-linecap="round"/>
               <path d="M99.5 7.5C109.6 7.5 119.3 11.6 126.4 18.8C133.5 26.1 137.5 35.9 137.5 46.2V93.5H56.7V46.2C56.7 35.9 60.7 26.1 67.8 18.8C74.9 11.6 84.6 7.5 99.5 7.5Z" fill="#435BB5"/>
-              <path d="M235.8 193V5.8H271.2V193H235.8ZM405.8 193V126.7C405.8 123.5 405.6 119.4 405.3 114.5C405 109.5 403.9 104.4 402 99.4C400.2 94.4 397.2 90.2 393.1 86.8C389 83.4 383.2 81.7 375.7 81.7C372.6 81.7 369.4 82.2 365.9 83.2C362.4 84.1 359.2 86 356.2 88.7C353.1 91.4 350.6 95.4 348.6 100.7C346.7 106 345.8 113 345.8 121.8L325.5 112.1C325.5 101 327.7 90.6 332.2 80.9C336.7 71.2 343.5 63.4 352.5 57.4C361.6 51.4 373.1 48.4 386.8 48.4C397.8 48.4 406.8 50.3 413.7 54C420.7 57.8 426.1 62.5 429.9 68.2C433.8 73.9 436.5 79.9 438.2 86.1C439.8 92.3 440.8 97.9 441.2 103C441.5 108.2 441.7 111.9 441.7 114.2V193H405.8ZM527.7 197.2C516.7 197.2 507.7 195.3 500.8 191.6C493.8 187.8 488.4 183.1 484.5 177.4C480.7 171.7 478 165.7 476.3 159.6C474.7 153.4 473.7 147.7 473.3 142.6C473 137.4 472.8 133.7 472.8 131.4V52.6H508.7V118.9C508.7 122.1 508.9 126.2 509.2 131.3C509.6 136.2 510.7 141.2 512.5 146.2C514.3 151.2 517.2 155.4 521.3 158.8C525.5 162.2 531.3 163.9 538.9 163.9C541.9 163.9 545.2 163.4 548.6 162.5C552.1 161.5 555.3 159.7 558.4 157C561.4 154.2 563.9 150.2 565.8 144.9C567.8 139.5 568.8 132.5 568.8 123.8L589 133.5C589 144.6 586.8 155 582.3 164.7C577.8 174.4 571 182.2 561.9 188.2C552.9 194.2 541.5 197.2 527.7 197.2ZM573.2 193V146.5H568.8V52.6H604.4V193H573.2Z" fill="#435BB5"/>
+              <text x="210" y="160" font-family="'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="160" letter-spacing="-0.03em" fill="#435BB5">Faro</text>
             </svg>
             <p class="login-subtitle">
               Sistema de Alerta Temprana, Gestión de Reclamos y Rutas Seguras ante Inundaciones
@@ -1515,7 +1214,7 @@
               <a href="#">¿Olvidaste tu clave?</a>
             </div>
 
-            <button class="btn-inu-primary" style="margin-top: 6px;" onclick="alert('Iniciando sesión en Inú...')">
+            <button class="btn-inu-primary" style="margin-top: 6px;" onclick="alert('Iniciando sesión en Faro...')">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
               <span>Iniciar Sesión</span>
             </button>
@@ -1556,133 +1255,12 @@
 
   <!-- ── Script Interactivo (Categorías, Subítems, LoRa y Vistas) ── -->
   <script>
-    // Sub-items adaptados a las catástrofes frecuentes del Norte Argentino
-    const subcategories = {
-      inundacion: {
-        title: 'Detalle del anegamiento / inundación',
-        items: [
-          { id: 'calle', label: '💧 Calle anegada de cordón a cordón', severity: 1 },
-          { id: 'agua_casa', label: '🏠 Agua ingresando al interior de viviendas', severity: 2 },
-          { id: 'rio_desborde', label: '🌊 Desborde de río Paraná / arroyo / laguna', severity: 3 },
-          { id: 'evacuacion_ya', label: '🚨 Evacuación urgente / familias aisladas', severity: 4 },
-          { id: 'riesgo_electrico', label: '⚡ Peligro de electrocución en agua', severity: 4 },
-          { id: 'ruta_inundada', label: '🚧 Ruta provincial / nacional cortada', severity: 3 }
-        ]
-      },
-      tormenta: {
-        title: 'Detalle de la tormenta / vientos',
-        items: [
-          { id: 'arbol', label: '🌳 Caída de árboles de gran porte sobre casas', severity: 2 },
-          { id: 'cables_luz', label: '⚡ Cables de alta tensión cortados con chispas', severity: 4 },
-          { id: 'techos', label: '🏚️ Voladura de techos de chapa / tinglados', severity: 3 },
-          { id: 'granizo', label: '🧊 Granizo destructor en la zona', severity: 2 },
-          { id: 'poste', label: '🪵 Postes de luz o telefonía a punto de caer', severity: 2 }
-        ]
-      },
-      incendio: {
-        title: 'Detalle del foco de fuego',
-        items: [
-          { id: 'pastizal', label: '🌾 Foco activo en pastizal / campo abierto', severity: 2 },
-          { id: 'cerca_casas', label: '🏡 Fuego a menos de 50m de viviendas', severity: 4 },
-          { id: 'humo_ruta', label: '🌫️ Cortina de humo nula visibilidad en ruta', severity: 3 },
-          { id: 'forestal', label: '🌲 Incendio en plantación forestal / monte', severity: 4 },
-          { id: 'animales', label: '🐄 Animales de corral atrapados por fuego', severity: 3 }
-        ]
-      },
-      alud: {
-        title: 'Detalle de socavón / desmoronamiento',
-        items: [
-          { id: 'barranca', label: '⛰️ Desmoronamiento de barranca sobre río', severity: 3 },
-          { id: 'socavon', label: '🕳️ Socavón / grieta profunda en pavimento', severity: 2 },
-          { id: 'puente', label: '🚧 Puente / alcantarilla con riesgo de colapso', severity: 4 },
-          { id: 'defensas', label: '⚠️ Filtración en muro de defensas costeras', severity: 4 }
-        ]
-      },
-      servicios: {
-        title: 'Detalle de servicios interrumpidos',
-        items: [
-          { id: 'luz_masivo', label: '💡 Corte masivo de energía eléctrica (DPEC)', severity: 2 },
-          { id: 'agua_potable', label: '🚰 Corte de suministro de agua potable', severity: 3 },
-          { id: 'aislados_sin_red', label: '📡 Sin señal de celular ni comunicación', severity: 3 },
-          { id: 'sala_sin_luz', label: '🏥 Sala de primeros auxilios sin grupo electrógeno', severity: 4 }
-        ]
-      },
-      rescate: {
-        title: 'Tipo de asistencia prioritaria requerida',
-        items: [
-          { id: 'bote', label: '🚤 Rescate en bote / lancha indispensable', severity: 4 },
-          { id: 'electrodependiente', label: '🔋 Paciente electrodependiente sin batería', severity: 4 },
-          { id: 'viveres', label: '🍞 Familias sin agua potable ni alimentos', severity: 3 },
-          { id: 'herido', label: '🚑 Persona herida requiriendo auxilio médico', severity: 4 }
-        ]
-      }
-    };
-
-    const severityNames = ['Leve', 'Moderada', 'Grave', 'Crítica (Alerta Roja)'];
-
     let currentCategory = 'inundacion';
-    let currentSeverity = 2;
 
     function selectCategory(el) {
       document.querySelectorAll('.cat-item').forEach(item => item.classList.remove('active'));
       el.classList.add('active');
       currentCategory = el.dataset.cat;
-      renderSubcategories(currentCategory);
-    }
-
-    function renderSubcategories(catKey) {
-      const data = subcategories[catKey];
-      if (!data) return;
-
-      document.getElementById('subSectionTitle').textContent = data.title;
-      const container = document.getElementById('subChips');
-      
-      container.innerHTML = data.items.map((item, idx) => `
-        <button class="sub-pill ${idx === 0 ? 'selected' : ''}" data-sev="${item.severity}" onclick="selectSubPill(this)">
-          ${item.label}
-        </button>
-      `).join('');
-
-      updateSeverity(data.items[0].severity);
-    }
-
-    function selectSubPill(el) {
-      document.querySelectorAll('.sub-pill').forEach(pill => pill.classList.remove('selected'));
-      el.classList.add('selected');
-      const sev = parseInt(el.dataset.sev, 10);
-      updateSeverity(sev);
-    }
-
-    function updateSeverity(level) {
-      currentSeverity = level;
-      const textEl = document.getElementById('severityText');
-      textEl.textContent = severityNames[level - 1] || 'Moderada';
-
-      const dots = [
-        document.getElementById('dot1'),
-        document.getElementById('dot2'),
-        document.getElementById('dot3'),
-        document.getElementById('dot4')
-      ];
-
-      dots.forEach((dot, idx) => {
-        dot.className = 'sev-dot';
-        if (idx < level) {
-          dot.classList.add(`lvl-${level}`);
-        }
-      });
-    }
-
-    // Simulación de Foto
-    function simulatePhotoUpload() {
-      document.getElementById('uploadZone').style.display = 'none';
-      document.getElementById('photoPreview').style.display = 'block';
-    }
-
-    function removePhoto(e) {
-      e.stopPropagation();
-      document.getElementById('photoPreview').style.display = 'none';
-      document.getElementById('uploadZone').style.display = 'flex';
     }
 
     // Modal de envío
@@ -1751,9 +1329,6 @@
         inputUser.placeholder = 'Ej: COE-COR-4912';
       }
     }
-
-    // Inicializar subcategorías
-    renderSubcategories('inundacion');
   </script>
 </body>
 </html>
