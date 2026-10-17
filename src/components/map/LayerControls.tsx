@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Plus, Satellite, Map, Check } from "lucide-react";
+import { Layers, Plus, Satellite, Map, Check, Radio } from "lucide-react";
 import { TooltipSign } from "@/components/ui/TooltipSign";
 
 interface LayerControlsProps {
@@ -9,6 +9,8 @@ interface LayerControlsProps {
   setShowEvacuationCenters: React.Dispatch<React.SetStateAction<boolean>>;
   showMedicalCenters: boolean;
   setShowMedicalCenters: React.Dispatch<React.SetStateAction<boolean>>;
+  showLoraAntennas?: boolean;
+  setShowLoraAntennas?: React.Dispatch<React.SetStateAction<boolean>>;
   showSatellite: boolean;
   setShowSatellite: React.Dispatch<React.SetStateAction<boolean>>;
   onCreateEvacuationCenter?: () => void;
@@ -22,6 +24,8 @@ export function LayerControls({
   setShowEvacuationCenters,
   showMedicalCenters,
   setShowMedicalCenters,
+  showLoraAntennas = true,
+  setShowLoraAntennas,
   showSatellite,
   setShowSatellite,
   onCreateEvacuationCenter,
@@ -224,6 +228,35 @@ export function LayerControls({
                 )}
               </div>
             </div>
+
+            {/* Antenas LoRa */}
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-2xs">
+                  <Radio className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs font-semibold text-zinc-800 dark:text-slate-200">
+                  Antenas LoRa (Red Emergencia)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  suppressHydrationWarning
+                  onClick={() => setShowLoraAntennas?.((prev) => !prev)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    showLoraAntennas ? "bg-indigo-600" : "bg-zinc-300"
+                  }`}
+                >
+                  <span
+                    suppressHydrationWarning
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      showLoraAntennas ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -259,7 +292,16 @@ export function LayerControls({
             />
           </svg>
           <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
-            Centros de at. médica
+            Centros de salud
+          </span>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-white shadow-2xs">
+            <Radio className="h-2.5 w-2.5" />
+          </div>
+          <span className="text-[11px] font-semibold text-zinc-700 dark:text-slate-300">
+            Antenas LoRa
           </span>
         </div>
 

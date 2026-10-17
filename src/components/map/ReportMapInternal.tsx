@@ -26,8 +26,9 @@ import { MapController } from "./MapController";
 import { MapSizeInvalidator } from "./MapSizeInvalidator";
 import { LocateButton } from "./LocateButton";
 import { SafeRoute } from "./SafeRoute";
-import { ShieldCheck, PlusSquare } from "lucide-react";
+import { ShieldCheck, PlusSquare, Radio } from "lucide-react";
 import { RouteResult } from "@/lib/routing";
+import { LoraAntenna } from "@/types/loraAntenna";
 import {
   DrawingOverlay,
   DraftMarkers,
@@ -53,6 +54,10 @@ interface ReportMapInternalProps {
   healthCenters?: HealthCenter[];
   selectedHealthCenter?: HealthCenter | null;
   onSelectHealthCenter?: (center: HealthCenter | null) => void;
+  loraAntennas?: LoraAntenna[];
+  selectedLoraAntenna?: LoraAntenna | null;
+  onSelectLoraAntenna?: (antenna: LoraAntenna | null) => void;
+  showLoraAntennas?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;
@@ -252,6 +257,50 @@ function createCustomPinIcon(
   });
 }
 
+function createLoraAntennaIcon(zoom: number, isSelected: boolean = false) {
+  const minSize = 22;
+  const maxSize = 38;
+  let size = minSize + (maxSize - minSize) * ((zoom - 8) / 10);
+  size = Math.max(minSize, Math.min(maxSize, size));
+
+  const bgColor = isSelected ? "#4338ca" : "#6366f1";
+
+  return L.divIcon({
+    className: `custom-lora-antenna-marker ${isSelected ? "selected" : ""}`,
+    html: `
+      <div class="marker-inner ${isSelected ? "animate-pulse ring-4 ring-indigo-400/50" : ""}" style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: ${size}px;
+        height: ${size * 1.18}px;
+        filter: drop-shadow(0 3px 6px rgba(79, 70, 229, 0.45));
+        position: relative;
+        transform-origin: bottom center;
+        transition: transform 0.2s ease;
+      ">
+        <svg width="100%" height="100%" viewBox="0 0 26 31" fill="${bgColor}" stroke="#ffffff" stroke-width="1.2">
+          <path d="M13 2C7.48 2 3 6.48 3 12c0 6.5 10 17 10 17s10-10.5 10-17c0-5.52-4.48-10-10-10z" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="13" cy="11.5" r="7.5" fill="#ffffff" stroke="none"/>
+        </svg>
+        <div style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: ${size * 0.46}px; height: ${size * 0.46}px; display: flex; align-items: center; justify-content: center; color: ${bgColor};">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+            <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+            <path d="M19.1 4.9c3.9 3.9 3.9 10.2 0 14.1"/>
+            <path d="M12 14v7"/>
+          </svg>
+        </div>
+      </div>
+    `,
+    iconSize: [size, size * 1.18],
+    iconAnchor: [size / 2, size * 1.18],
+    popupAnchor: [0, -size * 1.18],
+  });
+}
+
 function BarriosLayer({
   data,
   reports,
@@ -376,6 +425,10 @@ export default function ReportMapInternal({
   healthCenters = [],
   selectedHealthCenter,
   onSelectHealthCenter,
+  loraAntennas = [],
+  selectedLoraAntenna,
+  onSelectLoraAntenna,
+  showLoraAntennas = true,
   onMapClick,
   isCreatingSafeZone,
   draftLocation,
@@ -404,6 +457,7 @@ export default function ReportMapInternal({
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
   const szMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const hcMarkerRefs = useRef<Record<string, L.Marker | null>>({});
+  const loraMarkerRefs = useRef<Record<string, L.Marker | null>>({});
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
   const [barriosGeoJson, setBarriosGeoJson] =
     useState<GeoJSON.FeatureCollection | null>(null);
@@ -503,6 +557,14 @@ export default function ReportMapInternal({
     () => createHealthCenterIcon(currentZoom, false),
     [currentZoom]
   );
+  const loraDefaultIcon = useMemo(
+    () => createLoraAntennaIcon(currentZoom, false),
+    [currentZoom]
+  );
+  const loraSelectedIcon = useMemo(
+    () => createLoraAntennaIcon(currentZoom, true),
+    [currentZoom]
+  );
   const draftCustomPinIcon = useMemo(
     () => createCustomPinIcon(currentZoom, "spawn"),
     [currentZoom]
@@ -594,6 +656,15 @@ export default function ReportMapInternal({
     [healthCenters]
   );
 
+  const validLoraAntennas = useMemo(
+    () =>
+      loraAntennas.filter(
+        (antenna) =>
+          Number.isFinite(antenna.latitud) && Number.isFinite(antenna.longitud)
+      ),
+    [loraAntennas]
+  );
+
   const heatPoints = useMemo(
     () => buildHeatPoints(validReports),
     [validReports]
@@ -655,6 +726,7 @@ export default function ReportMapInternal({
           markerRefs={markerRefs}
           selectedSafeZone={selectedSafeZone}
           selectedHealthCenter={selectedHealthCenter}
+          selectedLoraAntenna={selectedLoraAntenna}
         />
 
         {/* Capa de calor y marcadores — solo visibles en la vista "Mapa de calor" */}
@@ -748,6 +820,42 @@ export default function ReportMapInternal({
                 </Marker>
               );
             })}
+
+            {showLoraAntennas &&
+              validLoraAntennas.map((antenna) => {
+                const isSelected = selectedLoraAntenna?.id === antenna.id;
+                return (
+                  <Marker
+                    key={`lora-${antenna.id}`}
+                    ref={(marker) => {
+                      loraMarkerRefs.current[antenna.id] = marker;
+                    }}
+                    position={[antenna.latitud, antenna.longitud]}
+                    icon={isSelected ? loraSelectedIcon : loraDefaultIcon}
+                    eventHandlers={{
+                      click: (e) => {
+                        e.originalEvent?.stopPropagation();
+                        if (isSelected) {
+                          onSelectLoraAntenna?.(null);
+                        } else {
+                          onSelectLoraAntenna?.(antenna);
+                        }
+                      },
+                    }}
+                    zIndexOffset={isSelected ? 1150 : 1050}
+                  >
+                    <MapTooltip variant="marker" offset={[0, -20]}>
+                      <div className="text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                        <Radio className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <span>{antenna.nombre}</span>
+                        <span className="rounded bg-indigo-100 dark:bg-indigo-950/80 px-1 py-0.2 text-[9px] font-mono text-indigo-700 dark:text-indigo-300">
+                          LoRa
+                        </span>
+                      </div>
+                    </MapTooltip>
+                  </Marker>
+                );
+              })}
           </>
         )}
 

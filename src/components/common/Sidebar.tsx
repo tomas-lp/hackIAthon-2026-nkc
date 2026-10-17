@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Report, ReportFilters, ReportType } from "@/types/report";
+import { Report, ReportFilters } from "@/types/report";
 import { SafeZone, SafeZoneType } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
 import {
@@ -20,7 +20,9 @@ import {
   MapPin,
   ShieldCheck,
   SquarePlus,
+  Radio,
 } from "lucide-react";
+import { LoraAntenna } from "@/types/loraAntenna";
 
 import "overlayscrollbars/overlayscrollbars.css";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
@@ -45,6 +47,8 @@ interface SidebarProps {
   healthCenters?: HealthCenter[];
   selectedHealthCenter?: HealthCenter | null;
   onSelectHealthCenter?: (center: HealthCenter) => void;
+  loraAntennas?: LoraAntenna[];
+  onSelectLoraAntenna?: (antenna: LoraAntenna) => void;
   onCollapse?: () => void;
   /** Usuario: navegar a la zona segura con menor costo de ruta */
   onNavigateToNearest?: () => void;
@@ -68,6 +72,8 @@ export function Sidebar({
   onSelectSafeZone,
   healthCenters = [],
   onSelectHealthCenter,
+  loraAntennas = [],
+  onSelectLoraAntenna,
   onCollapse,
   fullHeight = false,
 }: SidebarProps) {
@@ -133,8 +139,21 @@ export function Sidebar({
       }
     }
 
+    for (const ant of loraAntennas) {
+      res.push({
+        id: `lora-${ant.id}`,
+        nombre: ant.nombre,
+        tipo: `Antena LoRa (${ant.frecuencia})`,
+        category: "LORA" as "EVACUACION" | "SALUD",
+        ubicacion: ant.direccion || ant.localidad || "Corrientes Capital",
+        lat: ant.latitud,
+        lon: ant.longitud,
+        rawLoraAntenna: ant,
+      });
+    }
+
     return res;
-  }, [safeZones, healthCenters]);
+  }, [safeZones, healthCenters, loraAntennas]);
 
   const searchResults = useMemo(() => {
     const q = markerSearchQuery.trim().toLowerCase();
@@ -162,6 +181,13 @@ export function Sidebar({
       onSelectHealthCenter
     ) {
       onSelectHealthCenter(item.rawHealthCenter);
+    } else if (
+      (item as unknown as { rawLoraAntenna?: LoraAntenna }).rawLoraAntenna &&
+      onSelectLoraAntenna
+    ) {
+      onSelectLoraAntenna(
+        (item as unknown as { rawLoraAntenna: LoraAntenna }).rawLoraAntenna
+      );
     }
     setMarkerSearchQuery("");
     setIsSearchFocused(false);
@@ -319,11 +345,15 @@ export function Sidebar({
                             className={`flex h-8 w-8 shrink-0 items-center justify-center ${
                               item.category === "EVACUACION"
                                 ? "text-emerald-600 dark:text-emerald-500"
-                                : "text-red-500 dark:text-red-400"
+                                : (item.category as string) === "LORA"
+                                  ? "text-indigo-600 dark:text-indigo-400"
+                                  : "text-red-500 dark:text-red-400"
                             }`}
                           >
                             {item.category === "EVACUACION" ? (
                               <ShieldCheck className="h-5 w-5" />
+                            ) : (item.category as string) === "LORA" ? (
+                              <Radio className="h-5 w-5" />
                             ) : (
                               <SquarePlus className="h-5 w-5" />
                             )}

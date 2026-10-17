@@ -8,9 +8,13 @@ import { TooltipSign } from "@/components/ui/TooltipSign";
 
 type BotType = "telegram" | "whatsapp" | null;
 
-export function BotQRWidget({ isHidden }: { isHidden?: boolean }) {
-  const [activeBot, setActiveBot] = useState<BotType>(null);
+export function BotQRWidget(_props: { isHidden?: boolean }) {
+  // Modal de WhatsApp y Telegram oculto según requerimiento
+  return null;
+}
 
+export function BotQRWidgetLegacy({ isHidden }: { isHidden?: boolean }) {
+  const [activeBot, setActiveBot] = useState<BotType>(null);
   return (
     <>
       <div

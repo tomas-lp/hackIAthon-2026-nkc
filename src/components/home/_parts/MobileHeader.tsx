@@ -9,21 +9,33 @@ import {
   SAFE_ZONE_TYPE_LABELS,
   HEALTH_CENTER_TYPE_LABELS,
 } from "@/types/marker";
-import { Search, X, MapPin, ShieldCheck, SquarePlus } from "lucide-react";
+import {
+  Search,
+  X,
+  MapPin,
+  ShieldCheck,
+  SquarePlus,
+  Radio,
+} from "lucide-react";
+import { LoraAntenna } from "@/types/loraAntenna";
 
 interface MobileHeaderProps {
   safeZones?: SafeZone[];
   healthCenters?: HealthCenter[];
+  loraAntennas?: LoraAntenna[];
   onSelectSafeZone?: (zone: SafeZone) => void;
   onSelectHealthCenter?: (center: HealthCenter) => void;
+  onSelectLoraAntenna?: (antenna: LoraAntenna) => void;
   isHidden?: boolean;
 }
 
 export function MobileHeader({
   safeZones = [],
   healthCenters = [],
+  loraAntennas = [],
   onSelectSafeZone,
   onSelectHealthCenter,
+  onSelectLoraAntenna,
   isHidden = false,
 }: MobileHeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -97,8 +109,21 @@ export function MobileHeader({
       }
     }
 
+    for (const ant of loraAntennas) {
+      res.push({
+        id: `lora-${ant.id}`,
+        nombre: ant.nombre,
+        tipo: `Antena LoRa (${ant.frecuencia})`,
+        category: "LORA" as "EVACUACION" | "SALUD",
+        ubicacion: ant.direccion || ant.localidad || "Corrientes Capital",
+        lat: ant.latitud,
+        lon: ant.longitud,
+        rawLoraAntenna: ant,
+      });
+    }
+
     return res;
-  }, [safeZones, healthCenters]);
+  }, [safeZones, healthCenters, loraAntennas]);
 
   const searchResults = useMemo(() => {
     const q = markerSearchQuery.trim().toLowerCase();
@@ -126,6 +151,13 @@ export function MobileHeader({
       onSelectHealthCenter
     ) {
       onSelectHealthCenter(item.rawHealthCenter);
+    } else if (
+      (item as unknown as { rawLoraAntenna?: LoraAntenna }).rawLoraAntenna &&
+      onSelectLoraAntenna
+    ) {
+      onSelectLoraAntenna(
+        (item as unknown as { rawLoraAntenna: LoraAntenna }).rawLoraAntenna
+      );
     }
     setMarkerSearchQuery("");
     setIsSearchOpen(false);
@@ -241,11 +273,15 @@ export function MobileHeader({
                       className={`flex h-8 w-8 shrink-0 items-center justify-center ${
                         item.category === "EVACUACION"
                           ? "text-emerald-600 dark:text-emerald-500"
-                          : "text-red-500 dark:text-red-400"
+                          : (item.category as string) === "LORA"
+                            ? "text-indigo-600 dark:text-indigo-400"
+                            : "text-red-500 dark:text-red-400"
                       }`}
                     >
                       {item.category === "EVACUACION" ? (
                         <ShieldCheck className="h-5 w-5" />
+                      ) : (item.category as string) === "LORA" ? (
+                        <Radio className="h-5 w-5" />
                       ) : (
                         <SquarePlus className="h-5 w-5" />
                       )}

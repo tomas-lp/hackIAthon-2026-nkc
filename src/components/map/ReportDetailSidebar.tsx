@@ -6,7 +6,7 @@ import { formatDate, formatMapLocationAddress } from "@/lib/format";
 import { TYPE_CONFIG } from "@/lib/constants";
 import { resolveAddress } from "@/lib/geocode";
 import { ageMultiplier } from "@/lib/zones";
-import { MapPin, Loader2, AlignLeft, Mic } from "lucide-react";
+import { MapPin, AlignLeft, Mic } from "lucide-react";
 import { MapDetailRow } from "@/components/map/MapDetailRow";
 import { MapDetailShell } from "@/components/map/MapDetailShell";
 
@@ -17,34 +17,9 @@ interface ReportDetailSidebarProps {
   isAdmin?: boolean;
 }
 
-function ReportPhoto({ fotoUrl }: { fotoUrl?: string | null }) {
-  const [imgError, setImgError] = useState(false);
-  const [imgLoading, setImgLoading] = useState(true);
-
-  if (!fotoUrl || imgError) {
-    return null;
-  }
-
-  return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-[#2b395b] dark:bg-[#0b101d]">
-      {imgLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-50 text-sm text-zinc-500 animate-pulse dark:bg-[#0b101d] dark:text-slate-400">
-          <Loader2 className="h-5 w-5 animate-spin text-zinc-400 dark:text-slate-500" />
-          <span className="text-xs font-medium text-zinc-400 dark:text-slate-500">
-            Cargando foto...
-          </span>
-        </div>
-      )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={fotoUrl}
-        alt="Foto del reporte"
-        className={`h-full w-full object-cover transition-opacity duration-300 ${imgLoading ? "opacity-0" : "opacity-100"}`}
-        onError={() => setImgError(true)}
-        onLoad={() => setImgLoading(false)}
-      />
-    </div>
-  );
+function ReportPhoto(_props: { fotoUrl?: string | null }) {
+  // Las fotos de los reportes están ocultas según requerimiento
+  return null;
 }
 
 export function ReportDetailSidebar({

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
+import { LoraAntenna } from "@/types/loraAntenna";
 import { RouteResult } from "@/lib/routing";
 
 import { RegionPersonalizada } from "@/types/region";
@@ -20,6 +21,10 @@ interface ReportMapProps {
   healthCenters?: HealthCenter[];
   selectedHealthCenter?: HealthCenter | null;
   onSelectHealthCenter?: (center: HealthCenter | null) => void;
+  loraAntennas?: LoraAntenna[];
+  selectedLoraAntenna?: LoraAntenna | null;
+  onSelectLoraAntenna?: (antenna: LoraAntenna | null) => void;
+  showLoraAntennas?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
   isCreatingSafeZone?: boolean;
   draftLocation?: { lat: number; lng: number } | null;

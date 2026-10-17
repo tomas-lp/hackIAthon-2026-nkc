@@ -41,6 +41,9 @@ const MobileAlertsSheet = dynamic<MobileAlertsSheetProps>(
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeMapView } from "./HomeMapView";
 import { useAdminSidebar } from "@/components/common/AppShell";
+import { MOCK_LORA_ANTENNAS } from "@/lib/mockLoraAntennas";
+import { LoraAntenna } from "@/types/loraAntenna";
+import { LoraAntennaDetailSidebar } from "@/components/map/LoraAntennaDetailSidebar";
 
 interface HomeDashboardProps {
   initialReports: Report[];
@@ -333,6 +336,9 @@ export function HomeDashboard({
 
   const safeZoneSel = useSafeZoneSelection();
   const healthSel = useHealthCenterSelection();
+  const [selectedLoraAntenna, setSelectedLoraAntenna] =
+    useState<LoraAntenna | null>(null);
+  const [showLoraAntennas, setShowLoraAntennas] = useState(true);
 
   const mapRouting = useMapRouting({
     reports,
@@ -340,6 +346,12 @@ export function HomeDashboard({
     selectedSafeZone: safeZoneSel.selectedSafeZone,
     setSelectedSafeZone: safeZoneSel.setSelectedSafeZone,
   });
+
+  useEffect(() => {
+    if (mapRouting.displayRoute && selectedLoraAntenna) {
+      queueMicrotask(() => setSelectedLoraAntenna(null));
+    }
+  }, [mapRouting.displayRoute, selectedLoraAntenna]);
 
   const hideMainUI =
     safeZoneSel.isCreatingSafeZone || safeZoneSel.isEditingSafeZones;
@@ -364,6 +376,7 @@ export function HomeDashboard({
       setSelectedReport(null);
       safeZoneSel.setSelectedSafeZone(null);
       healthSel.setSelectedHealthCenter(null);
+      setSelectedLoraAntenna(null);
     }
   };
 
@@ -382,6 +395,7 @@ export function HomeDashboard({
             setSelectedReport(report);
             safeZoneSel.setSelectedSafeZone(null);
             healthSel.setSelectedHealthCenter(null);
+            setSelectedLoraAntenna(null);
           }}
           onUpdateFilter={updateFilter}
           onResetFilters={resetFilters}
@@ -393,6 +407,7 @@ export function HomeDashboard({
             safeZoneSel.setSelectedSafeZone(zone);
             setSelectedReport(null);
             healthSel.setSelectedHealthCenter(null);
+            setSelectedLoraAntenna(null);
             safeZoneSel.setIsEditingSafeZones(false);
             safeZoneSel.setIsCreatingSafeZone(false);
             safeZoneSel.setDraftLocation(null);
@@ -405,9 +420,20 @@ export function HomeDashboard({
             healthSel.setSelectedHealthCenter(center);
             setSelectedReport(null);
             safeZoneSel.setSelectedSafeZone(null);
+            setSelectedLoraAntenna(null);
             safeZoneSel.setIsEditingSafeZones(false);
             safeZoneSel.setIsCreatingSafeZone(false);
             safeZoneSel.setDraftLocation(null);
+          }}
+          loraAntennas={MOCK_LORA_ANTENNAS}
+          onSelectLoraAntenna={(antenna) => {
+            setShowLoraAntennas(true);
+            setSelectedLoraAntenna(antenna);
+            setSelectedReport(null);
+            safeZoneSel.setSelectedSafeZone(null);
+            healthSel.setSelectedHealthCenter(null);
+            if (mapRouting.draftCustomPin)
+              mapRouting.handleCloseDraftCustomPin();
           }}
           onCollapse={() => setSidebarCollapsed(true)}
           onNavigateToNearest={
@@ -434,11 +460,13 @@ export function HomeDashboard({
         <MobileHeader
           safeZones={safeZoneSel.safeZones}
           healthCenters={healthSel.healthCenters}
+          loraAntennas={MOCK_LORA_ANTENNAS}
           onSelectSafeZone={(zone) => {
             setShowEvacuationCenters(true);
             safeZoneSel.setSelectedSafeZone(zone);
             setSelectedReport(null);
             healthSel.setSelectedHealthCenter(null);
+            setSelectedLoraAntenna(null);
             safeZoneSel.setIsEditingSafeZones(false);
             safeZoneSel.setIsCreatingSafeZone(false);
             safeZoneSel.setDraftLocation(null);
@@ -448,9 +476,19 @@ export function HomeDashboard({
             healthSel.setSelectedHealthCenter(center);
             setSelectedReport(null);
             safeZoneSel.setSelectedSafeZone(null);
+            setSelectedLoraAntenna(null);
             safeZoneSel.setIsEditingSafeZones(false);
             safeZoneSel.setIsCreatingSafeZone(false);
             safeZoneSel.setDraftLocation(null);
+          }}
+          onSelectLoraAntenna={(antenna) => {
+            setShowLoraAntennas(true);
+            setSelectedLoraAntenna(antenna);
+            setSelectedReport(null);
+            safeZoneSel.setSelectedSafeZone(null);
+            healthSel.setSelectedHealthCenter(null);
+            if (mapRouting.draftCustomPin)
+              mapRouting.handleCloseDraftCustomPin();
           }}
           isHidden={hideMainUI}
         />
@@ -509,6 +547,7 @@ export function HomeDashboard({
           setSelectedReport(report);
           safeZoneSel.setSelectedSafeZone(null);
           healthSel.setSelectedHealthCenter(null);
+          setSelectedLoraAntenna(null);
           if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
         }}
         safeZones={safeZoneSel.safeZones}
@@ -517,6 +556,7 @@ export function HomeDashboard({
           safeZoneSel.setSelectedSafeZone(zone);
           setSelectedReport(null);
           healthSel.setSelectedHealthCenter(null);
+          setSelectedLoraAntenna(null);
           if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
         }}
         healthCenters={healthSel.healthCenters}
@@ -525,8 +565,19 @@ export function HomeDashboard({
           healthSel.setSelectedHealthCenter(center);
           setSelectedReport(null);
           safeZoneSel.setSelectedSafeZone(null);
+          setSelectedLoraAntenna(null);
           if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
         }}
+        loraAntennas={MOCK_LORA_ANTENNAS}
+        selectedLoraAntenna={selectedLoraAntenna}
+        onSelectLoraAntenna={(antenna) => {
+          setSelectedLoraAntenna(antenna);
+          setSelectedReport(null);
+          safeZoneSel.setSelectedSafeZone(null);
+          healthSel.setSelectedHealthCenter(null);
+          if (mapRouting.draftCustomPin) mapRouting.handleCloseDraftCustomPin();
+        }}
+        showLoraAntennas={showLoraAntennas}
         onMapClick={handleMapClick}
         isCreatingSafeZone={safeZoneSel.isCreatingSafeZone}
         draftLocation={safeZoneSel.draftLocation}
@@ -559,6 +610,8 @@ export function HomeDashboard({
           setShowEvacuationCenters={setShowEvacuationCenters}
           showMedicalCenters={showMedicalCenters}
           setShowMedicalCenters={setShowMedicalCenters}
+          showLoraAntennas={showLoraAntennas}
+          setShowLoraAntennas={setShowLoraAntennas}
           showSatellite={showSatellite}
           setShowSatellite={setShowSatellite}
           onCreateEvacuationCenter={
@@ -632,6 +685,36 @@ export function HomeDashboard({
           }
         />
       )}
+
+      <LoraAntennaDetailSidebar
+        antenna={selectedLoraAntenna}
+        isOpen={!!selectedLoraAntenna && !hideMainUI}
+        onClose={() => setSelectedLoraAntenna(null)}
+        onNavigate={
+          !isAdmin && selectedLoraAntenna
+            ? () => {
+                const ant = selectedLoraAntenna;
+                const antennaZone: SafeZone = {
+                  id: `lora-${ant.id}`,
+                  nombre: ant.nombre,
+                  descripcion: `Antena LoRa (${ant.frecuencia}) - ${ant.descripcion || ""}`,
+                  direccion: ant.direccion,
+                  localidad: ant.localidad,
+                  departamento: ant.departamento,
+                  provincia: ant.provincia,
+                  latitud: ant.latitud,
+                  longitud: ant.longitud,
+                  created_at: ant.created_at || new Date().toISOString(),
+                };
+                mapRouting.startRouting(antennaZone, `lora-${ant.id}`);
+              }
+            : undefined
+        }
+        isNavigating={
+          mapRouting.routingState.status === "loading" &&
+          mapRouting.navigatingTargetId === `lora-${selectedLoraAntenna?.id}`
+        }
+      />
 
       <EditingBar
         isCreatingSafeZone={safeZoneSel.isCreatingSafeZone}

@@ -6,6 +6,7 @@ import L from "leaflet";
 import { Report } from "@/types/report";
 import { SafeZone } from "@/types/safeZone";
 import { HealthCenter } from "@/types/healthCenter";
+import { LoraAntenna } from "@/types/loraAntenna";
 
 interface MapControllerProps {
   selectedReport: Report | null;
@@ -13,6 +14,7 @@ interface MapControllerProps {
   markerRefs: MutableRefObject<Record<string, L.Marker | null>>;
   selectedSafeZone?: SafeZone | null;
   selectedHealthCenter?: HealthCenter | null;
+  selectedLoraAntenna?: LoraAntenna | null;
 }
 
 function isValidLatLng(lat: number, lng: number): boolean {
@@ -59,6 +61,7 @@ export function MapController({
   markerRefs,
   selectedSafeZone,
   selectedHealthCenter,
+  selectedLoraAntenna,
 }: MapControllerProps) {
   const map = useMap();
   const popupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,6 +152,29 @@ export function MapController({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedHealthCenter?.id]);
+
+  // Focus on selected LoRa antenna
+  useEffect(() => {
+    if (
+      !selectedLoraAntenna ||
+      !isValidLatLng(selectedLoraAntenna.latitud, selectedLoraAntenna.longitud)
+    ) {
+      return;
+    }
+
+    const bounds = L.latLngBounds([
+      [selectedLoraAntenna.latitud, selectedLoraAntenna.longitud],
+    ]);
+
+    const targetMaxZoom = Math.max(map.getZoom(), 16);
+    map.fitBounds(bounds, {
+      padding: [50, 50],
+      duration: FLY_DURATION,
+      animate: true,
+      maxZoom: targetMaxZoom,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedLoraAntenna?.id]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
